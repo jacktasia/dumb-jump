@@ -45,11 +45,15 @@
 ;; TODO: ensure \s for regexes stay...
 ;; TODO: should take the path to search
 ;; TODO: should quote the regexes
-(defun dumb-jump-generate-command (mode lookfor)
+
+(defun dumb-jump-parse-grep-response (resp)
+  (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp)))
+
+(defun dumb-jump-generate-command (mode lookfor tosearch)
   (let* ((rules (dumb-jump-get-rules-by-mode mode))
          (regexes (-map (lambda (r) (plist-get r ':regex)) rules))
          (meat (s-join " -e " (-map (lambda (x) (s-replace "JJJ" lookfor x)) regexes))))
-    (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " " meat)))
+    (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " " meat " " tosearch)))
 
 (defun dumb-jump-get-rules-by-languages (languages)
   "Get a list of rules with a list of languages"
