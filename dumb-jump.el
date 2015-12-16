@@ -16,6 +16,7 @@
 ;; (require 's)
 ;; (require 'pp)
 ;; (require 'cl-lib)
+(require 's)
 (require 'dash)
 
 (defun dumb-jump-asdf ()
@@ -26,23 +27,29 @@
 
 (defvar dumb-jump-grep-args "-REn")
 
-(defvar dumb-jump-find-rules '((:type "function" :language "elisp" :regex "\\(defun\s+JJJ\s+")
-                               (:type "variable" :language "elisp" :regex "\\(defvar\s+JJJ\s+")
-                               (:type "variable" :language "elisp" :regex "\\(setq\s+JJJ\s+")))
+;; todo: ensure
+(defvar dumb-jump-find-rules '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\s+")
+                               (:type "variable" :language "elisp" :regex "\\\(defvar\\s+JJJ\\s+")
+                               (:type "variable" :language "elisp" :regex "\\\(setq\\s+JJJ\\s+")))
 
 (defvar dumb-jump-language-modes '((:language "elisp" :mode "emacs-lisp-mode")))
 
-;; TODO: find project route
-;; TODO: find and combine and create all match rules joinning with -e
-;; (defun dj--get-command (query)
-;;   (s-concat dj-grep-prefix " grep " dj-grep-args
 
 ;; TODO: process response
 (shell-command-to-string "grep -REn -e '\\(defun\s+' -e 'defvar ' .")
 
-;; (defun dump-jump-generate-command (mode)
-;;   (let* ((rules (dump-jump-get-rules-by-mode mode)
+;; (let* ((cmd (dumb-jump-generate-command "emacs-lisp-mode" "blah")))
+;;   (message cmd)
+;;   (shell-command-to-string cmd))
 
+;; TODO: ensure \s for regexes stay...
+;; TODO: should take the path to search
+;; TODO: should quote the regexes
+(defun dumb-jump-generate-command (mode lookfor)
+  (let* ((rules (dumb-jump-get-rules-by-mode mode))
+         (regexes (-map (lambda (r) (plist-get r ':regex)) rules))
+         (meat (s-join " -e " (-map (lambda (x) (s-replace "JJJ" lookfor x)) regexes))))
+    (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " " meat)))
 
 (defun dumb-jump-get-rules-by-languages (languages)
   "Get a list of rules with a list of languages"
@@ -65,8 +72,6 @@
   "Get all languages connected to a mode"
   (-map (lambda (x) (plist-get x ':language))
         (-filter (lambda (x) (string= (plist-get x ':mode) mode)) dumb-jump-language-modes)))
-
-(length '(1 2 3 4))
 
 ;; for parsing a grep line
 ;;(-map (lambda (x) (s-split ":" x)) (s-split "\n" "a:1\nb:2\nc:c3"))
