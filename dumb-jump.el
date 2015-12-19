@@ -19,9 +19,6 @@
 (require 's)
 (require 'dash)
 
-(defun dumb-jump-asdf ()
-  "asdf")
-
 ;; TODO: document defvars
 (defvar dumb-jump-grep-prefix "LANG=C grep")
 
@@ -35,25 +32,23 @@
 (defvar dumb-jump-language-modes '((:language "elisp" :mode "emacs-lisp-mode")))
 
 
-;; TODO: process response
-(shell-command-to-string "grep -REn -e '\\(defun\s+' -e 'defvar ' .")
+(defun dumb-jump-run-command (mode lookfor tosearch)
+  (let* ((cmd (dumb-jump-generate-command mode lookfor tosearch))
+         (rawresults (shell-command-to-string cmd)))
+    ;; (message cmd)
+    ;; (message rawresults)
+    (dumb-jump-parse-grep-response rawresults)))
 
-;; (let* ((cmd (dumb-jump-generate-command "emacs-lisp-mode" "blah")))
-;;   (message cmd)
-;;   (shell-command-to-string cmd))
 
-;; TODO: ensure \s for regexes stay...
-;; TODO: should take the path to search
-;; TODO: should quote the regexes
-
+;; TODO: put into a plist to treat as a map?
 (defun dumb-jump-parse-grep-response (resp)
   (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp)))
 
 (defun dumb-jump-generate-command (mode lookfor tosearch)
   (let* ((rules (dumb-jump-get-rules-by-mode mode))
-         (regexes (-map (lambda (r) (plist-get r ':regex)) rules))
+         (regexes (-map (lambda (r) (format "'%s'" (plist-get r ':regex))) rules))
          (meat (s-join " -e " (-map (lambda (x) (s-replace "JJJ" lookfor x)) regexes))))
-    (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " " meat " " tosearch)))
+    (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " -e " meat " " tosearch)))
 
 (defun dumb-jump-get-rules-by-languages (languages)
   "Get a list of rules with a list of languages"
