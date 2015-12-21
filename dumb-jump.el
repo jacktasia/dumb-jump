@@ -42,7 +42,15 @@
 
 ;; TODO: put into a plist to treat as a map?
 (defun dumb-jump-parse-grep-response (resp)
-  (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp)))
+  (let ((parsed (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp))))
+    (-mapcat
+      (lambda (x)
+        (let ((item '()))
+          (setq item (plist-put item :path (nth 0 x)))
+          (setq item (plist-put item :line (nth 1 x)))
+          (setq item (plist-put item :context (nth 2 x)))
+          (list item)))
+      parsed)))
 
 (defun dumb-jump-generate-command (mode lookfor tosearch)
   (let* ((rules (dumb-jump-get-rules-by-mode mode))

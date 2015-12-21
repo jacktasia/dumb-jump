@@ -30,10 +30,11 @@
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump.el:28:(defvar dumb-jump-grep)")
          (parsed (dumb-jump-parse-grep-response resp)))
-    (should (string= (nth 1 (nth 1 parsed)) "26"))))
+    (should (string= (plist-get (nth 1 parsed) ':line) "26"))))
+
 
 (ert-deftest dumb-jump-run-cmd-test ()
   (let* ((results (dumb-jump-run-command "emacs-lisp-mode" "another-fake-function" test-data-dir-elisp))
         (first-result (car results)))
-    (should (s-contains? "/fake.el" (car first-result)))
-    (should (string= (nth 1 first-result) "6"))))
+    (should (s-contains? "/fake.el" (plist-get first-result :path)))
+    (should (string= (plist-get first-result :line) "6"))))
