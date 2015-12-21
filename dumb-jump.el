@@ -11,14 +11,12 @@
 
 ;;; Code:
 ;; (require 'json)
-;; (require 'url)
 ;; (require 'ht)
-;; (require 's)
-;; (require 'pp)
-;; (require 'cl-lib)
 (require 's)
 (require 'dash)
 
+;; TODO: display options to user if more than one match
+;; TODO: goto file AND find proj root:  https://github.com/jacktasia/dotemacs24/commit/3972d4decbb09f7dff78feb7cbc5db5b6979b0eb
 ;; TODO: document defvars
 (defvar dumb-jump-grep-prefix "LANG=C grep")
 
@@ -39,8 +37,6 @@
     ;; (message rawresults)
     (dumb-jump-parse-grep-response rawresults)))
 
-
-;; TODO: put into a plist to treat as a map?
 (defun dumb-jump-parse-grep-response (resp)
   (let ((parsed (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp))))
     (-mapcat
