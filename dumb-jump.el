@@ -10,32 +10,39 @@
 ;; Uses `grep` to jump to delcartions via a list of regular expressions based on the major mode you are in.
 
 ;;; Code:
-;; (require 'json)
-;; (require 'ht)
 (require 'f)
 (require 's)
 (require 'dash)
 
 ;; TODO: display options to user if more than one match
 ;; TODO: goto file AND find proj root:  https://github.com/jacktasia/dotemacs24/commit/3972d4decbb09f7dff78feb7cbc5db5b6979b0eb
-;; TODO: document defvars
-(defvar dumb-jump-grep-prefix "LANG=C grep")
+(defvar dumb-jump-grep-prefix "LANG=C grep" "Prefix to grep command. Seemingly makes it faster for pure text.")
 
-(defvar dumb-jump-grep-args "-REn")
+(defvar dumb-jump-grep-args "-REn" "Grep command args Recursive, [e]xtended regexes, and show line numbers")
 
 ;; todo: ensure
-(defvar dumb-jump-find-rules '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\s+")
-                               (:type "variable" :language "elisp" :regex "\\\(defvar\\s+JJJ\\s+")
-                               (:type "variable" :language "elisp" :regex "\\\(setq\\s+JJJ\\s+")))
+(defvar dumb-jump-find-rules
+  '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\s+")
+    (:type "variable" :language "elisp" :regex "\\\(defvar\\s+JJJ\\s+")
+    (:type "variable" :language "elisp" :regex "\\\(setq\\s+JJJ\\s+"))
+  "List of regex patttern templates organized by language
+and type to use for generating the grep command")
 
-(defvar dumb-jump-language-modes '((:language "elisp" :mode "emacs-lisp-mode")))
+(defvar dumb-jump-language-modes
+  '((:language "elisp" :mode "emacs-lisp-mode"))
+  "Mapping of programming lanaguage(s) to emacs major mode(s)")
 
-(defvar dumb-jump-project-denoters '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile"))
+(defvar dumb-jump-project-denoters '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile")
+  "Files and directories that signify a directory is a project root")
 
-(defvar dumb-jump-default-project "~")
+(defvar dumb-jump-default-project "~"
+  "The default project to search for searching if a denoter is not found in parent of file")
 
 ;; this should almost always take (buffer-file-name)
 (defun dumb-jump-get-project-root (filepath)
+  "Keep looking at the parent dir of FILEPATH until a
+denoter file/dir is found then return that directory
+If not found, then return dumb-jump-default-profile"
   (let ((test-path filepath)
         (proj-root nil))
     (while (and (null proj-root)
@@ -50,15 +57,15 @@
       (f-long dumb-jump-default-project)
       proj-root)))
 
-
 (defun dumb-jump-run-command (mode lookfor tosearch)
+  "Run the grep command based on emacs MODE and
+the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command mode lookfor tosearch))
          (rawresults (shell-command-to-string cmd)))
-    ;; (message cmd)
-    ;; (message rawresults)
     (dumb-jump-parse-grep-response rawresults)))
 
 (defun dumb-jump-parse-grep-response (resp)
+  "Takes a grep response RESP and parses into a list of plists"
   (let ((parsed (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp))))
     (-mapcat
       (lambda (x)
@@ -70,6 +77,8 @@
       parsed)))
 
 (defun dumb-jump-generate-command (mode lookfor tosearch)
+  "Generate the grep response based on emacs MODE and
+the needle LOOKFOR in the directory TOSEARCH"
   (let* ((rules (dumb-jump-get-rules-by-mode mode))
          (regexes (-map (lambda (r) (format "'%s'" (plist-get r ':regex))) rules))
          (meat (s-join " -e " (-map (lambda (x) (s-replace "JJJ" lookfor x)) regexes))))
