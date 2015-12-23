@@ -12,6 +12,7 @@
 ;;; Code:
 ;; (require 'json)
 ;; (require 'ht)
+(require 'f)
 (require 's)
 (require 'dash)
 
@@ -28,6 +29,26 @@
                                (:type "variable" :language "elisp" :regex "\\\(setq\\s+JJJ\\s+")))
 
 (defvar dumb-jump-language-modes '((:language "elisp" :mode "emacs-lisp-mode")))
+
+(defvar dumb-jump-project-denoters '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile"))
+
+(defvar dumb-jump-default-project "~")
+
+;; this should almost always take (buffer-file-name)
+(defun dumb-jump-get-project-root (filepath)
+  (let ((test-path filepath)
+        (proj-root nil))
+    (while (and (null proj-root)
+                (not (null test-path)))
+      (setq test-path (f-dirname test-path))
+      (unless (null test-path)
+        (-each dumb-jump-project-denoters
+          (lambda (denoter)
+            (when (f-exists? (f-join test-path denoter))
+              (setq proj-root test-path))))))
+    (if (null proj-root)
+      (f-long dumb-jump-default-project)
+      proj-root)))
 
 
 (defun dumb-jump-run-command (mode lookfor tosearch)
@@ -75,9 +96,6 @@
   "Get all languages connected to a mode"
   (-map (lambda (x) (plist-get x ':language))
         (-filter (lambda (x) (string= (plist-get x ':mode) mode)) dumb-jump-language-modes)))
-
-;; for parsing a grep line
-;;(-map (lambda (x) (s-split ":" x)) (s-split "\n" "a:1\nb:2\nc:c3"))
 
 
 (provide 'dumb-jump)

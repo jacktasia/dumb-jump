@@ -7,6 +7,7 @@
 
 (setq test-data-dir (f-expand "./test/data"))
 (setq test-data-dir-elisp (f-join test-data-dir "proj2-elisp"))
+(setq test-data-dir-proj1 (f-join test-data-dir "proj1"))
 
 (ert-deftest data-dir-exists-test ()
   (should (f-dir? test-data-dir)))
@@ -38,3 +39,9 @@
         (first-result (car results)))
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (string= (plist-get first-result :line) "6"))))
+
+(ert-deftest dumb-jump-find-proj-root-test ()
+  (let* ((js-file (f-join test-data-dir-proj1 "src" "js"))
+         (found-project (dumb-jump-get-project-root js-file)))
+    (should (f-exists? found-project))
+    (should (string= found-project test-data-dir-proj1))))
