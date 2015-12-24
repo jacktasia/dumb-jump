@@ -57,6 +57,27 @@ If not found, then return dumb-jump-default-profile"
       (f-long dumb-jump-default-project)
       proj-root)))
 
+
+(defun dumb-jump-go ()
+  "Go to the function/variable declaration for thing at point"
+  (interactive)
+  (let* ((proj-root (dumb-jump-get-project-root (buffer-file-name)))
+         (look-for (thing-at-point 'symbol))
+         (results (dumb-jump-run-command major-mode look-for proj-root))
+         (result-count (length results))
+         (top-result (car results)))
+    (cond
+     ((= result-count 1)
+      (dumb-jump-goto-file-line (plist-get top-result :path) (plist-get top-result :line)))
+     (t
+      (message "Un-handled results: %s" (prin1-to-string results))))))
+
+(defun dumb-jump-goto-file-line (thefile theline)
+  "Open THEFILE and go line THELINE"
+  (find-file thefile)
+  (goto-char (point-min))
+  (forward-line (- (string-to-number theline) 1)))
+
 (defun dumb-jump-run-command (mode lookfor tosearch)
   "Run the grep command based on emacs MODE and
 the needle LOOKFOR in the directory TOSEARCH"
@@ -66,7 +87,7 @@ the needle LOOKFOR in the directory TOSEARCH"
 
 (defun dumb-jump-parse-grep-response (resp)
   "Takes a grep response RESP and parses into a list of plists"
-  (let ((parsed (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp))))
+  (let ((parsed (butlast (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp)))))
     (-mapcat
       (lambda (x)
         (let ((item '()))

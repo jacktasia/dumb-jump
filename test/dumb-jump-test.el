@@ -45,3 +45,9 @@
          (found-project (dumb-jump-get-project-root js-file)))
     (should (f-exists? found-project))
     (should (string= found-project test-data-dir-proj1))))
+
+(ert-deftest dumb-jump-goto-file-line-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (dumb-jump-goto-file-line js-file "3")
+    (should (string= (buffer-file-name) js-file))
+    (should (string= (what-line) "Line 3"))))
