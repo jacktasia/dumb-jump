@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015 jack angers
 ;; Author: jack angers
 ;; Version: 1.0
-;; Package-Requires: ((json "1.2") (ht "2.0") (s "1.9.0") (dash "2.9.0") (cl-lib "0.5"))
+;; Package-Requires: ((f "0.17.3") (s "1.9.0") (dash "2.9.0"))
 ;; Keywords: programming
 ;;; Commentary:
 
@@ -15,7 +15,8 @@
 (require 'dash)
 
 ;; TODO: display options to user if more than one match
-;; TODO: goto file AND find proj root:  https://github.com/jacktasia/dotemacs24/commit/3972d4decbb09f7dff78feb7cbc5db5b6979b0eb
+;; TODO: add rules for more languages
+;; TODO: make dumb-jump-test-rules run on boot?
 (defvar dumb-jump-grep-prefix "LANG=C grep" "Prefix to grep command. Seemingly makes it faster for pure text.")
 
 (defvar dumb-jump-grep-args "-REn" "Grep command args Recursive, [e]xtended regexes, and show line numbers")
@@ -23,9 +24,9 @@
 (defvar dumb-jump-find-rules
   '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\s*" :tests ("(defun test (blah)"))
     (:type "variable" :language "elisp" :regex "\\\(defvar\\b\\s*JJJ\\b\\s*" :tests ("(defvar test "))
-    (:type "variable" :language "elisp" :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)"))))
-;  "List of regex patttern templates organized by language
-;and type to use for generating the grep command")
+    (:type "variable" :language "elisp" :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)")))
+  "List of regex patttern templates organized by language
+and type to use for generating the grep command")
 
 (defvar dumb-jump-language-modes
   '((:language "elisp" :mode "emacs-lisp-mode"))
