@@ -17,19 +17,37 @@
 ;; TODO: display options to user if more than one match
 ;; TODO: add rules for more languages
 ;; TODO: make dumb-jump-test-rules run on boot?
+;; TODO: add warning message if a mode has ZERO language rules...
 (defvar dumb-jump-grep-prefix "LANG=C grep" "Prefix to grep command. Seemingly makes it faster for pure text.")
 
 (defvar dumb-jump-grep-args "-REn" "Grep command args Recursive, [e]xtended regexes, and show line numbers")
 
 (defvar dumb-jump-find-rules
-  '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\s*" :tests ("(defun test (blah)"))
-    (:type "variable" :language "elisp" :regex "\\\(defvar\\b\\s*JJJ\\b\\s*" :tests ("(defvar test "))
-    (:type "variable" :language "elisp" :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)")))
+  '((:type "function" :language "elisp"
+           :regex "\\\(defun\\s+JJJ\\s*" :tests ("(defun test (blah)"))
+    (:type "variable" :language "elisp"
+           :regex "\\\(defvar\\b\\s*JJJ\\b\\s*" :tests ("(defvar test "))
+    (:type "variable" :language "elisp"
+           :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)"))
+    ;; javascript
+    (:type "variable" :language "javascript"
+           :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
+    (:type "function" :language "javascript"
+           :regex "function\\s*JJJ\\s*\\\("
+           :tests ("function test()" "function test ()"))
+    (:type "function" :language "javascript"
+           :regex "\\s*JJJ\\s*=\\s*function\\s*\\\("
+           :tests ("test = function()"))
+
+)
   "List of regex patttern templates organized by language
 and type to use for generating the grep command")
 
 (defvar dumb-jump-language-modes
-  '((:language "elisp" :mode "emacs-lisp-mode"))
+  '((:language "elisp" :mode "emacs-lisp-mode")
+    (:language "javascript" :mode "js2-mode")
+    (:language "javascript" :mode "javascript-mode")
+    (:language "javascript" :mode "web-mode"))
   "Mapping of programming lanaguage(s) to emacs major mode(s)")
 
 (defvar dumb-jump-project-denoters '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile")
