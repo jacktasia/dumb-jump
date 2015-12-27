@@ -53,5 +53,12 @@
     (should (string= (what-line) "Line 3"))))
 
 (ert-deftest dumb-jump-test-rules-test ()
-  (let (rule-failures (dumb-jump-test-rules))
+  (let ((rule-failures (dumb-jump-test-rules)))
     (should (= (length rule-failures) 0))))
+
+(ert-deftest dumb-jump-test-rules-fail-test ()
+  (let* ((bad-rule '(:type "variable" :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+         (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
+         (rule-failures (dumb-jump-test-rules)))
+    ;(message "%s" (prin1-to-string rule-failures))
+    (should (= (length rule-failures) 1))))

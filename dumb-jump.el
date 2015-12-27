@@ -37,11 +37,11 @@
 (defvar dumb-jump-default-project "~"
   "The default project to search for searching if a denoter is not found in parent of file")
 
-;; TODO: this needs to bring in parts of generate command too for populating the template...
-
 (defun dumb-jump-test-rules ()
-  "Test all the rules and return those that fail"
-  (let ((failures '()))
+  "Test all the rules and return count ofthose that fail
+Optionally pass t to see a list of all failed rules"
+  (let ((failures '())
+        (fail-tmpl "FAILURE '%s' not in response '%s' | CMD: '%s' | rule: '%s'"))
     (-each dumb-jump-find-rules
       (lambda (rule)
         (-each (plist-get rule :tests)
@@ -49,8 +49,8 @@
             (let* ((cmd (concat " echo '" test "' | grep -En -e '"  (s-replace "JJJ" "test" (plist-get rule :regex)) "'"))
                    (resp (shell-command-to-string cmd)))
               (when (not (s-contains? test resp))
-                (message "test '%s' not in response '%s' CMD:%s " test resp cmd)
-                (add-to-list 'failures (plist-put rule :failed rule))))))))
+                (add-to-list 'failures (format fail-tmpl test resp cmd rule))))
+                ))))
     failures))
 
 ;(dumb-jump-test-rules)
