@@ -18,6 +18,7 @@
 ;; TODO: add rules for more languages
 ;; TODO: make dumb-jump-test-rules run on boot?
 ;; TODO: add warning message if a mode has ZERO language rules...
+;; TODO: add "searching.." message with a warning if it's slow to exclude directories
 (defvar dumb-jump-grep-prefix "LANG=C grep" "Prefix to grep command. Seemingly makes it faster for pure text.")
 
 (defvar dumb-jump-grep-args "-REn" "Grep command args Recursive, [e]xtended regexes, and show line numbers")
@@ -46,6 +47,7 @@ and type to use for generating the grep command")
 (defvar dumb-jump-language-modes
   '((:language "elisp" :mode "emacs-lisp-mode")
     (:language "javascript" :mode "js2-mode")
+    (:language "javascript" :mode "js-mode")
     (:language "javascript" :mode "javascript-mode")
     (:language "javascript" :mode "web-mode"))
   "Mapping of programming lanaguage(s) to emacs major mode(s)")
