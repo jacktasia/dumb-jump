@@ -26,7 +26,7 @@
 
 (ert-deftest dumb-jump-generate-command-test ()
   (let ((expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s*' -e '\\(setq\\b\\s*tester\\b\\s*' ."))
-    (should (string= expected  (dumb-jump-generate-command "emacs-lisp-mode" "tester" ".")))))
+    (should (string= expected  (dumb-jump-generate-command "emacs-lisp-mode" "tester" "." nil)))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump.el:28:(defvar dumb-jump-grep)")
@@ -35,7 +35,7 @@
 
 
 (ert-deftest dumb-jump-run-cmd-test ()
-  (let* ((results (dumb-jump-run-command "emacs-lisp-mode" "another-fake-function" test-data-dir-elisp))
+  (let* ((results (dumb-jump-run-command "emacs-lisp-mode" "another-fake-function" test-data-dir-elisp nil))
         (first-result (car results)))
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (string= (plist-get first-result :line) "6"))))
@@ -62,3 +62,10 @@
          (rule-failures (dumb-jump-test-rules)))
     ;(message "%s" (prin1-to-string rule-failures))
     (should (= (length rule-failures) 1))))
+
+(ert-deftest dumb-jump-context-point-test ()
+  (let* ((sentence "mainWindow.loadUrl('file://' + __dirname + '/dt/inspector.html?electron=true');")
+         (func "loadUrl")
+         (ctx (dumb-jump-get-point-context sentence func)))
+         (should (string= (plist-get ctx :left) "."))
+         (should (string= (plist-get ctx :right) "("))))

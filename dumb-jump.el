@@ -10,6 +10,7 @@
 ;; Uses `grep` to jump to delcartions via a list of regular expressions based on the major mode you are in.
 
 ;;; Code:
+(require 'org)
 (require 'f)
 (require 's)
 (require 'dash)
@@ -52,6 +53,10 @@ and type to use for generating the grep command")
     (:language "javascript" :mode "web-mode"))
   "Mapping of programming lanaguage(s) to emacs major mode(s)")
 
+(defvar dumb-jump-language-contexts
+  '((:language "javascript" :type "function" :right "(" :left nil)
+    (:language "javascript" :type "variable" :right "." :left nil)))
+
 (defvar dumb-jump-project-denoters '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile")
   "Files and directories that signify a directory is a project root")
 
@@ -75,6 +80,15 @@ Optionally pass t to see a list of all failed rules"
     failures))
 
 ;(dumb-jump-test-rules)
+
+(defun dumb-jump-get-point-context (sentence func)
+  (let* ((loc (s-index-of func sentence))
+         (sd (s-replace func "" sentence))
+         (left (substring sd (- loc 1) loc))
+         (right (substring sd loc (+ loc 1))))
+       (org-combine-plists (plist-put nil :left left)
+                           (plist-put nil :right right))))
+
 
 ;; this should almost always take (buffer-file-name)
 (defun dumb-jump-get-project-root (filepath)
@@ -101,14 +115,19 @@ If not found, then return dumb-jump-default-profile"
   (interactive)
   (let* ((proj-root (dumb-jump-get-project-root (buffer-file-name)))
          (look-for (thing-at-point 'symbol))
-         (results (dumb-jump-run-command major-mode look-for proj-root))
+         (pt-ctx (dumb-jump-get-point-context
+                  (thing-at-point 'sentence)
+                  (thing-at-point 'symbol)))
+         (results (dumb-jump-run-command major-mode look-for proj-root pt-ctx))
          (result-count (length results))
          (top-result (car results)))
     (cond
+     ((null results)
+      (message "Could not find rules for %s" major-mode))
      ((= result-count 1)
       (dumb-jump-goto-file-line (plist-get top-result :path) (plist-get top-result :line)))
      (t
-      (message "Un-handled results: %s -> %s" (prin1-to-string (dumb-jump-generate-command major-mode look-for proj-root)) (prin1-to-string results))))))
+      (message "Un-handled results: %s -> %s" (prin1-to-string (dumb-jump-generate-command major-mode look-for proj-root pt-ctx)) (prin1-to-string results))))))
 
 (defun dumb-jump-goto-file-line (thefile theline)
   "Open THEFILE and go line THELINE"
@@ -116,12 +135,14 @@ If not found, then return dumb-jump-default-profile"
   (goto-char (point-min))
   (forward-line (- (string-to-number theline) 1)))
 
-(defun dumb-jump-run-command (mode lookfor tosearch)
+(defun dumb-jump-run-command (mode lookfor tosearch pt-ctx)
   "Run the grep command based on emacs MODE and
 the needle LOOKFOR in the directory TOSEARCH"
-  (let* ((cmd (dumb-jump-generate-command mode lookfor tosearch))
+  (let* ((cmd (dumb-jump-generate-command mode lookfor tosearch pt-ctx))
          (rawresults (shell-command-to-string cmd)))
-    (dumb-jump-parse-grep-response rawresults)))
+    (if (null cmd)
+        nil
+      (dumb-jump-parse-grep-response rawresults))))
 
 (defun dumb-jump-parse-grep-response (resp)
   "Takes a grep response RESP and parses into a list of plists"
@@ -135,13 +156,24 @@ the needle LOOKFOR in the directory TOSEARCH"
           (list item)))
       parsed)))
 
-(defun dumb-jump-generate-command (mode lookfor tosearch)
+(defun dumb-jump-generate-command (mode lookfor tosearch pt-ctx)
   "Generate the grep response based on emacs MODE and
 the needle LOOKFOR in the directory TOSEARCH"
   (let* ((rules (dumb-jump-get-rules-by-mode mode))
+         (lang (car (dumb-jump-get-languages-by-mode mode))) ;; TODO: support all
          (regexes (-map (lambda (r) (format "'%s'" (plist-get r ':regex))) rules))
+         ;;(contexts (-filter (lambda (x) (string= (plist-get x ':language))) lang))
+         ;; (ctx-regexes (if (not (null pt-ctx))
+         ;;                  (-filter (lambda (x)
+         ;;                             (or (string= (plist-get contexts :left)
+         ;;                                           (plist-get pt-ctx :left))
+         ;;                                  (string= (plist-get contexts :left)
+         ;;                                           (plist-get pt-ctx :left)))))
+         ;;                contexts))
          (meat (s-join " -e " (-map (lambda (x) (s-replace "JJJ" lookfor x)) regexes))))
-    (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " -e " meat " " tosearch)))
+    (if (= (length rules) 0)
+        nil
+        (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " -e " meat " " tosearch))))
 
 (defun dumb-jump-get-rules-by-languages (languages)
   "Get a list of rules with a list of languages"
