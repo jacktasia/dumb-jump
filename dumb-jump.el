@@ -20,13 +20,12 @@
 
 (defvar dumb-jump-grep-args "-REn" "Grep command args Recursive, [e]xtended regexes, and show line numbers")
 
-;; todo: ensure
 (defvar dumb-jump-find-rules
-  '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\s+")
-    (:type "variable" :language "elisp" :regex "\\\(defvar\\s+JJJ\\s+")
-    (:type "variable" :language "elisp" :regex "\\\(setq\\s+JJJ\\s+"))
-  "List of regex patttern templates organized by language
-and type to use for generating the grep command")
+  '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\s*" :tests ("(defun test (blah)"))
+    (:type "variable" :language "elisp" :regex "\\\(defvar\\b\\s*JJJ\\b\\s*" :tests ("(defvar test "))
+    (:type "variable" :language "elisp" :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)"))))
+;  "List of regex patttern templates organized by language
+;and type to use for generating the grep command")
 
 (defvar dumb-jump-language-modes
   '((:language "elisp" :mode "emacs-lisp-mode"))
@@ -37,6 +36,24 @@ and type to use for generating the grep command")
 
 (defvar dumb-jump-default-project "~"
   "The default project to search for searching if a denoter is not found in parent of file")
+
+;; TODO: this needs to bring in parts of generate command too for populating the template...
+
+(defun dumb-jump-test-rules ()
+  "Test all the rules and return those that fail"
+  (let ((failures '()))
+    (-each dumb-jump-find-rules
+      (lambda (rule)
+        (-each (plist-get rule :tests)
+          (lambda (test)
+            (let* ((cmd (concat " echo '" test "' | grep -En -e '"  (s-replace "JJJ" "test" (plist-get rule :regex)) "'"))
+                   (resp (shell-command-to-string cmd)))
+              (when (not (s-contains? test resp))
+                (message "test '%s' not in response '%s' CMD:%s " test resp cmd)
+                (add-to-list 'failures (plist-put rule :failed rule))))))))
+    failures))
+
+;(dumb-jump-test-rules)
 
 ;; this should almost always take (buffer-file-name)
 (defun dumb-jump-get-project-root (filepath)
@@ -70,7 +87,7 @@ If not found, then return dumb-jump-default-profile"
      ((= result-count 1)
       (dumb-jump-goto-file-line (plist-get top-result :path) (plist-get top-result :line)))
      (t
-      (message "Un-handled results: %s" (prin1-to-string results))))))
+      (message "Un-handled results: %s -> %s" (prin1-to-string (dumb-jump-generate-command major-mode look-for proj-root)) (prin1-to-string results))))))
 
 (defun dumb-jump-goto-file-line (thefile theline)
   "Open THEFILE and go line THELINE"

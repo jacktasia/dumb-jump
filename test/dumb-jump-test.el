@@ -25,7 +25,7 @@
   (should (= 3 (length (dumb-jump-get-rules-by-mode "emacs-lisp-mode")))))
 
 (ert-deftest dumb-jump-generate-command-test ()
-  (let ((expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s+' -e '\\(defvar\\s+tester\\s+' -e '\\(setq\\s+tester\\s+' ."))
+  (let ((expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s*' -e '\\(setq\\b\\s*tester\\b\\s*' ."))
     (should (string= expected  (dumb-jump-generate-command "emacs-lisp-mode" "tester" ".")))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
@@ -51,3 +51,7 @@
     (dumb-jump-goto-file-line js-file "3")
     (should (string= (buffer-file-name) js-file))
     (should (string= (what-line) "Line 3"))))
+
+(ert-deftest dumb-jump-test-rules-test ()
+  (let (rule-failures (dumb-jump-test-rules))
+    (should (= (length rule-failures) 0))))
