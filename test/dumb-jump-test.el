@@ -50,7 +50,7 @@
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
     (dumb-jump-goto-file-line js-file "3")
     (should (string= (buffer-file-name) js-file))
-    (should (string= (what-line) "Line 3"))))
+    (should (= (line-number-at-pos) 3))))
 
 (ert-deftest dumb-jump-test-rules-test ()
   (let ((rule-failures (dumb-jump-test-rules)))
