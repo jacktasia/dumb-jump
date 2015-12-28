@@ -89,3 +89,17 @@
          (pt-ctx (dumb-jump-get-point-context sentence func))
          (ctx-type (dumb-jump-get-ctx-type-by-mode "js2-mode" pt-ctx)))
     (should (string= ctx-type "function"))))
+
+(ert-deftest dumb-jump-multiple-choice-input-test ()
+  (progn
+    (should (= (dumb-jump-parse-input 5 "4") 4))
+    (should (= (dumb-jump-parse-input 50 "1") 1))
+    (should (null (dumb-jump-parse-input 50 "242")))
+    (should (null (dumb-jump-parse-input 5 "0")))
+    (should (null (dumb-jump-parse-input 500 "asdf")))
+    (should (null (dumb-jump-parse-input 5 "6")))))
+
+(ert-deftest dumb-jump-multiple-choice-text-test ()
+  (let* ((choice-txt (dumb-jump-generate-prompt-text "asdf" "/usr/blah" '((:path "/usr/blah/test.txt" :line "54"))))
+         (expected "Multiple results for 'asdf':\n\n1. /test.txt:54\n\nChoice: "))
+    (should (string= choice-txt expected))))
