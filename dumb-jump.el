@@ -84,13 +84,10 @@ Optionally pass t to see a list of all failed rules"
                 ))))
     failures))
 
-;; (askldjfkl
-
 (defun dumb-jump-get-point-context (sentence func)
   (let* ((loc (s-index-of func sentence))
          (func-len (length func))
          (sen-len (length sentence))
-         ;(sd (s-replace func "" sentence))
          (right-loc-start (+ loc func-len))
          (right-loc-end (+ right-loc-start 1))
          (left (substring sentence (- loc 1) loc))
