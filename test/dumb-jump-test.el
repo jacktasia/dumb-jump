@@ -24,9 +24,17 @@
 (ert-deftest dumb-jump-get-rules-by-mode-test ()
   (should (= 3 (length (dumb-jump-get-rules-by-mode "emacs-lisp-mode")))))
 
-(ert-deftest dumb-jump-generate-command-test ()
+(ert-deftest dumb-jump-generate-command-no-ctx-test ()
   (let ((expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s*' -e '\\(setq\\b\\s*tester\\b\\s*' ."))
     (should (string= expected  (dumb-jump-generate-command "emacs-lisp-mode" "tester" "." nil)))))
+
+(ert-deftest dumb-jump-generate-command-with-ctx-test ()
+  (let ((expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' ."))
+    ;; the point context being passed should match a "function" type so only the one command
+    (should (string= expected  (dumb-jump-generate-command "emacs-lisp-mode" "tester" "." '(:left "(" :right nil))))))
+
+(ert-deftest dumb-jump-generate-bad-command-test ()
+    (should (s-blank? (dumb-jump-generate-command "unknown-mode" "tester" "." nil))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump.el:28:(defvar dumb-jump-grep)")
@@ -69,3 +77,10 @@
          (ctx (dumb-jump-get-point-context sentence func)))
          (should (string= (plist-get ctx :left) "."))
          (should (string= (plist-get ctx :right) "("))))
+
+(ert-deftest dumb-jump-context-point-test ()
+  (let* ((sentence "mainWindow.loadUrl('file://' + __dirname + '/dt/inspector.html?electron=true');")
+         (func "loadUrl")
+         (pt-ctx (dumb-jump-get-point-context sentence func))
+         (ctx-type (dumb-jump-get-ctx-type-by-mode "js2-mode" pt-ctx)))
+    (should (string= ctx-type "function"))))
