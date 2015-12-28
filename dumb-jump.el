@@ -21,6 +21,9 @@
 ;; TODO: add warning message if a mode has ZERO language rules...
 ;; TODO: add "searching.." message with a warning if it's slow to exclude directories
 ;; TODO: prefix private functions with dj/ or simliar
+;; TODO: .dumb-jump settings file for excludes
+
+;; https://github.com/jacktasia/dotemacs24/commit/3972d4decbb09f7dff78feb7cbc5db5b6979b0eb
 
 (defvar dumb-jump-grep-prefix "LANG=C grep" "Prefix to grep command. Seemingly makes it faster for pure text.")
 
