@@ -48,6 +48,11 @@
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (string= (plist-get first-result :line) "6"))))
 
+(ert-deftest dumb-jump-run-cmd-fail-test ()
+  (let* ((results (dumb-jump-run-command "emacs-lisp-mode" "hidden-function" test-data-dir-elisp nil))
+        (first-result (car results)))
+    (should (null first-result))))
+
 (ert-deftest dumb-jump-find-proj-root-test ()
   (let* ((js-file (f-join test-data-dir-proj1 "src" "js"))
          (found-project (dumb-jump-get-project-root js-file)))

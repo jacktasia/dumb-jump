@@ -81,11 +81,20 @@ Optionally pass t to see a list of all failed rules"
                 ))))
     failures))
 
+;; (askldjfkl
+
 (defun dumb-jump-get-point-context (sentence func)
   (let* ((loc (s-index-of func sentence))
-         (sd (s-replace func "" sentence))
-         (left (substring sd (- loc 1) loc))
-         (right (substring sd loc (+ loc 1))))
+         (func-len (length func))
+         (sen-len (length sentence))
+         ;(sd (s-replace func "" sentence))
+         (right-loc-start (+ loc func-len))
+         (right-loc-end (+ right-loc-start 1))
+         (left (substring sentence (- loc 1) loc))
+         (right (if (> right-loc-end sen-len)
+                    ""
+                  (substring sentence right-loc-start right-loc-end))))
+
        (org-combine-plists (plist-put nil :left left)
                            (plist-put nil :right right))))
 
@@ -124,6 +133,8 @@ If not found, then return dumb-jump-default-profile"
       (message "Could not find rules for mode '%s'." major-mode))
      ((= result-count 1)
       (dumb-jump-goto-file-line (plist-get top-result :path) (plist-get top-result :line)))
+     ((= result-count 0)
+      (message "'%s' declaration not found" look-for))
      (t
       (message "Un-handled results: %s -> %s" (prin1-to-string (dumb-jump-generate-command major-mode look-for proj-root pt-ctx)) (prin1-to-string results))))))
 
@@ -139,7 +150,7 @@ If not found, then return dumb-jump-default-profile"
 the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command mode lookfor tosearch pt-ctx))
          (rawresults (shell-command-to-string cmd)))
-    ; (message "Running cmd '%s'" cmd)
+    ;(message "Running cmd '%s'" cmd)
     (if (s-blank? cmd)
        nil
       (dumb-jump-parse-grep-response rawresults))))
@@ -223,7 +234,6 @@ the needle LOOKFOR in the directory TOSEARCH"
   "Get all languages connected to a mode"
   (-map (lambda (x) (plist-get x ':language))
         (-filter (lambda (x) (string= (plist-get x ':mode) mode)) dumb-jump-language-modes)))
-
 
 (global-set-key (kbd "C-M-g") 'dumb-jump-go)
 
