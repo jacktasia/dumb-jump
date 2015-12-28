@@ -83,7 +83,7 @@
          (should (string= (plist-get ctx :left) "."))
          (should (string= (plist-get ctx :right) "("))))
 
-(ert-deftest dumb-jump-context-point-test ()
+(ert-deftest dumb-jump-context-point-type-test ()
   (let* ((sentence "mainWindow.loadUrl('file://' + __dirname + '/dt/inspector.html?electron=true');")
          (func "loadUrl")
          (pt-ctx (dumb-jump-get-point-context sentence func))
