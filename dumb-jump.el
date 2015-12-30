@@ -7,7 +7,7 @@
 ;; Keywords: programming
 ;;; Commentary:
 
-;; Uses `grep` to jump to delcartions via a list of regular expressions based on the major mode you are in.
+;; Uses `grep` to jump to the declaration for a variable/function under point via a set of regular expressions based on the current `major-mode`.
 
 ;;; Code:
 (require 'org)
