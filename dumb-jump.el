@@ -17,9 +17,9 @@
 
 ;; TODO: add rules for more languages
 ;; TODO: make dumb-jump-test-rules run on boot?
-;; TODO: add "searching.." message with a warning if it's slow to exclude directories
 ;; TODO: prefix private functions with dj/ or simliar
 ;; TODO: .dumb-jump settings file for excludes
+;; TODO: time search operation. if above N then have a helpful not about setting up excludes
 
 ;; https://github.com/jacktasia/dotemacs24/commit/3972d4decbb09f7dff78feb7cbc5db5b6979b0eb
 
@@ -181,6 +181,7 @@ the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command mode lookfor tosearch pt-ctx))
          (rawresults (shell-command-to-string cmd)))
     ;(message "Running cmd '%s'" cmd)
+    ;(message "Searching for '%s'..." lookfor)
     (if (s-blank? cmd)
        nil
       (dumb-jump-parse-grep-response rawresults))))
