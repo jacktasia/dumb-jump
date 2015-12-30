@@ -15,10 +15,8 @@
 (require 's)
 (require 'dash)
 
-;; TODO: display options to user if more than one match
 ;; TODO: add rules for more languages
 ;; TODO: make dumb-jump-test-rules run on boot?
-;; TODO: add warning message if a mode has ZERO language rules...
 ;; TODO: add "searching.." message with a warning if it's slow to exclude directories
 ;; TODO: prefix private functions with dj/ or simliar
 ;; TODO: .dumb-jump settings file for excludes
@@ -98,6 +96,30 @@ Optionally pass t to see a list of all failed rules"
        (org-combine-plists (plist-put nil :left left)
                            (plist-put nil :right right))))
 
+(defun dumb-jump-generate-prompt-text (look-for proj results)
+  (let* ((title (format "Multiple results for '%s':\n\n" look-for))
+         (choices (-map-indexed (lambda (index result)
+                                  (format "%d. %s:%s" (1+ index)
+                                          (s-replace proj "" (plist-get result :path))
+                                          (plist-get result :line)))
+                                results)))
+    (concat title (s-join "\n" choices) "\n\nChoice: ")))
+
+(defun dumb-jump-parse-input (total input)
+  (let* ((choice (string-to-number input)))
+    (when (and
+           (<= choice total)
+           (>= choice 1))
+      choice)))
+
+(defun dumb-jump-handle-multiple-choices (look-for proj results)
+  (let* ((prompt-text (dumb-jump-generate-prompt-text look-for proj results))
+         (input (read-from-minibuffer prompt-text))
+         (choice (dumb-jump-parse-input (length results) input)))
+    (if choice
+      (dumb-jump-result-go (nth (1- choice) results))
+      (message "Sorry, that's an invalid choice."))))
+
 ;; this should almost always take (buffer-file-name)
 (defun dumb-jump-get-project-root (filepath)
   "Keep looking at the parent dir of FILEPATH until a
@@ -132,11 +154,19 @@ If not found, then return dumb-jump-default-profile"
      ((and (not (listp results)) (s-blank? results))
       (message "Could not find rules for mode '%s'." major-mode))
      ((= result-count 1)
-      (dumb-jump-goto-file-line (plist-get top-result :path) (plist-get top-result :line)))
+      (dumb-jump-result-go top-result))
+     ((> result-count 1)
+      ;; multiple results so let the user pick from a list
+      (dumb-jump-handle-multiple-choices look-for proj-root results)
+     )
      ((= result-count 0)
-      (message "'%s' declaration not found" look-for))
+      ;; TODO: mention on the context it searched with
+      (message "'%s' declaration not found." look-for))
      (t
       (message "Un-handled results: %s -> %s" (prin1-to-string (dumb-jump-generate-command major-mode look-for proj-root pt-ctx)) (prin1-to-string results))))))
+
+(defun dumb-jump-result-go (result)
+  (dumb-jump-goto-file-line (plist-get result :path) (plist-get result :line)))
 
 (defun dumb-jump-goto-file-line (thefile theline)
   "Open THEFILE and go line THELINE"
