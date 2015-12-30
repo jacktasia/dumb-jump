@@ -15,10 +15,8 @@
 (require 's)
 (require 'dash)
 
-;; TODO: display options to user if more than one match
 ;; TODO: add rules for more languages
 ;; TODO: make dumb-jump-test-rules run on boot?
-;; TODO: add warning message if a mode has ZERO language rules...
 ;; TODO: add "searching.." message with a warning if it's slow to exclude directories
 ;; TODO: prefix private functions with dj/ or simliar
 ;; TODO: .dumb-jump settings file for excludes
@@ -115,8 +113,12 @@ Optionally pass t to see a list of all failed rules"
       choice)))
 
 (defun dumb-jump-handle-multiple-choices (look-for proj results)
-  (let* ((prompt-text (dumb-jump-generate-prompt-text look-for proj results)))))
-
+  (let* ((prompt-text (dumb-jump-generate-prompt-text look-for proj results))
+         (input (read-from-minibuffer prompt-text))
+         (choice (dumb-jump-parse-input (length results) input)))
+    (if choice
+      (dumb-jump-result-go (nth (1- choice) results))
+      (message "Sorry, that's an invalid choice."))))
 
 ;; this should almost always take (buffer-file-name)
 (defun dumb-jump-get-project-root (filepath)
@@ -154,10 +156,12 @@ If not found, then return dumb-jump-default-profile"
      ((= result-count 1)
       (dumb-jump-result-go top-result))
      ((> result-count 1)
-      ;; handle prompt...
+      ;; multiple results so let the user pick from a list
+      (dumb-jump-handle-multiple-choices look-for proj-root results)
      )
      ((= result-count 0)
-      (message "'%s' declaration not found" look-for))
+      ;; TODO: mention on the context it searched with
+      (message "'%s' declaration not found." look-for))
      (t
       (message "Un-handled results: %s -> %s" (prin1-to-string (dumb-jump-generate-command major-mode look-for proj-root pt-ctx)) (prin1-to-string results))))))
 
