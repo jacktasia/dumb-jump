@@ -180,7 +180,7 @@ If not found, then return dumb-jump-default-profile"
 the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command mode lookfor tosearch pt-ctx))
          (rawresults (shell-command-to-string cmd)))
-    ;(message "Running cmd '%s'" cmd)
+    (message "RUNNING cMD '%s'" cmd)
     ;(message "Searching for '%s'..." lookfor)
     (if (s-blank? cmd)
        nil
@@ -224,13 +224,16 @@ the needle LOOKFOR in the directory TOSEARCH"
           (dumb-jump-get-rules-by-mode mode))
          (ctx-type
           (dumb-jump-get-ctx-type-by-mode mode pt-ctx))
-         (rules
+         (ctx-rules
           (if ctx-type
               (-filter (lambda (r)
                          (string= (plist-get r :type)
                                    ctx-type))
                        raw-rules)
             raw-rules))
+         (rules (if ctx-rules
+                    ctx-rules
+                  raw-rules))
          (regexes
           (-map
            (lambda (r)
@@ -240,6 +243,7 @@ the needle LOOKFOR in the directory TOSEARCH"
           (s-join " -e " (-map
                           (lambda (x) (s-replace "JJJ" lookfor x))
                           regexes))))
+    (message "lang: %s | mode: %s | ctx-rules: %s | rules: %s | raw-rules: %s" lang mode (prin1-to-string ctx-rules) (prin1-to-string rules) (prin1-to-string raw-rules) )
     (if (= (length regexes) 0)
         ""
         (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " -e " meat " " tosearch))))
