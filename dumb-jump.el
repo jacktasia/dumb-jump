@@ -18,7 +18,7 @@
 ;; TODO: add rules for more languages
 ;; TODO: make dumb-jump-test-rules run on boot?
 ;; TODO: prefix private functions with dj/ or simliar
-;; TODO: .dumb-jump settings file for excludes
+;; TODO: .dumb-jump settings file for excludes: also respect in .projectile see: https://github.com/bbatsov/projectile#ignoring-files
 ;; TODO: time search operation. if above N then have a helpful not about setting up excludes
 
 ;; https://github.com/jacktasia/dotemacs24/commit/3972d4decbb09f7dff78feb7cbc5db5b6979b0eb
