@@ -155,7 +155,8 @@ If not found, then return dumb-jump-default-profile"
 (defun dumb-jump-go ()
   "Go to the function/variable declaration for thing at point"
   (interactive)
-  (let* ((proj-info (dumb-jump-get-project-root (buffer-file-name)))
+  (let* ((cur-file (buffer-file-name))
+         (proj-info (dumb-jump-get-project-root cur-file))
          (proj-root (plist-get proj-info :root))
          (look-for (thing-at-point 'symbol))
          (lang (car (dumb-jump-get-languages-by-mode major-mode))) ;; TODO: support all
@@ -176,7 +177,12 @@ If not found, then return dumb-jump-default-profile"
       (dumb-jump-result-go top-result))
      ((> result-count 1)
       ;; multiple results so let the user pick from a list
-      (dumb-jump-handle-multiple-choices look-for proj-root results)
+      ;; unless the match is in the current file
+      (let ((matched (dumb-jump-current-file-result cur-file results)))
+        ;;(if (and (string= ctx-type "variable") matched)
+        (if matched
+            (dumb-jump-result-go matched)
+            (dumb-jump-handle-multiple-choices look-for proj-root results)))
      )
      ((= result-count 0)
       ;; TODO: mention on the context it searched with
@@ -193,6 +199,11 @@ If not found, then return dumb-jump-default-profile"
   (find-file thefile)
   (goto-char (point-min))
   (forward-line (- (string-to-number theline) 1)))
+
+(defun dumb-jump-current-file-result (path results)
+  "Is the PATH in the list of RESULTS"
+  (let ((matched (-filter (lambda (r) (string= path (plist-get r :path))) results)))
+    (car matched)))
 
 (defun dumb-jump-run-command (look-for proj regexes include-args)
   "Run the grep command based on emacs MODE and

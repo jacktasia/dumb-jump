@@ -21,6 +21,11 @@
 (ert-deftest dumb-jump-language-to-mode-test ()
   (should (-contains? (dumb-jump-get-modes-by-language "elisp") "emacs-lisp-mode")))
 
+(ert-deftest dumb-jump-current-file-result-test ()
+  (let ((results '((:path "blah") (:path "rarr")))
+        (expected '(:path "blah")))
+    (should (equal (dumb-jump-current-file-result "blah" results) expected))))
+
 (ert-deftest dumb-jump-language-to-ext-test ()
   (should (-contains? (dumb-jump-get-file-exts-by-language "elisp") "el")))
 
