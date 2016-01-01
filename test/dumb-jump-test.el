@@ -55,7 +55,8 @@
 
 (ert-deftest dumb-jump-find-proj-root-test ()
   (let* ((js-file (f-join test-data-dir-proj1 "src" "js"))
-         (found-project (dumb-jump-get-project-root js-file)))
+         (proj-info (dumb-jump-get-project-root js-file))
+         (found-project (plist-get proj-info :root)))
     (should (f-exists? found-project))
     (should (string= found-project test-data-dir-proj1))))
 

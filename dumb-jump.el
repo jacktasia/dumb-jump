@@ -126,6 +126,7 @@ Optionally pass t to see a list of all failed rules"
 denoter file/dir is found then return that directory
 If not found, then return dumb-jump-default-profile"
   (let ((test-path filepath)
+        (proj-file nil)
         (proj-root nil))
     (while (and (null proj-root)
                 (not (null test-path)))
@@ -134,15 +135,17 @@ If not found, then return dumb-jump-default-profile"
         (-each dumb-jump-project-denoters
           (lambda (denoter)
             (when (f-exists? (f-join test-path denoter))
+              (setq proj-file denoter)
               (setq proj-root test-path))))))
     (if (null proj-root)
-      (f-long dumb-jump-default-project)
-      proj-root)))
+      `(:root ,(f-long dumb-jump-default-project) :file nil)
+      `(:root ,proj-root :file ,proj-file))))
 
 (defun dumb-jump-go ()
   "Go to the function/variable declaration for thing at point"
   (interactive)
-  (let* ((proj-root (dumb-jump-get-project-root (buffer-file-name)))
+  (let* ((proj-info (dumb-jump-get-project-root (buffer-file-name)))
+         (proj-root (plist-get proj-info :root))
          (look-for (thing-at-point 'symbol))
          (pt-ctx (dumb-jump-get-point-context
                   (thing-at-point 'sentence)
@@ -180,7 +183,7 @@ If not found, then return dumb-jump-default-profile"
 the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command mode lookfor tosearch pt-ctx))
          (rawresults (shell-command-to-string cmd)))
-    (message "RUNNING cMD '%s'" cmd)
+    ;(message "RUNNING CMD '%s'" cmd)
     ;(message "Searching for '%s'..." lookfor)
     (if (s-blank? cmd)
        nil
@@ -243,7 +246,7 @@ the needle LOOKFOR in the directory TOSEARCH"
           (s-join " -e " (-map
                           (lambda (x) (s-replace "JJJ" lookfor x))
                           regexes))))
-    (message "lang: %s | mode: %s | ctx-rules: %s | rules: %s | raw-rules: %s" lang mode (prin1-to-string ctx-rules) (prin1-to-string rules) (prin1-to-string raw-rules) )
+    ;(message "lang: %s | mode: %s | ctx-rules: %s | rules: %s | raw-rules: %s" lang mode (prin1-to-string ctx-rules) (prin1-to-string rules) (prin1-to-string raw-rules) )
     (if (= (length regexes) 0)
         ""
         (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " -e " meat " " tosearch))))
