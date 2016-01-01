@@ -15,6 +15,7 @@
 (require 's)
 (require 'dash)
 
+;; TODO: grep join on "--include" for limiting file exts http://stackoverflow.com/a/12517022
 ;; TODO: add rules for more languages
 ;; TODO: make dumb-jump-test-rules run on boot?
 ;; TODO: prefix private functions with dj/ or simliar
@@ -45,6 +46,13 @@
            :tests ("test = function()")))
   "List of regex patttern templates organized by language
 and type to use for generating the grep command")
+
+(defvar dumb-jump-language-file-exts
+  '((:language "elisp" :ext "el")
+    (:language "javascript" :ext "js")
+    (:language "javascript" :ext "jsx")
+    (:language "javascript" :ext "html"))
+  "Mapping of programming lanaguage(s) to file extensions")
 
 (defvar dumb-jump-language-modes
   '((:language "elisp" :mode "emacs-lisp-mode")
@@ -241,7 +249,7 @@ the needle LOOKFOR in the directory TOSEARCH"
            rules)))
     regexes))
 
-(defun dumb-jump-generate-command (look-for proj regexes)
+(defun dumb-jump-generate-command (look-for proj regexes) ;; TODO: also pass ext includes
   "Generate the grep response based on emacs MODE and
 the needle LOOK-FOR in the directory PROJ"
   (let ((meat
