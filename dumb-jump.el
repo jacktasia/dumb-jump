@@ -191,7 +191,6 @@ If not found, then return dumb-jump-default-profile"
             (dumb-jump-handle-multiple-choices look-for proj-root results)))
      )
      ((= result-count 0)
-      ;; TODO: mention on the context it searched with
       (message "'%s' declaration not found (%s %s)." look-for lang ctx-type))
      (t
       (message "Un-handled results: %s " (prin1-to-string results))))))
@@ -230,7 +229,7 @@ If not found, then return dumb-jump-default-profile"
 the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command look-for proj regexes include-args exclude-args))
          (rawresults (shell-command-to-string cmd)))
-    (message "RUNNING CMD '%s'" cmd)
+    ;(message "RUNNING CMD '%s'" cmd)
     (if (s-blank? cmd)
        nil
       (dumb-jump-parse-grep-response rawresults))))
