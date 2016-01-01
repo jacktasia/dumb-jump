@@ -30,7 +30,8 @@
     (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes)))))
 
 (ert-deftest dumb-jump-generate-command-with-ctx-test ()
-  (let ((regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" '(:left "(" :right nil)))
+  (let* ((ctx-type (dumb-jump-get-ctx-type-by-mode "emacs-lisp-mode" '(:left "(" :right nil)))
+        (regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" ctx-type))
         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' ."))
     ;; the point context being passed should match a "function" type so only the one command
     (should (string= expected  (dumb-jump-generate-command "tester" "." regexes)))))

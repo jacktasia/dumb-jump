@@ -150,7 +150,9 @@ If not found, then return dumb-jump-default-profile"
          (pt-ctx (dumb-jump-get-point-context
                   (thing-at-point 'sentence)
                   (thing-at-point 'symbol)))
-         (regexes (dumb-jump-get-contextual-regexes major-mode pt-ctx))
+         (ctx-type
+          (dumb-jump-get-ctx-type-by-mode major-mode pt-ctx))
+         (regexes (dumb-jump-get-contextual-regexes major-mode ctx-type))
          (results (dumb-jump-run-command look-for proj-root regexes))
          (result-count (length results))
          (top-result (car results)))
@@ -219,11 +221,9 @@ the needle LOOKFOR in the directory TOSEARCH"
     (when usable-ctxs
       (plist-get (car usable-ctxs) :type))))
 
-(defun dumb-jump-get-contextual-regexes (mode pt-ctx)
+(defun dumb-jump-get-contextual-regexes (mode ctx-type)
   (let* ((raw-rules
           (dumb-jump-get-rules-by-mode mode))
-         (ctx-type
-          (dumb-jump-get-ctx-type-by-mode mode pt-ctx))
          (ctx-rules
           (if ctx-type
               (-filter (lambda (r)
