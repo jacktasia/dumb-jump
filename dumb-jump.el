@@ -41,6 +41,9 @@
     ;; javascript
     (:type "variable" :language "javascript"
            :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
+    ;; TODO: below row is dependent on TODO in interactive
+    ;; (:type "variable" :language "javascript"
+    ;;        :regex "\\\(\\s*JJJ\\s*,?\\s*\\\)?" :tests ("(test)" "(test, blah)"))
     (:type "function" :language "javascript"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
@@ -186,7 +189,8 @@ If not found, then return dumb-jump-default-profile"
       ;; unless the match is in the current file
       (let ((matched (dumb-jump-current-file-result cur-file results)))
         ;;(if (and (string= ctx-type "variable") matched)
-        (if matched
+        ;; TODO: this should check if there is ONLY 1 and/or go to the clest line number ABOVE
+        (if (matched
             (dumb-jump-result-go matched)
             (dumb-jump-handle-multiple-choices look-for proj-root results)))
      )
