@@ -150,7 +150,8 @@ If not found, then return dumb-jump-default-profile"
          (pt-ctx (dumb-jump-get-point-context
                   (thing-at-point 'sentence)
                   (thing-at-point 'symbol)))
-         (results (dumb-jump-run-command major-mode look-for proj-root pt-ctx))
+         (regexes (dumb-jump-get-contextual-regexes major-mode pt-ctx))
+         (results (dumb-jump-run-command look-for proj-root regexes))
          (result-count (length results))
          (top-result (car results)))
     (cond
@@ -166,7 +167,7 @@ If not found, then return dumb-jump-default-profile"
       ;; TODO: mention on the context it searched with
       (message "'%s' declaration not found." look-for))
      (t
-      (message "Un-handled results: %s -> %s" (prin1-to-string (dumb-jump-generate-command major-mode look-for proj-root pt-ctx)) (prin1-to-string results))))))
+      (message "Un-handled results: %s " (prin1-to-string results))))))
 
 (defun dumb-jump-result-go (result)
   (dumb-jump-goto-file-line (plist-get result :path) (plist-get result :line)))
@@ -178,13 +179,12 @@ If not found, then return dumb-jump-default-profile"
   (goto-char (point-min))
   (forward-line (- (string-to-number theline) 1)))
 
-(defun dumb-jump-run-command (mode lookfor tosearch pt-ctx)
+(defun dumb-jump-run-command (look-for proj regexes)
   "Run the grep command based on emacs MODE and
 the needle LOOKFOR in the directory TOSEARCH"
-  (let* ((cmd (dumb-jump-generate-command mode lookfor tosearch pt-ctx))
+  (let* ((cmd (dumb-jump-generate-command look-for proj regexes))
          (rawresults (shell-command-to-string cmd)))
     ;(message "RUNNING CMD '%s'" cmd)
-    ;(message "Searching for '%s'..." lookfor)
     (if (s-blank? cmd)
        nil
       (dumb-jump-parse-grep-response rawresults))))
@@ -219,11 +219,8 @@ the needle LOOKFOR in the directory TOSEARCH"
     (when usable-ctxs
       (plist-get (car usable-ctxs) :type))))
 
-(defun dumb-jump-generate-command (mode lookfor tosearch pt-ctx)
-  "Generate the grep response based on emacs MODE and
-the needle LOOKFOR in the directory TOSEARCH"
-  (let* ((lang (car (dumb-jump-get-languages-by-mode mode))) ;; TODO: support all
-         (raw-rules
+(defun dumb-jump-get-contextual-regexes (mode pt-ctx)
+  (let* ((raw-rules
           (dumb-jump-get-rules-by-mode mode))
          (ctx-type
           (dumb-jump-get-ctx-type-by-mode mode pt-ctx))
@@ -241,15 +238,20 @@ the needle LOOKFOR in the directory TOSEARCH"
           (-map
            (lambda (r)
              (format "'%s'" (plist-get r ':regex)))
-           rules))
-         (meat
-          (s-join " -e " (-map
-                          (lambda (x) (s-replace "JJJ" lookfor x))
-                          regexes))))
-    ;(message "lang: %s | mode: %s | ctx-rules: %s | rules: %s | raw-rules: %s" lang mode (prin1-to-string ctx-rules) (prin1-to-string rules) (prin1-to-string raw-rules) )
+           rules)))
+    regexes))
+
+(defun dumb-jump-generate-command (look-for proj regexes)
+  "Generate the grep response based on emacs MODE and
+the needle LOOK-FOR in the directory PROJ"
+  (let ((meat
+          (s-join " -e "
+                  (-map
+                   (lambda (x) (s-replace "JJJ" look-for x))
+                   regexes))))
     (if (= (length regexes) 0)
         ""
-        (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " -e " meat " " tosearch))))
+        (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " -e " meat " " proj))))
 
 (defun dumb-jump-get-rules-by-languages (languages)
   "Get a list of rules with a list of languages"

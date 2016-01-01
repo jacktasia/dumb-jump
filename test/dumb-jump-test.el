@@ -25,31 +25,33 @@
   (should (= 3 (length (dumb-jump-get-rules-by-mode "emacs-lisp-mode")))))
 
 (ert-deftest dumb-jump-generate-command-no-ctx-test ()
-  (let ((expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s*' -e '\\(setq\\b\\s*tester\\b\\s*' ."))
-    (should (string= expected  (dumb-jump-generate-command "emacs-lisp-mode" "tester" "." nil)))))
+  (let ((regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" nil))
+        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s*' -e '\\(setq\\b\\s*tester\\b\\s*' ."))
+    (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes)))))
 
 (ert-deftest dumb-jump-generate-command-with-ctx-test ()
-  (let ((expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' ."))
+  (let ((regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" '(:left "(" :right nil)))
+        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' ."))
     ;; the point context being passed should match a "function" type so only the one command
-    (should (string= expected  (dumb-jump-generate-command "emacs-lisp-mode" "tester" "." '(:left "(" :right nil))))))
+    (should (string= expected  (dumb-jump-generate-command "tester" "." regexes)))))
 
 (ert-deftest dumb-jump-generate-bad-command-test ()
-    (should (s-blank? (dumb-jump-generate-command "unknown-mode" "tester" "." nil))))
+    (should (s-blank? (dumb-jump-generate-command "tester" "." nil))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump.el:28:(defvar dumb-jump-grep)")
          (parsed (dumb-jump-parse-grep-response resp)))
     (should (string= (plist-get (nth 1 parsed) ':line) "26"))))
 
-
 (ert-deftest dumb-jump-run-cmd-test ()
-  (let* ((results (dumb-jump-run-command "emacs-lisp-mode" "another-fake-function" test-data-dir-elisp nil))
+  (let* ((regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" nil))
+         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes))
         (first-result (car results)))
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (string= (plist-get first-result :line) "6"))))
 
 (ert-deftest dumb-jump-run-cmd-fail-test ()
-  (let* ((results (dumb-jump-run-command "emacs-lisp-mode" "hidden-function" test-data-dir-elisp nil))
+  (let* ((results (dumb-jump-run-command "hidden-function" test-data-dir-elisp nil))
         (first-result (car results)))
     (should (null first-result))))
 
