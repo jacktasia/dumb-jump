@@ -21,23 +21,31 @@
 (ert-deftest dumb-jump-language-to-mode-test ()
   (should (-contains? (dumb-jump-get-modes-by-language "elisp") "emacs-lisp-mode")))
 
+(ert-deftest dumb-jump-language-to-ext-test ()
+  (should (-contains? (dumb-jump-get-file-exts-by-language "elisp") "el")))
+
 (ert-deftest dumb-jump-get-rules-by-mode-test ()
   (should (= 3 (length (dumb-jump-get-rules-by-mode "emacs-lisp-mode")))))
+
+(ert-deftest dumb-jump-generate-cmd-include-args ()
+  (let ((args (dumb-jump-get-ext-includes "javascript"))
+        (expected " --include \\*.js --include \\*.jsx --include \\*.html "))
+    (should (string= expected args))))
 
 (ert-deftest dumb-jump-generate-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" nil))
         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s*' -e '\\(setq\\b\\s*tester\\b\\s*' ."))
-    (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes)))))
+    (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes "")))))
 
 (ert-deftest dumb-jump-generate-command-with-ctx-test ()
-  (let* ((ctx-type (dumb-jump-get-ctx-type-by-mode "emacs-lisp-mode" '(:left "(" :right nil)))
+  (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
         (regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" ctx-type))
         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' ."))
     ;; the point context being passed should match a "function" type so only the one command
-    (should (string= expected  (dumb-jump-generate-command "tester" "." regexes)))))
+    (should (string= expected  (dumb-jump-generate-command "tester" "." regexes "")))))
 
 (ert-deftest dumb-jump-generate-bad-command-test ()
-    (should (s-blank? (dumb-jump-generate-command "tester" "." nil))))
+    (should (s-blank? (dumb-jump-generate-command "tester" "." nil ""))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump.el:28:(defvar dumb-jump-grep)")
@@ -46,13 +54,13 @@
 
 (ert-deftest dumb-jump-run-cmd-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" nil))
-         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes))
+         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes ""))
         (first-result (car results)))
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (string= (plist-get first-result :line) "6"))))
 
 (ert-deftest dumb-jump-run-cmd-fail-test ()
-  (let* ((results (dumb-jump-run-command "hidden-function" test-data-dir-elisp nil))
+  (let* ((results (dumb-jump-run-command "hidden-function" test-data-dir-elisp nil ""))
         (first-result (car results)))
     (should (null first-result))))
 
@@ -91,7 +99,7 @@
   (let* ((sentence "mainWindow.loadUrl('file://' + __dirname + '/dt/inspector.html?electron=true');")
          (func "loadUrl")
          (pt-ctx (dumb-jump-get-point-context sentence func))
-         (ctx-type (dumb-jump-get-ctx-type-by-mode "js2-mode" pt-ctx)))
+         (ctx-type (dumb-jump-get-ctx-type-by-language "javascript" pt-ctx)))
     (should (string= ctx-type "function"))))
 
 (ert-deftest dumb-jump-multiple-choice-input-test ()

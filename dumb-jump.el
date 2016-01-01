@@ -15,12 +15,15 @@
 (require 's)
 (require 'dash)
 
-;; TODO: grep join on "--include" for limiting file exts http://stackoverflow.com/a/12517022
-;; TODO: add rules for more languages
+;; TODO: if it's a variable context and the current file is in list then just jump to that?
+;; TODO: don't use modes just use file extensions...?
+;; TODO: add rules for more languages!
 ;; TODO: make dumb-jump-test-rules run on boot?
 ;; TODO: prefix private functions with dj/ or simliar
 ;; TODO: .dumb-jump settings file for excludes: also respect in .projectile see: https://github.com/bbatsov/projectile#ignoring-files
 ;; TODO: time search operation. if above N then have a helpful not about setting up excludes
+
+;;LANG=C grep -REn --exclude-dir /Users/jack/code/react-canvas/node_modules --exclude-dir /Users/jack/code/react-canvas/bower_components --include \*.js --include \*.jsx --include \*.html  -e '\s*width\s*=\s*' -e 'function\s*width\s*\(' -e '\s*width\s*=\s*function\s*\(' /Users/jack/code/react-canvas
 
 ;; https://github.com/jacktasia/dotemacs24/commit/3972d4decbb09f7dff78feb7cbc5db5b6979b0eb
 
@@ -155,13 +158,15 @@ If not found, then return dumb-jump-default-profile"
   (let* ((proj-info (dumb-jump-get-project-root (buffer-file-name)))
          (proj-root (plist-get proj-info :root))
          (look-for (thing-at-point 'symbol))
+         (lang (car (dumb-jump-get-languages-by-mode major-mode))) ;; TODO: support all
          (pt-ctx (dumb-jump-get-point-context
                   (thing-at-point 'sentence)
                   (thing-at-point 'symbol)))
          (ctx-type
-          (dumb-jump-get-ctx-type-by-mode major-mode pt-ctx))
+          (dumb-jump-get-ctx-type-by-language lang pt-ctx))
          (regexes (dumb-jump-get-contextual-regexes major-mode ctx-type))
-         (results (dumb-jump-run-command look-for proj-root regexes))
+         (include-args (dumb-jump-get-ext-includes lang))
+         (results (dumb-jump-run-command look-for proj-root regexes include-args))
          (result-count (length results))
          (top-result (car results)))
     (cond
@@ -175,7 +180,7 @@ If not found, then return dumb-jump-default-profile"
      )
      ((= result-count 0)
       ;; TODO: mention on the context it searched with
-      (message "'%s' declaration not found." look-for))
+      (message "'%s' declaration not found (%s %s)." look-for lang ctx-type))
      (t
       (message "Un-handled results: %s " (prin1-to-string results))))))
 
@@ -189,12 +194,12 @@ If not found, then return dumb-jump-default-profile"
   (goto-char (point-min))
   (forward-line (- (string-to-number theline) 1)))
 
-(defun dumb-jump-run-command (look-for proj regexes)
+(defun dumb-jump-run-command (look-for proj regexes include-args)
   "Run the grep command based on emacs MODE and
 the needle LOOKFOR in the directory TOSEARCH"
-  (let* ((cmd (dumb-jump-generate-command look-for proj regexes))
+  (let* ((cmd (dumb-jump-generate-command look-for proj regexes include-args))
          (rawresults (shell-command-to-string cmd)))
-    ;(message "RUNNING CMD '%s'" cmd)
+    (message "RUNNING CMD '%s'" cmd)
     (if (s-blank? cmd)
        nil
       (dumb-jump-parse-grep-response rawresults))))
@@ -211,10 +216,9 @@ the needle LOOKFOR in the directory TOSEARCH"
           (list item)))
       parsed)))
 
-(defun dumb-jump-get-ctx-type-by-mode (mode pt-ctx)
+(defun dumb-jump-get-ctx-type-by-language (lang pt-ctx)
   "Detect the type of context by the mode"
-  (let* ((lang (car (dumb-jump-get-languages-by-mode mode))) ;; TODO: support all
-         (contexts (-filter
+  (let* ((contexts (-filter
                     (lambda (x) (string= (plist-get x ':language) lang))
                     dumb-jump-language-contexts))
          (usable-ctxs
@@ -228,6 +232,17 @@ the needle LOOKFOR in the directory TOSEARCH"
             nil)))
     (when usable-ctxs
       (plist-get (car usable-ctxs) :type))))
+
+(defun dumb-jump-get-ext-includes (language)
+  (let* ((exts (dumb-jump-get-file-exts-by-language language))
+         (include-arg (s-join " --include "
+                              (-map
+                               (lambda (ext)
+                                 (format "\\*.%s" ext))
+                               exts))))
+    (if exts
+        (format " --include %s " include-arg)
+        "")))
 
 (defun dumb-jump-get-contextual-regexes (mode ctx-type)
   (let* ((raw-rules
@@ -249,7 +264,7 @@ the needle LOOKFOR in the directory TOSEARCH"
            rules)))
     regexes))
 
-(defun dumb-jump-generate-command (look-for proj regexes) ;; TODO: also pass ext includes
+(defun dumb-jump-generate-command (look-for proj regexes include-args)
   "Generate the grep response based on emacs MODE and
 the needle LOOK-FOR in the directory PROJ"
   (let ((meat
@@ -259,11 +274,16 @@ the needle LOOK-FOR in the directory PROJ"
                    regexes))))
     (if (= (length regexes) 0)
         ""
-        (concat dumb-jump-grep-prefix " " dumb-jump-grep-args " -e " meat " " proj))))
+        (concat dumb-jump-grep-prefix " " dumb-jump-grep-args include-args " -e " meat " " proj))))
 
 (defun dumb-jump-get-rules-by-languages (languages)
   "Get a list of rules with a list of languages"
   (-mapcat (lambda (lang) (dumb-jump-get-rules-by-language lang)) languages))
+
+(defun dumb-jump-get-file-exts-by-language (language)
+  "Get list of file extensions for a language"
+  (-map (lambda (x) (plist-get x :ext))
+        (-filter (lambda (x) (string= (plist-get x :language) language)) dumb-jump-language-file-exts)))
 
 (defun dumb-jump-get-rules-by-mode (mode)
   "Get a list of rules by a major mode"
