@@ -161,6 +161,7 @@ If not found, then return dumb-jump-default-profile"
   (interactive)
   (let* ((cur-file (buffer-file-name))
          (cur-line (thing-at-point 'line))
+         (cur-line-num (line-number-at-pos))
          (cur-symbol (thing-at-point 'symbol))
          (proj-info (dumb-jump-get-project-root cur-file))
          (proj-root (plist-get proj-info :root))
@@ -175,7 +176,7 @@ If not found, then return dumb-jump-default-profile"
          (exclude-args (if (s-ends-with? "/.dumbjump" proj-config)
                            (dumb-jump-read-exclusions proj-config)
                            ""))
-         (raw-results (dumb-jump-run-command look-for proj-root regexes include-args exclude-args))
+         (raw-results (dumb-jump-run-command look-for proj-root regexes include-args exclude-args cur-line-num))
          (results (-map (lambda (r) (plist-put r :target look-for)) raw-results))
          (result-count (length results))
          (top-result (car results)))
@@ -223,7 +224,7 @@ If not found, then return dumb-jump-default-profile"
   ;(message "Going to file '%s' line %s" thefile theline)
   (find-file thefile)
   (goto-char (point-min))
-  (forward-line (- (string-to-number theline) 1))
+  (forward-line (- theline 1))
   (forward-char pos))
 
 (defun dumb-jump-current-file-result (path results)
@@ -231,7 +232,7 @@ If not found, then return dumb-jump-default-profile"
   (let ((matched (-filter (lambda (r) (string= path (plist-get r :path))) results)))
     (car matched)))
 
-(defun dumb-jump-run-command (look-for proj regexes include-args exclude-args)
+(defun dumb-jump-run-command (look-for proj regexes include-args exclude-args line-num)
   "Run the grep command based on emacs MODE and
 the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command look-for proj regexes include-args exclude-args))
@@ -239,18 +240,22 @@ the needle LOOKFOR in the directory TOSEARCH"
     ;(message "RUNNING CMD '%s'" cmd)
     (if (s-blank? cmd)
        nil
-      (dumb-jump-parse-grep-response rawresults))))
+      (dumb-jump-parse-grep-response rawresults line-num))))
 
-(defun dumb-jump-parse-grep-response (resp)
+(defun dumb-jump-parse-grep-response (resp cur-line-num)
   "Takes a grep response RESP and parses into a list of plists"
   (let ((parsed (butlast (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp)))))
     (-mapcat
       (lambda (x)
-        (let ((item '()))
-          (setq item (plist-put item :path (nth 0 x)))
-          (setq item (plist-put item :line (nth 1 x)))
-          (setq item (plist-put item :context (nth 2 x)))
-          (list item)))
+        (let* ((line-num (string-to-number (nth 1 x)))
+              (diff (- cur-line-num line-num)))
+
+        (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 2 x) :diff ,diff))))
+        ;; (let ((item '()))
+        ;;   (setq item (plist-put item :path (nth 0 x)))
+        ;;   (setq item (plist-put item :line (nth 1 x)))
+        ;;   (setq item (plist-put item :context (nth 2 x)))
+        ;;   (list item)))
       parsed)))
 
 (defun dumb-jump-get-ctx-type-by-language (lang pt-ctx)

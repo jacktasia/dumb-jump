@@ -60,18 +60,20 @@
 
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump.el:28:(defvar dumb-jump-grep)")
-         (parsed (dumb-jump-parse-grep-response resp)))
-    (should (string= (plist-get (nth 1 parsed) ':line) "26"))))
+         (parsed (dumb-jump-parse-grep-response resp 30))
+         (test-result (nth 1 parsed)))
+    (should (= (plist-get test-result :diff) 4))
+    (should (= (plist-get test-result ':line) 26))))
 
 (ert-deftest dumb-jump-run-cmd-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" nil))
-         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""))
+         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" "" 3))
         (first-result (car results)))
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
-    (should (string= (plist-get first-result :line) "6"))))
+    (should (= (plist-get first-result :line) 6))))
 
 (ert-deftest dumb-jump-run-cmd-fail-test ()
-  (let* ((results (dumb-jump-run-command "hidden-function" test-data-dir-elisp nil "" ""))
+  (let* ((results (dumb-jump-run-command "hidden-function" test-data-dir-elisp nil "" "" 3))
         (first-result (car results)))
     (should (null first-result))))
 
@@ -84,7 +86,7 @@
 
 (ert-deftest dumb-jump-goto-file-line-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
-    (dumb-jump-goto-file-line js-file "3" 0)
+    (dumb-jump-goto-file-line js-file 3 0)
     (should (string= (buffer-file-name) js-file))
     (should (= (line-number-at-pos) 3))))
 
