@@ -126,7 +126,7 @@ Optionally pass t to see a list of all failed rules"
            (>= choice 1))
       choice)))
 
-(defun dumb-jump-handle-multiple-choices (look-for proj results)
+(defun dumb-jump-prompt-user-for-choice (look-for proj results)
   (let* ((prompt-text (dumb-jump-generate-prompt-text look-for proj results))
          (input (read-from-minibuffer prompt-text))
          (choice (dumb-jump-parse-input (length results) input)))
@@ -194,7 +194,7 @@ If not found, then return dumb-jump-default-profile"
         ;; TODO: this should check if there is ONLY 1 and/or go to the clest line number ABOVE
         (if matched
             (dumb-jump-result-follow matched)
-            (dumb-jump-handle-multiple-choices look-for proj-root results)))
+            (dumb-jump-prompt-user-for-choice look-for proj-root results)))
      )
      ((= result-count 0)
       (message "'%s' %s %s declaration not found." look-for (if (null lang) "" lang) (if (null ctx-type) "" ctx-type)))
