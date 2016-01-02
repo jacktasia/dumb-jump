@@ -96,16 +96,16 @@ Optionally pass t to see a list of all failed rules"
                 ))))
     failures))
 
-(defun dumb-jump-get-point-context (sentence func)
-  (let* ((loc (s-index-of func sentence))
+(defun dumb-jump-get-point-context (line func)
+  (let* ((loc (s-index-of func line))
          (func-len (length func))
-         (sen-len (length sentence))
+         (sen-len (length line))
          (right-loc-start (+ loc func-len))
          (right-loc-end (+ right-loc-start 1))
-         (left (substring sentence (- loc 1) loc))
+         (left (substring line (- loc 1) loc))
          (right (if (> right-loc-end sen-len)
                     ""
-                  (substring sentence right-loc-start right-loc-end))))
+                  (substring line right-loc-start right-loc-end))))
 
        (org-combine-plists (plist-put nil :left left)
                            (plist-put nil :right right))))
