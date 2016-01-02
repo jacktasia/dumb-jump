@@ -160,14 +160,14 @@ If not found, then return dumb-jump-default-profile"
   "Go to the function/variable declaration for thing at point"
   (interactive)
   (let* ((cur-file (buffer-file-name))
+         (cur-line (thing-at-point 'line))
+         (cur-symbol (thing-at-point 'symbol))
          (proj-info (dumb-jump-get-project-root cur-file))
          (proj-root (plist-get proj-info :root))
          (proj-config (plist-get proj-info :file))
          (look-for (thing-at-point 'symbol))
          (lang (car (dumb-jump-get-languages-by-mode major-mode))) ;; TODO: support all
-         (pt-ctx (dumb-jump-get-point-context
-                  (thing-at-point 'line)
-                  (thing-at-point 'symbol)))
+         (pt-ctx (dumb-jump-get-point-context cur-line cur-symbol))
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
          (regexes (dumb-jump-get-contextual-regexes major-mode ctx-type))
@@ -175,7 +175,8 @@ If not found, then return dumb-jump-default-profile"
          (exclude-args (if (s-ends-with? "/.dumbjump" proj-config)
                            (dumb-jump-read-exclusions proj-config)
                            ""))
-         (results (dumb-jump-run-command look-for proj-root regexes include-args exclude-args))
+         (raw-results (dumb-jump-run-command look-for proj-root regexes include-args exclude-args))
+         (results (-map (lambda (r) (plist-put r :target look-for)) raw-results))
          (result-count (length results))
          (top-result (car results)))
 
@@ -214,14 +215,16 @@ If not found, then return dumb-jump-default-profile"
     (dumb-jump-arg-joiner "--exclude-dir" exclude-paths)))
 
 (defun dumb-jump-result-go (result)
-  (dumb-jump-goto-file-line (plist-get result :path) (plist-get result :line)))
+  (let ((pos (s-index-of (plist-get result :target) (plist-get result :context))))
+    (dumb-jump-goto-file-line (plist-get result :path) (plist-get result :line) pos)))
 
-(defun dumb-jump-goto-file-line (thefile theline)
+(defun dumb-jump-goto-file-line (thefile theline pos)
   "Open THEFILE and go line THELINE"
   ;(message "Going to file '%s' line %s" thefile theline)
   (find-file thefile)
   (goto-char (point-min))
-  (forward-line (- (string-to-number theline) 1)))
+  (forward-line (- (string-to-number theline) 1))
+  (forward-char pos))
 
 (defun dumb-jump-current-file-result (path results)
   "Is the PATH in the list of RESULTS"
