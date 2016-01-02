@@ -196,7 +196,7 @@ If not found, then return dumb-jump-default-profile"
             (dumb-jump-handle-multiple-choices look-for proj-root results)))
      )
      ((= result-count 0)
-      (message "'%s' declaration not found (%s %s)." look-for lang ctx-type))
+      (message "'%s' %s %s declaration not found." look-for (if (null lang) "" lang) (if (null ctx-type) "" ctx-type)))
      (t
       (message "Un-handled results: %s " (prin1-to-string results))))))
 
