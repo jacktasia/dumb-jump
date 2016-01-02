@@ -131,7 +131,7 @@ Optionally pass t to see a list of all failed rules"
          (input (read-from-minibuffer prompt-text))
          (choice (dumb-jump-parse-input (length results) input)))
     (if choice
-      (dumb-jump-result-go (nth (1- choice) results))
+      (dumb-jump-result-follow (nth (1- choice) results))
       (message "Sorry, that's an invalid choice."))))
 
 ;; this should almost always take (buffer-file-name)
@@ -185,7 +185,7 @@ If not found, then return dumb-jump-default-profile"
      ((and (not (listp results)) (s-blank? results))
       (message "Could not find rules for mode '%s'." major-mode))
      ((= result-count 1)
-      (dumb-jump-result-go top-result))
+      (dumb-jump-result-follow top-result))
      ((> result-count 1)
       ;; multiple results so let the user pick from a list
       ;; unless the match is in the current file
@@ -193,7 +193,7 @@ If not found, then return dumb-jump-default-profile"
         ;;(if (and (string= ctx-type "variable") matched)
         ;; TODO: this should check if there is ONLY 1 and/or go to the clest line number ABOVE
         (if matched
-            (dumb-jump-result-go matched)
+            (dumb-jump-result-follow matched)
             (dumb-jump-handle-multiple-choices look-for proj-root results)))
      )
      ((= result-count 0)
@@ -215,7 +215,7 @@ If not found, then return dumb-jump-default-profile"
                                exclude-lines)))
     (dumb-jump-arg-joiner "--exclude-dir" exclude-paths)))
 
-(defun dumb-jump-result-go (result)
+(defun dumb-jump-result-follow (result)
   (let ((pos (s-index-of (plist-get result :target) (plist-get result :context))))
     (dumb-jump-goto-file-line (plist-get result :path) (plist-get result :line) pos)))
 
