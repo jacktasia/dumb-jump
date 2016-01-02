@@ -166,7 +166,7 @@ If not found, then return dumb-jump-default-profile"
          (look-for (thing-at-point 'symbol))
          (lang (car (dumb-jump-get-languages-by-mode major-mode))) ;; TODO: support all
          (pt-ctx (dumb-jump-get-point-context
-                  (thing-at-point 'sentence)
+                  (thing-at-point 'line)
                   (thing-at-point 'symbol)))
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
