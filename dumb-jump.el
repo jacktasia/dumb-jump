@@ -190,9 +190,9 @@ If not found, then return dumb-jump-default-profile"
       (let ((matched (dumb-jump-current-file-result cur-file results)))
         ;;(if (and (string= ctx-type "variable") matched)
         ;; TODO: this should check if there is ONLY 1 and/or go to the clest line number ABOVE
-        (if (matched
+        (if matched
             (dumb-jump-result-go matched)
-            (dumb-jump-handle-multiple-choices look-for proj-root results))))
+            (dumb-jump-handle-multiple-choices look-for proj-root results)))
      )
      ((= result-count 0)
       (message "'%s' declaration not found (%s %s)." look-for lang ctx-type))
