@@ -15,11 +15,11 @@
 (ert-deftest data-dir-proj2-exists-test ()
   (should (f-dir? test-data-dir-elisp)))
 
-(ert-deftest dumb-jump-mode-to-language-test ()
-  (should (-contains? (dumb-jump-get-languages-by-mode "emacs-lisp-mode") "elisp")))
-
-(ert-deftest dumb-jump-language-to-mode-test ()
-  (should (-contains? (dumb-jump-get-modes-by-language "elisp") "emacs-lisp-mode")))
+(ert-deftest dumb-jump-get-lang-by-ext-test ()
+  (let ((lang1 (dumb-jump-get-language-by-filename "sldkfj.el"))
+        (lang2 (dumb-jump-get-language-by-filename "/askdfjkl/somefile.js")))
+    (should (string= lang1 "elisp"))
+    (should (string= lang2 "javascript"))))
 
 (ert-deftest dumb-jump-current-files-results-test ()
   (let ((results '((:path "blah") (:path "rarr")))
@@ -35,22 +35,19 @@
 (ert-deftest dumb-jump-language-to-ext-test ()
   (should (-contains? (dumb-jump-get-file-exts-by-language "elisp") "el")))
 
-(ert-deftest dumb-jump-get-rules-by-mode-test ()
-  (should (= 3 (length (dumb-jump-get-rules-by-mode "emacs-lisp-mode")))))
-
 (ert-deftest dumb-jump-generate-cmd-include-args ()
   (let ((args (dumb-jump-get-ext-includes "javascript"))
         (expected " --include \\*.js --include \\*.jsx --include \\*.html "))
     (should (string= expected args))))
 
 (ert-deftest dumb-jump-generate-command-no-ctx-test ()
-  (let ((regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" nil))
+  (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s*' -e '\\(setq\\b\\s*tester\\b\\s*' ."))
     (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes "" "")))))
 
 (ert-deftest dumb-jump-generate-command-with-ctx-test ()
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
-        (regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" ctx-type))
+        (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' ."))
     ;; the point context being passed should match a "function" type so only the one command
     (should (string= expected  (dumb-jump-generate-command "tester" "." regexes "" "")))))
@@ -66,7 +63,7 @@
     (should (= (plist-get test-result ':line) 26))))
 
 (ert-deftest dumb-jump-run-cmd-test ()
-  (let* ((regexes (dumb-jump-get-contextual-regexes "emacs-lisp-mode" nil))
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
          (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" "" 3))
         (first-result (car results)))
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
