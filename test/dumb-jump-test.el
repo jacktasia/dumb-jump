@@ -21,10 +21,10 @@
 (ert-deftest dumb-jump-language-to-mode-test ()
   (should (-contains? (dumb-jump-get-modes-by-language "elisp") "emacs-lisp-mode")))
 
-(ert-deftest dumb-jump-current-file-result-test ()
+(ert-deftest dumb-jump-current-files-results-test ()
   (let ((results '((:path "blah") (:path "rarr")))
-        (expected '(:path "blah")))
-    (should (equal (dumb-jump-current-file-result "blah" results) expected))))
+        (expected '((:path "blah"))))
+    (should (equal (dumb-jump-current-file-results "blah" results) expected))))
 
 (ert-deftest dumb-jump-exclude-path-test ()
   (let* ((expected (concat " --exclude-dir " (f-join test-data-dir-proj1 "ignored") " "))

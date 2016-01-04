@@ -17,10 +17,11 @@
 
 ;; TODO: if it's a variable context and the current file is in list then just jump to that?
 ;; TODO: don't use modes just use file extensions...?
+;; TODO: config variable for if it should be only for functions
 ;; TODO: add rules for more languages!
 ;; TODO: make dumb-jump-test-rules run on boot?
 ;; TODO: prefix private functions with dj/ or simliar
-;; TODO: .dumb-jump settings file for excludes: also respect in .projectile see: https://github.com/bbatsov/projectile#ignoring-files
+
 ;; TODO: time search operation. if above N then have a helpful not about setting up excludes
 
 ;;LANG=C grep -REn --exclude-dir /Users/jack/code/react-canvas/node_modules --exclude-dir /Users/jack/code/react-canvas/bower_components --include \*.js --include \*.jsx --include \*.html  -e '\s*width\s*=\s*' -e 'function\s*width\s*\(' -e '\s*width\s*=\s*function\s*\(' /Users/jack/code/react-canvas
@@ -41,15 +42,17 @@
     ;; javascript
     (:type "variable" :language "javascript"
            :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
-    ;; TODO: below row is dependent on TODO in interactive
-    ;; (:type "variable" :language "javascript"
-    ;;        :regex "\\\(\\s*JJJ\\s*,?\\s*\\\)?" :tests ("(test)" "(test, blah)"))
+    (:type "variable" :language "javascript"
+           :regex "\\\(?\\s*JJJ\\s*,?\\s*\\\)?" :tests ("(test)" "(test, blah)" "(blah, test)"))
     (:type "function" :language "javascript"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
     (:type "function" :language "javascript"
+           :regex "\\s*JJJ\\s*:\\s*function\\s*\\\("
+           :tests ("test: function()"))
+    (:type "function" :language "javascript"
            :regex "\\s*JJJ\\s*=\\s*function\\s*\\\("
-           :tests ("test = function()")))
+           :tests ("test = function()")) )
   "List of regex patttern templates organized by language
 and type to use for generating the grep command")
 
@@ -70,7 +73,12 @@ and type to use for generating the grep command")
 
 (defvar dumb-jump-language-contexts
   '((:language "javascript" :type "function" :right "(" :left nil)
+    (:language "javascript" :type "variable" :right nil :left "(")
+    (:language "javascript" :type "variable" :right ")" :left "(")
     (:language "javascript" :type "variable" :right "." :left nil)
+    (:language "javascript" :type "variable" :right ";" :left nil)
+    (:language "javascript" :type "variable" :right ";" :left nil)
+
     (:language "elisp" :type "variable" :right ")" :left " ")
     (:language "elisp" :type "function" :right " " :left "(")))
 
@@ -79,6 +87,9 @@ and type to use for generating the grep command")
 
 (defvar dumb-jump-default-project "~"
   "The default project to search for searching if a denoter is not found in parent of file")
+
+(defun message-prin1 (str &rest args)
+  (apply 'message str (-map 'prin1-to-string args)))
 
 (defun dumb-jump-test-rules ()
   "Test all the rules and return count ofthose that fail
@@ -180,7 +191,7 @@ If not found, then return dumb-jump-default-profile"
          (results (-map (lambda (r) (plist-put r :target look-for)) raw-results))
          (result-count (length results))
          (top-result (car results)))
-
+    ; (message-prin1 "lang:%s type:%s results: %s" lang ctx-type results)
     (cond
      ((and (not (listp results)) (s-blank? results))
       (message "Could not find rules for mode '%s'." major-mode))
@@ -189,17 +200,23 @@ If not found, then return dumb-jump-default-profile"
      ((> result-count 1)
       ;; multiple results so let the user pick from a list
       ;; unless the match is in the current file
-      (let ((matched (dumb-jump-current-file-result cur-file results)))
-        ;;(if (and (string= ctx-type "variable") matched)
-        ;; TODO: this should check if there is ONLY 1 and/or go to the clest line number ABOVE
-        (if matched
-            (dumb-jump-result-follow matched)
-            (dumb-jump-prompt-user-for-choice look-for proj-root results)))
+      (dumb-jump-handle-results results cur-file proj-root ctx-type look-for)
      )
      ((= result-count 0)
       (message "'%s' %s %s declaration not found." look-for (if (null lang) "" lang) (if (null ctx-type) "" ctx-type)))
      (t
       (message "Un-handled results: %s " (prin1-to-string results))))))
+
+(defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for)
+  (let* ((match-gt0 (-filter (lambda (x) (> (plist-get x :diff) 0)) results))
+        (match-sorted (-sort (lambda (x y) (message-prin1 "%s %s" x y) (< (plist-get x :diff) (plist-get y :diff))) match-gt0))
+        (matches (dumb-jump-current-file-results cur-file match-sorted))
+        (var-to-jump (car matches))
+        (do-var-jump (and (string= ctx-type "variable") var-to-jump)))
+    ;(message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s" ctx-type var-to-jump matches match-sorted)
+    (if do-var-jump
+        (dumb-jump-result-follow var-to-jump)
+      (dumb-jump-prompt-user-for-choice look-for proj-root results))))
 
 (defun dumb-jump-read-exclusions (config-file)
   (let* ((root (f-dirname config-file))
@@ -227,10 +244,10 @@ If not found, then return dumb-jump-default-profile"
   (forward-line (- theline 1))
   (forward-char pos))
 
-(defun dumb-jump-current-file-result (path results)
-  "Is the PATH in the list of RESULTS"
+(defun dumb-jump-current-file-results (path results)
+  "Return the RESULTS that have the PATH"
   (let ((matched (-filter (lambda (r) (string= path (plist-get r :path))) results)))
-    (car matched)))
+    matched))
 
 (defun dumb-jump-run-command (look-for proj regexes include-args exclude-args line-num)
   "Run the grep command based on emacs MODE and
