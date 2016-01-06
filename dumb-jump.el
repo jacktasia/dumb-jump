@@ -38,6 +38,36 @@
            :regex "\\\(defvar\\b\\s*JJJ\\b\\s*" :tests ("(defvar test "))
     (:type "variable" :language "elisp"
            :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)"))
+
+    ;; python
+    (:type "variable" :language "python"
+           :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
+
+    (:type "function" :language "python"
+           :regex "def\\s*JJJ\\s*\\\("
+           :tests ("\tdef test(asdf)" "def test()"))
+
+    (:type "type" :language "python"
+           :regex "class\\s*JJJ\\s*\\\(?"
+           :tests ("class test(object):"))
+
+    ;; go
+    (:type "variable" :language "go"
+           :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
+
+    (:type "function" :language "go"
+           :regex "func\\s+\\\([^\\\)]*\\\)\\s+JJJ\\s*\\\("
+           :tests ("func (s *blah) test(filename string) string {"))
+
+    (:type "function" :language "go"
+           :regex "func\\s+JJJ\\s*\\\("
+           :tests ("func test(url string) (string, error)"))
+
+    (:type "type" :language "go"
+           :regex "type\\s+JJJ\\s+struct\\s+\\\{"
+           :tests ("type test struct {"))
+
+
     ;; javascript
     (:type "variable" :language "javascript"
            :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
