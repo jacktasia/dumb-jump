@@ -268,11 +268,6 @@ If not found, then return dumb-jump-default-profile"
               (diff (- cur-line-num line-num)))
 
         (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 2 x) :diff ,diff))))
-        ;; (let ((item '()))
-        ;;   (setq item (plist-put item :path (nth 0 x)))
-        ;;   (setq item (plist-put item :line (nth 1 x)))
-        ;;   (setq item (plist-put item :context (nth 2 x)))
-        ;;   (list item)))
       parsed)))
 
 (defun dumb-jump-get-ctx-type-by-language (lang pt-ctx)
