@@ -1,6 +1,7 @@
 
-(require 'f)
 (require 'undercover)
-(defvar dumb-jump-file (f-join (f-parent (f-parent (f-this-file))) "dump-jump.el"))
-(undercover dumb-jump-file)
+(undercover "*.el"
+            (:exclude "*-test.el")
+            (:send-report nil)
+            (:report-file "/tmp/undercover-report.json"))
 (require 'dumb-jump)
