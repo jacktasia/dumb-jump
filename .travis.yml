@@ -1,0 +1,11 @@
+language: emacs-lisp
+before_install:
+  - curl -fsSkL https://gist.github.com/rejeep/7736123/raw > travis.sh && source ./travis.sh
+  - export PATH="/home/travis/.cask/bin:$PATH"
+  - export PATH="/home/travis/.evm/bin:$PATH"
+  - cask
+env:
+  - EVM_EMACS=emacs-24.3-bin
+script:
+  - emacs --version
+  - make test
