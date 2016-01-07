@@ -7,4 +7,6 @@
   (f-parent dumb-jump-test/test-path))
 
 (require 'ert)
-(require 'dumb-jump (f-expand "dumb-jump" dumb-jump-test/root-path))
+(require 'undercover)
+(undercover "dump-jump.el")
+(require 'dumb-jump)
