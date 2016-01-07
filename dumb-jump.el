@@ -17,15 +17,12 @@
 
 ;; TODO: config variable for if it should be only for functions
 ;; TODO: make defvars defcustoms?
-
+;; TODO: melpa
+;; TODO: complete README add gif etc.
 ;; TODO: add rules for more languages! (python and go)
 ;; TODO: make dumb-jump-test-rules run on boot?
 ;; TODO: prefix private functions with dj/ or simliar
 ;; TODO: time search operation. if above N then have a helpful not about setting up excludes
-
-;;LANG=C grep -REn --exclude-dir /Users/jack/code/react-canvas/node_modules --exclude-dir /Users/jack/code/react-canvas/bower_components --include \*.js --include \*.jsx --include \*.html  -e '\s*width\s*=\s*' -e 'function\s*width\s*\(' -e '\s*width\s*=\s*function\s*\(' /Users/jack/code/react-canvas
-
-;; https://github.com/jacktasia/dotemacs24/commit/3972d4decbb09f7dff78feb7cbc5db5b6979b0eb
 
 (defvar dumb-jump-grep-prefix "LANG=C grep" "Prefix to grep command. Seemingly makes it faster for pure text.")
 
