@@ -1,5 +1,4 @@
 ;;; -*- lexical-binding: t -*-
-(require 'dumb-jump)
 (require 'ert)
 (require 'f)
 (require 's)
