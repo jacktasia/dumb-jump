@@ -1,4 +1,5 @@
 
+(require 'ert)
 (require 'undercover)
 (undercover "*.el"
             (:exclude "*-test.el")

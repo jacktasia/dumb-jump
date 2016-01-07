@@ -1,5 +1,4 @@
 ;;; -*- lexical-binding: t -*-
-(require 'ert)
 (require 'f)
 (require 's)
 (require 'dash)
