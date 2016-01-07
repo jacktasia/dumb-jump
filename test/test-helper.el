@@ -6,3 +6,6 @@
             (:send-report nil)
             (:report-file "/tmp/undercover-report.json"))
 (require 'dumb-jump)
+
+(provide 'test-helper)
+;;; test-helper.el ends here
