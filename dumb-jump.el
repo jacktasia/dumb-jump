@@ -17,9 +17,11 @@
 
 ;; TODO: config variable for if it should be only for functions
 ;; TODO: make defvars defcustoms?
-;; TODO: melpa
+;; TODO: add rules for declarations in method signatures
 ;; TODO: complete README add gif etc.
-;; TODO: add rules for more languages! (python and go)
+;; TODO: melpa recipe
+
+;; TODO: answer here: http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project
 ;; TODO: make dumb-jump-test-rules run on boot?
 ;; TODO: prefix private functions with dj/ or simliar
 ;; TODO: time search operation. if above N then have a helpful not about setting up excludes
