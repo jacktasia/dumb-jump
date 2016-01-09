@@ -3,7 +3,7 @@
 (require 'undercover)
 (undercover "*.el"
             (:exclude "*-test.el")
-            (:send-report nil)
+            (:send-report t)
             (:report-file "/tmp/undercover-report.json"))
 (require 'dumb-jump)
 
