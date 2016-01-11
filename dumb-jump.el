@@ -16,7 +16,7 @@
 (require 'dash)
 
 ;; TODO: config variable for if it should be only for functions
-;; TODO: make defvars defcustoms?
+;; TODO: goback command
 ;; TODO: add rules for declarations in method signatures
 ;; TODO: complete README add gif etc.
 ;; TODO: melpa recipe
@@ -225,13 +225,12 @@ If not found, then return dumb-jump-default-profile"
   (let* ((cur-file (buffer-file-name))
          (cur-line (thing-at-point 'line))
          (cur-line-num (line-number-at-pos))
-         (cur-symbol (thing-at-point 'symbol))
+         (look-for (thing-at-point 'symbol))
          (proj-info (dumb-jump-get-project-root cur-file))
          (proj-root (plist-get proj-info :root))
          (proj-config (plist-get proj-info :file))
-         (look-for (thing-at-point 'symbol))
          (lang (dumb-jump-get-language-by-filename cur-file))
-         (pt-ctx (dumb-jump-get-point-context cur-line cur-symbol))
+         (pt-ctx (dumb-jump-get-point-context cur-line look-for))
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
          (regexes (dumb-jump-get-contextual-regexes lang ctx-type))
