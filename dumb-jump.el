@@ -135,7 +135,7 @@ immediately to the right of a symbol then it's probably a function call"
   (apply 'message str (-map 'prin1-to-string args)))
 
 (defun dumb-jump-test-rules ()
-  "Test all the rules and return count ofthose that fail
+  "Test all the rules and return count of those that fail
 Optionally pass t to see a list of all failed rules"
   (let ((failures '())
         (fail-tmpl "FAILURE '%s' not in response '%s' | CMD: '%s' | rule: '%s'"))
