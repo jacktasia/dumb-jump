@@ -26,11 +26,22 @@
 ;; TODO: prefix private functions with dj/ or simliar
 ;; TODO: time search operation. if above N then have a helpful not about setting up excludes
 
-(defvar dumb-jump-grep-prefix "LANG=C grep" "Prefix to grep command. Seemingly makes it faster for pure text.")
+(defgroup dumb-jump nil
+  "Easily jump to project function and variable definitions"
+  :group 'tools
+  :group 'convenience)
 
-(defvar dumb-jump-grep-args "-REn" "Grep command args Recursive, [e]xtended regexes, and show line numbers")
+(defcustom dumb-jump-grep-prefix
+  "LANG=C grep"
+  "Prefix to grep command. Seemingly makes it faster for pure text."
+  :group 'dumb-jump)
 
-(defvar dumb-jump-find-rules
+(defcustom dumb-jump-grep-args
+  "-REn"
+  "Grep command args Recursive, [e]xtended regexes, and show line numbers"
+  :group 'dumb-jump)
+
+(defcustom dumb-jump-find-rules
   '((:type "function" :language "elisp"
            :regex "\\\(defun\\s+JJJ\\s*" :tests ("(defun test (blah)"))
     (:type "variable" :language "elisp"
@@ -66,7 +77,6 @@
            :regex "type\\s+JJJ\\s+struct\\s+\\\{"
            :tests ("type test struct {"))
 
-
     ;; javascript
     (:type "variable" :language "javascript"
            :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
@@ -83,17 +93,20 @@
     (:type "function" :language "javascript"
            :regex "\\s*JJJ\\s*=\\s*function\\s*\\\("
            :tests ("test = function()")) )
-  "List of regex patttern templates organized by language
-and type to use for generating the grep command")
 
-(defvar dumb-jump-language-file-exts
+  "List of regex patttern templates organized by language
+and type to use for generating the grep command"
+  :group 'dumb-jump)
+
+(defcustom dumb-jump-language-file-exts
   '((:language "elisp" :ext "el")
     (:language "javascript" :ext "js")
     (:language "javascript" :ext "jsx")
     (:language "javascript" :ext "html"))
-  "Mapping of programming lanaguage(s) to file extensions")
+  "Mapping of programming lanaguage(s) to file extensions"
+  :group 'dumb-jump)
 
-(defvar dumb-jump-language-contexts
+(defcustom dumb-jump-language-contexts
   '((:language "javascript" :type "function" :right "(" :left nil)
     (:language "javascript" :type "variable" :right nil :left "(")
     (:language "javascript" :type "variable" :right ")" :left "(")
@@ -101,15 +114,24 @@ and type to use for generating the grep command")
     (:language "javascript" :type "variable" :right ";" :left nil)
 
     (:language "elisp" :type "variable" :right ")" :left " ")
-    (:language "elisp" :type "function" :right " " :left "(")))
+    (:language "elisp" :type "function" :right " " :left "("))
 
-(defvar dumb-jump-project-denoters '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile")
-  "Files and directories that signify a directory is a project root")
+  "List of under points contexts for each language. This helps limit
+the number of regular expressions we use if we know that if there's a '('
+immediately to the right of a symbol then it's probably a function call"
+  :group 'dumb-jump)
 
-(defvar dumb-jump-default-project "~"
-  "The default project to search for searching if a denoter is not found in parent of file")
+(defcustom dumb-jump-project-denoters
+  '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile")
+  "Files and directories that signify a directory is a project root"
+  :group 'dumb-jump)
+
+(defcustom dumb-jump-default-project "~"
+  "The default project to search for searching if a denoter is not found in parent of file"
+  :group 'dumb-jump)
 
 (defun message-prin1 (str &rest args)
+  "Helper function when debuging applies prin1-to-string to all ARGS"
   (apply 'message str (-map 'prin1-to-string args)))
 
 (defun dumb-jump-test-rules ()
