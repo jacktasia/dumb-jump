@@ -40,7 +40,7 @@
 
 (ert-deftest dumb-jump-generate-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s*' -e '\\(setq\\b\\s*tester\\b\\s*' ."))
+        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s*' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\b\\s*' ."))
     (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes "" "")))))
 
 (ert-deftest dumb-jump-generate-command-with-ctx-test ()
@@ -123,3 +123,12 @@
   (let* ((choice-txt (dumb-jump-generate-prompt-text "asdf" "/usr/blah" '((:path "/usr/blah/test.txt" :line "54"))))
          (expected "Multiple results for 'asdf':\n\n1. /test.txt:54\n\nChoice: "))
     (should (string= choice-txt expected))))
+
+(ert-deftest dumb-jump-fetch-results-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (forward-line 2)
+      (forward-char 10)
+      (let ((results(dumb-jump-fetch-results)))
+        (should (string= "doSomeStuff" (plist-get results :symbol)))
+        (should (string= "javascript" (plist-get results :lang)))))))

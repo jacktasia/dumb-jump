@@ -48,6 +48,8 @@
            :regex "\\\(defvar\\b\\s*JJJ\\b\\s*" :tests ("(defvar test "))
     (:type "variable" :language "elisp"
            :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)"))
+    (:type "variable" :language "elisp"
+           :regex "\\\(JJJ\\b\\s*" :tests ("(let ((test 123)))"))
 
     ;; python
     (:type "variable" :language "python"
@@ -219,9 +221,7 @@ If not found, then return dumb-jump-default-profile"
         (plist-get (car result) :language)
       nil)))
 
-(defun dumb-jump-go ()
-  "Go to the function/variable declaration for thing at point"
-  (interactive)
+(defun dumb-jump-fetch-results ()
   (let* ((cur-file (buffer-file-name))
          (cur-line (thing-at-point 'line))
          (cur-line-num (line-number-at-pos))
@@ -239,22 +239,27 @@ If not found, then return dumb-jump-default-profile"
                            (dumb-jump-read-exclusions proj-config)
                            ""))
          (raw-results (dumb-jump-run-command look-for proj-root regexes include-args exclude-args cur-line-num))
-         (results (-map (lambda (r) (plist-put r :target look-for)) raw-results))
-         (result-count (length results))
-         (top-result (car results)))
+         (results (-map (lambda (r) (plist-put r :target look-for)) raw-results)))
+    `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
+
+(defun dumb-jump-go ()
+  "Go to the function/variable declaration for thing at point"
+  (interactive)
+  (let* ((info (dumb-jump-fetch-results))
+         (results (plist-get info :results))
+         (result-count (length results)))
     ; (message-prin1 "lang:%s type:%s results: %s" lang ctx-type results)
     (cond
      ((and (not (listp results)) (s-blank? results))
-      (message "Could not find rules for language '%s'." lang))
+      (message "Could not find rules for language '%s'." (plist-get info :lang)))
      ((= result-count 1)
-      (dumb-jump-result-follow top-result))
+      (dumb-jump-result-follow (car results)))
      ((> result-count 1)
       ;; multiple results so let the user pick from a list
       ;; unless the match is in the current file
-      (dumb-jump-handle-results results cur-file proj-root ctx-type look-for)
-     )
+      (dumb-jump-handle-results results (plist-get info :file) (plist-get info :root) (plist-get info :ctx-type) (plist-get info :symbol)))
      ((= result-count 0)
-      (message "'%s' %s %s declaration not found." look-for (if (null lang) "" lang) (if (null ctx-type) "" ctx-type)))
+      (message "'%s' %s %s declaration not found." (plist-get info :symbol) (plist-get info :lang) (plist-get info :ctx-type)))
      (t
       (message "Un-handled results: %s " (prin1-to-string results))))))
 
