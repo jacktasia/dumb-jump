@@ -2,6 +2,7 @@
 (require 'f)
 (require 's)
 (require 'dash)
+(require 'noflet)
 
 (setq test-data-dir (f-expand "./test/data"))
 (setq test-data-dir-elisp (f-join test-data-dir "proj2-elisp"))
@@ -123,6 +124,20 @@
   (let* ((choice-txt (dumb-jump-generate-prompt-text "asdf" "/usr/blah" '((:path "/usr/blah/test.txt" :line "54"))))
          (expected "Multiple results for 'asdf':\n\n1. /test.txt:54\n\nChoice: "))
     (should (string= choice-txt expected))))
+
+(ert-deftest dumb-jump-prompt-user-for-choice-invalid-test ()
+  (noflet ((read-from-minibuffer (input) "2")
+           (message (input)
+             (should (string= input "Sorry, that's an invalid choice."))))
+
+    (dumb-jump-prompt-user-for-choice "asdf" "/usr/blah" '((:path "/usr/blah/test.txt" :line "54")))))
+
+(ert-deftest dumb-jump-prompt-user-for-choice-correct-test ()
+  (noflet ((read-from-minibuffer (input) "2")
+           (dumb-jump-result-follow (result)
+                                    (should (string= (plist-get result :path) "/usr/blah/test2.txt"))))
+
+    (dumb-jump-prompt-user-for-choice "asdf" "/usr/blah" '((:path "/usr/blah/test.txt" :line "54") (:path "/usr/blah/test2.txt" :line "52")))))
 
 (ert-deftest dumb-jump-fetch-results-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
