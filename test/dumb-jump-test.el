@@ -156,3 +156,11 @@
       (noflet ((dumb-jump-result-follow (result)
                                         (should (string= (plist-get result :path) go-js-file) )))
         (dumb-jump-go)))))
+
+(ert-deftest dumb-message-prin1-test ()
+  (noflet ((message (input arg arg2)
+                    (should (string= input "%s %s"))
+                    (should (string= arg "(:path \"test\" :line 24)"))
+                    (should (string= arg2 "3"))))
+
+          (message-prin1 "%s %s" '(:path "test" :line 24) 3)))
