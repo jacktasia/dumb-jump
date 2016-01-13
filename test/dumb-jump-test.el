@@ -157,10 +157,18 @@
                                         (should (string= (plist-get result :path) go-js-file) )))
         (dumb-jump-go)))))
 
+(ert-deftest dumb-jump-go-no-result-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (forward-char 0)
+      (noflet ((message (input arg1 arg2 arg3)
+               (should (string= input "'%s' %s %s declaration not found."))
+               (should (string= arg1 "console"))))
+        (dumb-jump-go)))))
+
 (ert-deftest dumb-message-prin1-test ()
   (noflet ((message (input arg arg2)
                     (should (string= input "%s %s"))
                     (should (string= arg "(:path \"test\" :line 24)"))
                     (should (string= arg2 "3"))))
-
           (message-prin1 "%s %s" '(:path "test" :line 24) 3)))
