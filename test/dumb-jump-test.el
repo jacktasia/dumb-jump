@@ -166,7 +166,14 @@
                (should (string= arg1 "console"))))
         (dumb-jump-go)))))
 
-(ert-deftest dumb-message-prin1-test ()
+(ert-deftest dumb-jump-message-handle-results-test ()
+  (noflet ((dumb-jump-result-follow (result)
+                                    (should (= (plist-get result :line) 62))))
+          (let ((results '((:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
+                           (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
+                (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow"))))
+
+(ert-deftest dumb-jump-message-prin1-test ()
   (noflet ((message (input arg arg2)
                     (should (string= input "%s %s"))
                     (should (string= arg "(:path \"test\" :line 24)"))

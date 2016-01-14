@@ -271,7 +271,7 @@ If not found, then return dumb-jump-default-profile"
         (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) match-gt0))
         (matches (dumb-jump-current-file-results cur-file match-sorted))
         (var-to-jump (car matches))
-        (do-var-jump (and (string= ctx-type "variable") var-to-jump)))
+        (do-var-jump (and (or (= (length matches) 1) (string= ctx-type "variable")) var-to-jump)))
     ;(message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s" ctx-type var-to-jump matches match-sorted)
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump)
