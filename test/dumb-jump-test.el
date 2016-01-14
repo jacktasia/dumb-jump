@@ -173,6 +173,14 @@
                            (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
                 (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow"))))
 
+(ert-deftest dumb-jump-message-result-follow-test ()
+  (noflet ((dumb-jump-goto-file-line (path line pos)
+                                     (should (string= path "src/file.js"))
+                                     (should (= line 62))
+                                     (should (= pos 4))))
+          (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
+            (dumb-jump-result-follow result))))
+
 (ert-deftest dumb-jump-message-prin1-test ()
   (noflet ((message (input arg arg2)
                     (should (string= input "%s %s"))
