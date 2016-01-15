@@ -166,6 +166,15 @@
                (should (string= arg1 "console"))))
         (dumb-jump-go)))))
 
+(ert-deftest dumb-jump-go-no-rules-test ()
+  (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt")))
+    (with-current-buffer (find-file-noselect txt-file t)
+      (forward-char 0)
+      (noflet ((message (input arg1)
+               (should (string= input "Could not find rules for '%s'."))
+               (should (string= arg1 ".txt file"))))
+        (dumb-jump-go)))))
+
 (ert-deftest dumb-jump-message-handle-results-test ()
   (noflet ((dumb-jump-result-follow (result)
                                     (should (= (plist-get result :line) 62))))

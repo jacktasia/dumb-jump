@@ -49,7 +49,7 @@
     (:type "variable" :language "elisp"
            :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)"))
     (:type "variable" :language "elisp"
-           :regex "\\\(JJJ\\b\\s*" :tests ("(let ((test 123)))"))
+           :regex "\\\(JJJ\\b\\s*" :tests ("(let ((test 123)))")) ; TODO: just \\s+?
 
     ;; python
     (:type "variable" :language "python"
@@ -115,8 +115,8 @@ and type to use for generating the grep command"
     (:language "javascript" :type "variable" :right "." :left nil)
     (:language "javascript" :type "variable" :right ";" :left nil)
 
-    (:language "elisp" :type "variable" :right ")" :left " ")
-    (:language "elisp" :type "function" :right " " :left "("))
+    (:language "elisp" :type "function" :right " " :left "(")
+    (:language "elisp" :type "variable" :right ")" :left " "))
 
   "List of under points contexts for each language. This helps limit
 the number of regular expressions we use if we know that if there's a '('
@@ -219,7 +219,7 @@ If not found, then return dumb-jump-default-profile"
                  dumb-jump-language-file-exts)))
     (if result
         (plist-get (car result) :language)
-      nil)))
+      (format ".%s file" (f-ext filename)))))
 
 (defun dumb-jump-fetch-results ()
   (let* ((cur-file (buffer-file-name))
@@ -250,11 +250,13 @@ If not found, then return dumb-jump-default-profile"
   (interactive)
   (let* ((info (dumb-jump-fetch-results))
          (results (plist-get info :results))
+         (lang (plist-get info :lang))
          (result-count (length results)))
     ; (message-prin1 "lang:%s type:%s results: %s" lang ctx-type results)
     (cond
-     ((and (not (listp results)) (s-blank? results))
-      (message "Could not find rules for language '%s'." (plist-get info :lang)))
+;     ((and (not (listp results)) (s-blank? results))
+     ((s-ends-with? " file" lang)
+      (message "Could not find rules for '%s'." lang))
      ((= result-count 1)
       (dumb-jump-result-follow (car results)))
      ((> result-count 1)
@@ -262,7 +264,7 @@ If not found, then return dumb-jump-default-profile"
       ;; unless the match is in the current file
       (dumb-jump-handle-results results (plist-get info :file) (plist-get info :root) (plist-get info :ctx-type) (plist-get info :symbol)))
      ((= result-count 0)
-      (message "'%s' %s %s declaration not found." (plist-get info :symbol) (plist-get info :lang) (plist-get info :ctx-type)))
+      (message "'%s' %s %s declaration not found." (plist-get info :symbol) lang (plist-get info :ctx-type)))
      (t
       (message "Un-handled results: %s " (prin1-to-string results))))))
 
@@ -378,6 +380,7 @@ If not found, then return dumb-jump-default-profile"
            (lambda (r)
              (format "'%s'" (plist-get r ':regex)))
            rules)))
+;    (message-prin1 "%s %s %s %s" raw-rules ctx-rules rules regexes)
     regexes))
 
 (defun dumb-jump-generate-command (look-for proj regexes include-args exclude-args)
