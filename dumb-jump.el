@@ -24,7 +24,6 @@
 ;; TODO: answer here: http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project
 ;; TODO: make dumb-jump-test-rules run on boot?
 ;; TODO: prefix private functions with dj/ or simliar
-;; TODO: time search operation. if above N then have a helpful not about setting up excludes
 
 (defgroup dumb-jump nil
   "Easily jump to project function and variable definitions"
@@ -40,6 +39,12 @@
   "-REn"
   "Grep command args Recursive, [e]xtended regexes, and show line numbers"
   :group 'dumb-jump)
+
+(defcustom dumb-jump-max-find-time
+  2
+  "Number of seconds a grep/find command can take before being warned"
+  :group 'dumb-jump)
+
 
 (defcustom dumb-jump-find-rules
   '((:type "function" :language "elisp"
@@ -248,13 +253,21 @@ If not found, then return dumb-jump-default-profile"
 (defun dumb-jump-go ()
   "Go to the function/variable declaration for thing at point"
   (interactive)
-  (let* ((info (dumb-jump-fetch-results))
+  (let* ((start-time (float-time))
+         (info (dumb-jump-fetch-results))
+         (end-time (float-time))
+         (fetch-time (- end-time start-time))
          (results (plist-get info :results))
+         (look-for (plist-get info :symbol))
+         (proj-root (plist-get info :root))
          (lang (plist-get info :lang))
          (result-count (length results)))
     ; (message-prin1 "lang:%s type:%s results: %s" lang ctx-type results)
     (cond
 ;     ((and (not (listp results)) (s-blank? results))
+     ((> fetch-time 2) ;; TODO: 2 should be a variable that can be overriden...
+      (message "Took over %ss to find '%s'. Please add a .dumbjump file to '%s' with path exclusions"
+               (number-to-string dumb-jump-max-find-time) look-for proj-root))
      ((s-ends-with? " file" lang)
       (message "Could not find rules for '%s'." lang))
      ((= result-count 1)
@@ -262,9 +275,9 @@ If not found, then return dumb-jump-default-profile"
      ((> result-count 1)
       ;; multiple results so let the user pick from a list
       ;; unless the match is in the current file
-      (dumb-jump-handle-results results (plist-get info :file) (plist-get info :root) (plist-get info :ctx-type) (plist-get info :symbol)))
+      (dumb-jump-handle-results results (plist-get info :file) proj-root (plist-get info :ctx-type) look-for))
      ((= result-count 0)
-      (message "'%s' %s %s declaration not found." (plist-get info :symbol) lang (plist-get info :ctx-type)))
+      (message "'%s' %s %s declaration not found." look-for lang (plist-get info :ctx-type)))
      (t
       (message "Un-handled results: %s " (prin1-to-string results))))))
 

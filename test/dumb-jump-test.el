@@ -175,6 +175,19 @@
                (should (string= arg1 ".txt file"))))
         (dumb-jump-go)))))
 
+(ert-deftest dumb-jump-go-too-long-test ()
+  (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt")))
+    (with-current-buffer (find-file-noselect txt-file t)
+      (forward-char 0)
+      (noflet ((dumb-jump-fetch-results ()
+                                        (sleep-for 3)
+                                        '())
+               (message (input arg1 arg2 arg3)
+                        (should (= (string-to-number arg1) dumb-jump-max-find-time))
+                        (should (string= input "Took over %ss to find '%s'. Please add a .dumbjump file to '%s' with path exclusions"))))
+
+               (dumb-jump-go)))))
+
 (ert-deftest dumb-jump-message-handle-results-test ()
   (noflet ((dumb-jump-result-follow (result)
                                     (should (= (plist-get result :line) 62))))
