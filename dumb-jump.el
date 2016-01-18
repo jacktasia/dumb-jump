@@ -16,10 +16,10 @@
 (require 'dash)
 
 ;; TODO: config variable for if it should be only for functions
-;; TODO: goback command
 ;; TODO: add rules for declarations in method signatures
 ;; TODO: complete README add gif etc.
 ;; TODO: melpa recipe
+;; TODO: track (point) and use to go
 
 ;; TODO: answer here: http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project
 ;; TODO: make dumb-jump-test-rules run on boot?
@@ -45,12 +45,16 @@
   "Number of seconds a grep/find command can take before being warned"
   :group 'dumb-jump)
 
+(defcustom dumb-jump-last-location
+  '()
+  "History of last locations when jumping"
+  :group 'dumb-jump)
 
 (defcustom dumb-jump-find-rules
   '((:type "function" :language "elisp"
            :regex "\\\(defun\\s+JJJ\\s*" :tests ("(defun test (blah)"))
     (:type "variable" :language "elisp"
-           :regex "\\\(defvar\\b\\s*JJJ\\b\\s*" :tests ("(defvar test "))
+           :regex "\\\(defvar\\b\\s*JJJ\\b\\s*" :tests ("(defvar test ")) ; TODO:  "(defvar test\n" when long list..
     (:type "variable" :language "elisp"
            :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)"))
     (:type "variable" :language "elisp"
@@ -250,7 +254,23 @@ If not found, then return dumb-jump-default-profile"
          (results (-map (lambda (r) (plist-put r :target look-for)) raw-results)))
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
-(defun dumb-jump-go ()
+(defun dumb-jump-back ()
+  (interactive)
+  (if dumb-jump-last-location
+    (let* ((last-loc (car dumb-jump-last-location))
+          (path (plist-get last-loc :path)))
+      (message "Jumping back to%s line %s"
+               (if (not (string= path (buffer-file-name)))
+                   (concat " " (f-filename path))
+                 "")
+               (number-to-string (plist-get last-loc :line)))
+      (setq dumb-jump-last-location (cdr dumb-jump-last-location))
+      (dumb-jump-goto-file-point
+       (plist-get last-loc :path)
+       (plist-get last-loc :point)))
+    (message "Nowhere to jump back to.")))
+
+(defun dumb-jump-go () ; TODO: rename to dumb-jump-to-definition,
   "Go to the function/variable declaration for thing at point"
   (interactive)
   (let* ((start-time (float-time))
@@ -307,8 +327,12 @@ If not found, then return dumb-jump-default-profile"
     (dumb-jump-arg-joiner "--exclude-dir" exclude-paths)))
 
 (defun dumb-jump-result-follow (result)
-  (let ((pos (s-index-of (plist-get result :target) (plist-get result :context))))
-    (dumb-jump-goto-file-line (plist-get result :path) (plist-get result :line) pos)))
+  (let ((pos (s-index-of (plist-get result :target) (plist-get result :context)))
+        (thef (plist-get result :path))
+        (line (plist-get result :line)))
+    (when thef
+      (add-to-list 'dumb-jump-last-location `(:line ,(line-number-at-pos) :path ,(buffer-file-name) :pos ,pos :point ,(point)))
+      (dumb-jump-goto-file-line thef line pos))))
 
 (defun dumb-jump-goto-file-line (thefile theline pos)
   "Open THEFILE and go line THELINE"
@@ -317,6 +341,11 @@ If not found, then return dumb-jump-default-profile"
   (goto-char (point-min))
   (forward-line (- theline 1))
   (forward-char pos))
+
+(defun dumb-jump-goto-file-point (thefile point)
+  "Open THEFILE and goto  POINT"
+  (find-file thefile)
+  (goto-char point))
 
 (defun dumb-jump-current-file-results (path results)
   "Return the RESULTS that have the PATH"
@@ -413,7 +442,8 @@ If not found, then return dumb-jump-default-profile"
   "Get list of rules for a language"
   (-filter (lambda (x) (string= (plist-get x ':language) language)) dumb-jump-find-rules))
 
-(global-set-key (kbd "C-M-g") 'dumb-jump-go)
+(global-set-key (kbd "C-M-g") 'dumb-jump-go )
+(global-set-key (kbd "C-M-p") 'dumb-jump-back)
 
 (provide 'dumb-jump)
 ;;; dumb-jump.el ends here
