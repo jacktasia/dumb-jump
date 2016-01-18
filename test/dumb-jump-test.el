@@ -180,7 +180,7 @@
     (with-current-buffer (find-file-noselect txt-file t)
       (forward-char 0)
       (noflet ((dumb-jump-fetch-results ()
-                                        (sleep-for 3)
+                                        (sleep-for 2 300)
                                         '())
                (message (input arg1 arg2 arg3)
                         (should (= (string-to-number arg1) dumb-jump-max-find-time))
