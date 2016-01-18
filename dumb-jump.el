@@ -20,7 +20,6 @@
 ;; TODO: complete README add gif etc.
 ;; TODO: melpa recipe
 ;; TODO: track (point) and use to go
-
 ;; TODO: answer here: http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project
 ;; TODO: make dumb-jump-test-rules run on boot?
 ;; TODO: prefix private functions with dj/ or simliar

@@ -156,7 +156,7 @@
       (goto-char (point-min))
       (forward-char 13)
       (noflet ((dumb-jump-result-follow (result)
-                                        (should (string= (plist-get result :path) go-js-file) )))
+                                        (should (string= (plist-get result :path) go-js-file))))
         (dumb-jump-go)))))
 
 (ert-deftest dumb-jump-back-test ()
