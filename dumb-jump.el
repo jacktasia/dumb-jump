@@ -17,6 +17,7 @@
 
 ;; TODO: config variable for if it should be only for functions
 ;; TODO: add rules for declarations in method signatures
+;; TODO: improve matching for exisiting rules with TODOs
 ;; TODO: complete README add gif etc.
 ;; TODO: melpa recipe
 ;; TODO: track (point) and use to go
@@ -42,6 +43,18 @@
 (defcustom dumb-jump-max-find-time
   2
   "Number of seconds a grep/find command can take before being warned"
+  :group 'dumb-jump)
+
+; TODO:
+(defcustom dumb-jump-functions-only
+  nil
+  "Should we only jump to functions?"
+  :group 'dumb-jump)
+
+; TODO:
+(defcustom dumb-jump-ignore-context
+  nil
+  "Should we ignore context when jumping?"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-last-location
