@@ -15,7 +15,6 @@
 (require 's)
 (require 'dash)
 
-;; TODO: config variable for if it should be only for functions
 ;; TODO: add rules for declarations in method signatures
 ;; TODO: complete README add gif etc.
 ;; TODO: melpa recipe
@@ -44,13 +43,11 @@
   "Number of seconds a grep/find command can take before being warned"
   :group 'dumb-jump)
 
-; TODO:
 (defcustom dumb-jump-functions-only
   nil
   "Should we only jump to functions?"
   :group 'dumb-jump)
 
-; TODO:
 (defcustom dumb-jump-ignore-context
   nil
   "Should we ignore context when jumping?"
@@ -418,6 +415,9 @@ If not found, then return dumb-jump-default-profile"
 (defun dumb-jump-get-contextual-regexes (lang ctx-type)
   (let* ((raw-rules
           (dumb-jump-get-rules-by-language lang))
+         (ctx-type (if dumb-jump-ignore-context
+                       nil
+                     ctx-type))
          (ctx-rules
           (if ctx-type
               (-filter (lambda (r)
@@ -451,7 +451,10 @@ If not found, then return dumb-jump-default-profile"
 
 (defun dumb-jump-get-rules-by-language (language)
   "Get list of rules for a language"
-  (-filter (lambda (x) (string= (plist-get x ':language) language)) dumb-jump-find-rules))
+  (let ((results (-filter (lambda (x) (string= (plist-get x ':language) language)) dumb-jump-find-rules)))
+    (if dumb-jump-functions-only
+        (-filter (lambda (x) (string= (plist-get x ':type) "function")) results)
+      results)))
 
 (global-set-key (kbd "C-M-g") 'dumb-jump-go )
 (global-set-key (kbd "C-M-p") 'dumb-jump-back)

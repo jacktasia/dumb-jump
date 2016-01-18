@@ -44,11 +44,26 @@
         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' ."))
     (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes "" "")))))
 
+(ert-deftest dumb-jump-generate-command-no-ctx-funcs-only-test ()
+  (let* ((dumb-jump-functions-only t)
+        (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' ."))
+    (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes "" "")))))
+
 (ert-deftest dumb-jump-generate-command-with-ctx-test ()
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
         (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' ."))
     ;; the point context being passed should match a "function" type so only the one command
+    (should (string= expected  (dumb-jump-generate-command "tester" "." regexes "" "")))))
+
+(ert-deftest dumb-jump-generate-command-with-ctx-but-ignored-test ()
+  (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
+         (dumb-jump-ignore-context t)
+         (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
+         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' ."))
+
+    ;; the point context being passed is ignored so ALL should return
     (should (string= expected  (dumb-jump-generate-command "tester" "." regexes "" "")))))
 
 (ert-deftest dumb-jump-generate-bad-command-test ()
