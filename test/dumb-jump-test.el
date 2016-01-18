@@ -41,7 +41,7 @@
 
 (ert-deftest dumb-jump-generate-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s*' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\b\\s*' ."))
+        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' ."))
     (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes "" "")))))
 
 (ert-deftest dumb-jump-generate-command-with-ctx-test ()

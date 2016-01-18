@@ -17,7 +17,6 @@
 
 ;; TODO: config variable for if it should be only for functions
 ;; TODO: add rules for declarations in method signatures
-;; TODO: improve matching for exisiting rules with TODOs
 ;; TODO: complete README add gif etc.
 ;; TODO: melpa recipe
 ;; TODO: track (point) and use to go
@@ -66,11 +65,11 @@
   '((:type "function" :language "elisp"
            :regex "\\\(defun\\s+JJJ\\s*" :tests ("(defun test (blah)"))
     (:type "variable" :language "elisp"
-           :regex "\\\(defvar\\b\\s*JJJ\\b\\s*" :tests ("(defvar test ")) ; TODO:  "(defvar test\n" when long list..
+           :regex "\\\(defvar\\b\\s*JJJ\\b\\s?" :tests ("(defvar test " "(defvar test\n"))
     (:type "variable" :language "elisp"
            :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)"))
     (:type "variable" :language "elisp"
-           :regex "\\\(JJJ\\b\\s*" :tests ("(let ((test 123)))")) ; TODO: just \\s+?
+           :regex "\\\(JJJ\\s+" :tests ("(let ((test 123)))"))
 
     ;; python
     (:type "variable" :language "python"
@@ -434,7 +433,7 @@ If not found, then return dumb-jump-default-profile"
            (lambda (r)
              (format "'%s'" (plist-get r ':regex)))
            rules)))
-;    (message-prin1 "%s %s %s %s" raw-rules ctx-rules rules regexes)
+;    (message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
     regexes))
 
 (defun dumb-jump-generate-command (look-for proj regexes include-args exclude-args)
