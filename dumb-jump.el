@@ -15,6 +15,7 @@
 (require 's)
 (require 'dash)
 
+;; TODO: change all (messsage calls to
 ;; TODO: add more tests for rules for declarations in method signatures
 ;; TODO: always? prefer definitions inside the same file.
 ;; TODO: improve context rules
@@ -50,6 +51,11 @@
   "Should we only jump to functions?"
   :group 'dumb-jump)
 
+(defcustom dumb-jump-quiet
+  nil
+  "Should dumb-jump say what it is doing to message"
+  :group 'dumb-jump)
+
 (defcustom dumb-jump-ignore-context
   nil
   "Should we ignore context when jumping?"
@@ -61,8 +67,9 @@
   :group 'dumb-jump)
 
 (defcustom dumb-jump-find-rules
-  '((:type "function" :language "elisp"
-           :regex "\\\(defun\\s+JJJ\\s*" :tests ("(defun test (blah)"))
+  '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\b\\s*"
+           :tests ("(defun test (blah)" "(defun test\n"))
+
     (:type "variable" :language "elisp"
            :regex "\\\(defvar\\b\\s*JJJ\\b\\s?" :tests ("(defvar test " "(defvar test\n"))
     (:type "variable" :language "elisp"
@@ -70,8 +77,9 @@
     (:type "variable" :language "elisp"
            :regex "\\\(JJJ\\s+" :tests ("(let ((test 123)))"))
 
-    ;; (:type "variable" :language "elisp2"
-    ;;        :regex "\\(defun\\s*.+\\\(?\\s*JJJ\\b\\s*\\\)?" :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)"))
+    (:type "variable" :language "elisp"
+           :regex "\\(defun\\s*.+\\\(?\\s*JJJ\\b\\s*\\\)?"
+           :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)"))
 
     ;; python
     (:type "variable" :language "python"
@@ -137,7 +145,6 @@ and type to use for generating the grep command"
     (:language "javascript" :type "variable" :right ";" :left nil)
 
     (:language "elisp" :type "function" :right " " :left " ")
-
     (:language "elisp" :type "function" :right " " :left "(")
     (:language "elisp" :type "variable" :right ")" :left " "))
 
@@ -185,6 +192,10 @@ Optionally pass t to see a list of all failed rules"
                 ))))
     failures))
 
+(defun dumb-jump-message (str &rest args)
+  (when (not dumb-jump-quiet)
+    (apply 'message str args)))
+
 (defun dumb-jump-get-point-context (line func cur-pos)
   (let* ((loc (dumb-jump-find-start-pos line func cur-pos))
          (func-len (length func))
@@ -221,7 +232,7 @@ Optionally pass t to see a list of all failed rules"
          (choice (dumb-jump-parse-input (length results) input)))
     (if choice
       (dumb-jump-result-follow (nth (1- choice) results))
-      (message "Sorry, that's an invalid choice."))))
+      (dumb-jump-message "Sorry, that's an invalid choice."))))
 
 ;; this should almost always take (buffer-file-name)
 (defun dumb-jump-get-project-root (filepath)
@@ -283,7 +294,7 @@ If not found, then return dumb-jump-default-profile"
   (if dumb-jump-last-location
     (let* ((last-loc (car dumb-jump-last-location))
           (path (plist-get last-loc :path)))
-      (message "Jumping back to%s line %s"
+      (dumb-jump-message "Jumping back to%s line %s"
                (if (not (string= path (buffer-file-name)))
                    (concat " " (f-filename path))
                  "")
@@ -292,7 +303,7 @@ If not found, then return dumb-jump-default-profile"
       (dumb-jump-goto-file-point
        (plist-get last-loc :path)
        (plist-get last-loc :point)))
-    (message "Nowhere to jump back to.")))
+    (dumb-jump-message "Nowhere to jump back to.")))
 
 (defun dumb-jump-go () ; TODO: rename to dumb-jump-to-definition,
   "Go to the function/variable declaration for thing at point"
@@ -310,10 +321,10 @@ If not found, then return dumb-jump-default-profile"
     (cond
 ;     ((and (not (listp results)) (s-blank? results))
      ((> fetch-time dumb-jump-max-find-time)
-      (message "Took over %ss to find '%s'. Please add a .dumbjump file to '%s' with path exclusions"
+      (dumb-jump-message "Took over %ss to find '%s'. Please add a .dumbjump file to '%s' with path exclusions"
                (number-to-string dumb-jump-max-find-time) look-for proj-root))
      ((s-ends-with? " file" lang)
-      (message "Could not find rules for '%s'." lang))
+      (dumb-jump-message "Could not find rules for '%s'." lang))
      ((= result-count 1)
       (dumb-jump-result-follow (car results)))
      ((> result-count 1)
@@ -321,15 +332,15 @@ If not found, then return dumb-jump-default-profile"
       ;; unless the match is in the current file
       (dumb-jump-handle-results results (plist-get info :file) proj-root (plist-get info :ctx-type) look-for))
      ((= result-count 0)
-      (message "'%s' %s %s declaration not found." look-for lang (plist-get info :ctx-type)))
+      (dumb-jump-message "'%s' %s %s declaration not found." look-for lang (plist-get info :ctx-type)))
      (t
-      (message "Un-handled results: %s " (prin1-to-string results))))))
+      (dumb-jump-message "Un-handled results: %s " (prin1-to-string results))))))
 
 (defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for)
   (let* ((match-gt0 (-filter (lambda (x) (> (plist-get x :diff) 0)) results))
         (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) match-gt0))
         (matches (dumb-jump-current-file-results cur-file match-sorted))
-        (var-to-jump (car matches))
+        (var-to-jump (car matches)) ;; TODO: this and next line needs to be improved
         (do-var-jump (and (or (= (length matches) 1) (string= ctx-type "variable")) var-to-jump)))
     ;(message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s" ctx-type var-to-jump matches match-sorted)
     (if do-var-jump
@@ -360,7 +371,7 @@ If not found, then return dumb-jump-default-profile"
 
 (defun dumb-jump-goto-file-line (thefile theline pos)
   "Open THEFILE and go line THELINE"
-  ;(message "Going to file '%s' line %s" thefile theline)
+  ;(dumb-jump-message "Going to file '%s' line %s" thefile theline)
   (find-file thefile)
   (goto-char (point-min))
   (forward-line (- theline 1))
@@ -380,7 +391,7 @@ If not found, then return dumb-jump-default-profile"
   "Run the grep command based on the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command look-for proj regexes include-args exclude-args))
          (rawresults (shell-command-to-string cmd)))
-    ;(message "RUNNING CMD '%s'" cmd)
+    ;(dumb-jump-message "RUNNING CMD '%s'" cmd)
     (if (s-blank? cmd)
        nil
       (dumb-jump-parse-grep-response rawresults line-num))))
@@ -409,9 +420,15 @@ If not found, then return dumb-jump-default-profile"
                              (string= (plist-get ctx :right)
                                       (plist-get pt-ctx :right))))
                        contexts)
-            nil)))
+            nil))
+         (use-ctx (= (length (-filter
+                              (lambda (x) (string= (plist-get x ':type)
+                                                   (and usable-ctxs (plist-get (car usable-ctxs) :type))))
+                              usable-ctxs))
+                     (length usable-ctxs))))
+
     ;(message-prin1 "pt-ctx: %s | usable-ctxs: %s" pt-ctx usable-ctxs)
-    (when usable-ctxs
+    (when (and usable-ctxs use-ctx)
       (plist-get (car usable-ctxs) :type))))
 
 (defun dumb-jump-get-ext-includes (language)
@@ -450,7 +467,7 @@ If not found, then return dumb-jump-default-profile"
            (lambda (r)
              (format "'%s'" (plist-get r ':regex)))
            rules)))
-;    (message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
+    ;(message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
     regexes))
 
 (defun dumb-jump-generate-command (look-for proj regexes include-args exclude-args)
@@ -459,7 +476,7 @@ If not found, then return dumb-jump-default-profile"
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
     (if (= (length regexes) 0)
         ""
-        (concat dumb-jump-grep-prefix " " dumb-jump-grep-args exclude-args include-args regex-args  proj))))
+        (concat dumb-jump-grep-prefix " " dumb-jump-grep-args exclude-args include-args regex-args proj))))
 
 (defun dumb-jump-get-file-exts-by-language (language)
   "Get list of file extensions for a language"

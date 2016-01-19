@@ -41,19 +41,19 @@
 
 (ert-deftest dumb-jump-generate-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' ."))
+        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
     (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes "" "")))))
 
 (ert-deftest dumb-jump-generate-command-no-ctx-funcs-only-test ()
   (let* ((dumb-jump-functions-only t)
         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' ."))
+        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' ."))
     (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes "" "")))))
 
 (ert-deftest dumb-jump-generate-command-with-ctx-test ()
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
         (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
-        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' ."))
+        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' ."))
     ;; the point context being passed should match a "function" type so only the one command
     (should (string= expected  (dumb-jump-generate-command "tester" "." regexes "" "")))))
 
@@ -61,7 +61,7 @@
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context t)
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
-         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' ."))
+         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
 
     ;; the point context being passed is ignored so ALL should return
     (should (string= expected  (dumb-jump-generate-command "tester" "." regexes "" "")))))
@@ -142,7 +142,7 @@
 
 (ert-deftest dumb-jump-prompt-user-for-choice-invalid-test ()
   (noflet ((read-from-minibuffer (input) "2")
-           (message (input)
+           (dumb-jump-message (input)
              (should (string= input "Sorry, that's an invalid choice."))))
 
     (dumb-jump-prompt-user-for-choice "asdf" "/usr/blah" '((:path "/usr/blah/test.txt" :line "54")))))
@@ -182,7 +182,7 @@
       (forward-char 13)
       (noflet ((dumb-jump-goto-file-point (path point)
                                           (should (= point 14)))
-               (message (input arg1 arg2)))
+               (dumb-jump-message (input arg1 arg2)))
         (dumb-jump-go)
         (dumb-jump-back)))))
 
@@ -190,7 +190,7 @@
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
-      (noflet ((message (input arg1 arg2 arg3)
+      (noflet ((dumb-jump-message (input arg1 arg2 arg3)
                (should (string= input "'%s' %s %s declaration not found."))
                (should (string= arg1 "console"))))
         (dumb-jump-go)))))
@@ -199,7 +199,7 @@
   (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt")))
     (with-current-buffer (find-file-noselect txt-file t)
       (goto-char (point-min))
-      (noflet ((message (input arg1)
+      (noflet ((dumb-jump-message (input arg1)
                (should (string= input "Could not find rules for '%s'."))
                (should (string= arg1 ".txt file"))))
         (dumb-jump-go)))))
@@ -212,7 +212,7 @@
       (noflet ((dumb-jump-fetch-results ()
                                         (sleep-for 0 300)
                                         '())
-               (message (input arg1 arg2 arg3)
+               (dumb-jump-message (input arg1 arg2 arg3)
                         (should (= (string-to-number arg1) dumb-jump-max-find-time))
                         (should (string= input "Took over %ss to find '%s'. Please add a .dumbjump file to '%s' with path exclusions"))))
 
@@ -239,6 +239,13 @@
                     (should (string= arg "(:path \"test\" :line 24)"))
                     (should (string= arg2 "3"))))
           (message-prin1 "%s %s" '(:path "test" :line 24) 3)))
+
+(ert-deftest dumb-jump-message-test ()
+  (noflet ((message (input arg arg2)
+                    (should (string= input "%s %s"))
+                    (should (string= arg "two"))
+                    (should (string= arg2 "three"))))
+          (dumb-jump-message "%s %s" "two" "three")))
 
 (ert-deftest dumb-jump-find-start-pos-test ()
   (let ((cur-pos 9)
