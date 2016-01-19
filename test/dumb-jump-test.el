@@ -115,14 +115,14 @@
 (ert-deftest dumb-jump-context-point-test ()
   (let* ((sentence "mainWindow.loadUrl('file://' + __dirname + '/dt/inspector.html?electron=true');")
          (func "loadUrl")
-         (ctx (dumb-jump-get-point-context sentence func)))
+         (ctx (dumb-jump-get-point-context sentence func 15)))
          (should (string= (plist-get ctx :left) "."))
          (should (string= (plist-get ctx :right) "("))))
 
 (ert-deftest dumb-jump-context-point-type-test ()
   (let* ((sentence "mainWindow.loadUrl('file://' + __dirname + '/dt/inspector.html?electron=true');")
          (func "loadUrl")
-         (pt-ctx (dumb-jump-get-point-context sentence func))
+         (pt-ctx (dumb-jump-get-point-context sentence func 14))
          (ctx-type (dumb-jump-get-ctx-type-by-language "javascript" pt-ctx)))
     (should (string= ctx-type "function"))))
 
@@ -239,3 +239,9 @@
                     (should (string= arg "(:path \"test\" :line 24)"))
                     (should (string= arg2 "3"))))
           (message-prin1 "%s %s" '(:path "test" :line 24) 3)))
+
+(ert-deftest dumb-jump-find-start-pos-test ()
+  (let ((cur-pos 9)
+        (line "event event")
+        (word "event"))
+    (should (= (dumb-jump-find-start-pos line word cur-pos) 6))))

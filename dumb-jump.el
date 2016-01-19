@@ -15,7 +15,9 @@
 (require 's)
 (require 'dash)
 
-;; TODO: add rules for declarations in method signatures
+;; TODO: add more tests for rules for declarations in method signatures
+;; TODO: always? prefer definitions inside the same file.
+;; TODO: improve context rules
 ;; TODO: complete README add gif etc.
 ;; TODO: melpa recipe
 ;; TODO: track (point) and use to go
@@ -68,6 +70,9 @@
     (:type "variable" :language "elisp"
            :regex "\\\(JJJ\\s+" :tests ("(let ((test 123)))"))
 
+    ;; (:type "variable" :language "elisp2"
+    ;;        :regex "\\(defun\\s*.+\\\(?\\s*JJJ\\b\\s*\\\)?" :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)"))
+
     ;; python
     (:type "variable" :language "python"
            :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
@@ -100,9 +105,8 @@
     (:type "variable" :language "javascript"
            :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
 
-    ;;TODO: improve if argument dec is in the func sig
-    ;; (:type "variable" :language "javascript"
-    ;;        :regex "\\bfunction.+\\\(?\\s*JJJ\\s*,?\\s*\\\)?" :tests ("function (test)" "function (test, blah)" "function(blah, test)"))
+    (:type "variable" :language "javascript"
+           :regex "\\bfunction.+\\\(?\\s*JJJ\\s*,?\\s*\\\)?" :tests ("function (test)" "function (test, blah)" "function(blah, test)"))
     (:type "function" :language "javascript"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
@@ -132,6 +136,8 @@ and type to use for generating the grep command"
     (:language "javascript" :type "variable" :right "." :left nil)
     (:language "javascript" :type "variable" :right ";" :left nil)
 
+    (:language "elisp" :type "function" :right " " :left " ")
+
     (:language "elisp" :type "function" :right " " :left "(")
     (:language "elisp" :type "variable" :right ")" :left " "))
 
@@ -153,6 +159,16 @@ immediately to the right of a symbol then it's probably a function call"
   "Helper function when debuging applies prin1-to-string to all ARGS"
   (apply 'message str (-map 'prin1-to-string args)))
 
+(defun dumb-jump-find-start-pos (line look-for cur-pos)
+  (let ((is-found nil))
+    (while (and (> cur-pos 0) (not is-found))
+      (let* ((char (substring line cur-pos (1+ cur-pos)))
+             (is-at (s-index-of char look-for)))
+        (if (null is-at)
+            (setq is-found t)
+          (setq cur-pos (1- cur-pos)))))
+    (1+ cur-pos)))
+
 (defun dumb-jump-test-rules ()
   "Test all the rules and return count of those that fail
 Optionally pass t to see a list of all failed rules"
@@ -169,8 +185,8 @@ Optionally pass t to see a list of all failed rules"
                 ))))
     failures))
 
-(defun dumb-jump-get-point-context (line func)
-  (let* ((loc (s-index-of func line))
+(defun dumb-jump-get-point-context (line func cur-pos)
+  (let* ((loc (dumb-jump-find-start-pos line func cur-pos))
          (func-len (length func))
          (sen-len (length line))
          (right-loc-start (+ loc func-len))
@@ -249,7 +265,7 @@ If not found, then return dumb-jump-default-profile"
          (lang (dumb-jump-get-language-by-filename cur-file))
 ;         (pt-ctx (dumb-jump-get-point-context cur-line look-for))
          (pt-ctx (if (not (string= cur-line look-for))
-                     (dumb-jump-get-point-context cur-line look-for)
+                     (dumb-jump-get-point-context cur-line look-for (current-column))
                  nil))
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
