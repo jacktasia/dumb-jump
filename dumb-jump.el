@@ -100,9 +100,9 @@
     (:type "variable" :language "javascript"
            :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
 
-    ;; TODO: improve if argument dec is in the func sig
+    ;;TODO: improve if argument dec is in the func sig
     ;; (:type "variable" :language "javascript"
-    ;;        :regex "\\\(?\\s*JJJ\\s*,?\\s*\\\)?" :tests ("(test)" "(test, blah)" "(blah, test)"))
+    ;;        :regex "\\bfunction.+\\\(?\\s*JJJ\\s*,?\\s*\\\)?" :tests ("function (test)" "function (test, blah)" "function(blah, test)"))
     (:type "function" :language "javascript"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
@@ -293,7 +293,7 @@ If not found, then return dumb-jump-default-profile"
     ; (message-prin1 "lang:%s type:%s results: %s" lang ctx-type results)
     (cond
 ;     ((and (not (listp results)) (s-blank? results))
-     ((> fetch-time 2) ;; TODO: 2 should be a variable that can be overriden...
+     ((> fetch-time dumb-jump-max-find-time)
       (message "Took over %ss to find '%s'. Please add a .dumbjump file to '%s' with path exclusions"
                (number-to-string dumb-jump-max-find-time) look-for proj-root))
      ((s-ends-with? " file" lang)
@@ -394,6 +394,7 @@ If not found, then return dumb-jump-default-profile"
                                       (plist-get pt-ctx :right))))
                        contexts)
             nil)))
+    ;(message-prin1 "pt-ctx: %s | usable-ctxs: %s" pt-ctx usable-ctxs)
     (when usable-ctxs
       (plist-get (car usable-ctxs) :type))))
 
