@@ -15,10 +15,8 @@
 (require 's)
 (require 'dash)
 
-;; TODO: change all (messsage calls to
-;; TODO: add more tests for rules for declarations in method signatures
 ;; TODO: always? prefer definitions inside the same file.
-;; TODO: improve context rules
+;; TODO: add more tests for rules for declarations in method signatures
 ;; TODO: complete README add gif etc.
 ;; TODO: melpa recipe
 ;; TODO: track (point) and use to go
