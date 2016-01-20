@@ -41,7 +41,7 @@
 
 (ert-deftest dumb-jump-generate-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
+        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(defcustom\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
     (should (string= expected  (dumb-jump-generate-command  "tester" "." regexes "" "")))))
 
 (ert-deftest dumb-jump-generate-command-no-ctx-funcs-only-test ()
@@ -61,7 +61,7 @@
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context t)
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
-         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
+         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(defcustom\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
 
     ;; the point context being passed is ignored so ALL should return
     (should (string= expected  (dumb-jump-generate-command "tester" "." regexes "" "")))))
@@ -70,21 +70,22 @@
     (should (s-blank? (dumb-jump-generate-command "tester" "." nil "" " --exclude-dir skaldjf"))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
-  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump.el:28:(defvar dumb-jump-grep)")
-         (parsed (dumb-jump-parse-grep-response resp 30))
+  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump2.el:28:(defvar dumb-jump-grep)")
+         (parsed (dumb-jump-parse-grep-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
-    (should (= (plist-get test-result :diff) 4))
+    (should (= (plist-get test-result :diff) 2))
+    (should (= (plist-get test-result :diff) 2))
     (should (= (plist-get test-result ':line) 26))))
 
 (ert-deftest dumb-jump-run-cmd-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" "" 3))
+         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""  "blah.el" 3))
         (first-result (car results)))
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (= (plist-get first-result :line) 6))))
 
 (ert-deftest dumb-jump-run-cmd-fail-test ()
-  (let* ((results (dumb-jump-run-command "hidden-function" test-data-dir-elisp nil "" "" 3))
+  (let* ((results (dumb-jump-run-command "hidden-function" test-data-dir-elisp nil "" "" "blah.el" 3))
         (first-result (car results)))
     (should (null first-result))))
 
