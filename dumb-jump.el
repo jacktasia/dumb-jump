@@ -337,6 +337,11 @@ If not found, then return dumb-jump-default-profile"
 (defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for)
   (let* ((match-gt0 (-filter (lambda (x) (> (plist-get x :diff) 0)) results))
         (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) match-gt0))
+        ; moves current file results to the front of the list
+        (match-cur-file-front (-concat
+                               (-filter (lambda (x) (string= (plist-get x :path) cur-file)) match-sorted)
+                               (-filter (lambda (x) (not (string= (plist-get x :path) cur-file))) match-sorted)))
+
         (matches (dumb-jump-current-file-results cur-file match-sorted))
         (var-to-jump (car matches)) ;; TODO: this and next line needs to be improved
         (do-var-jump (and (or (= (length matches) 1) (string= ctx-type "variable")) var-to-jump)))
