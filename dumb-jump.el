@@ -15,8 +15,9 @@
 (require 's)
 (require 'dash)
 
-;; TODO: always? prefer definitions inside the same file.
-;; TODO: add more tests for rules for declarations in method signatures
+;; TODO: if it's not nil point context and there's no results then ask user if we should try all...
+;; TODO: add more tests for rules for declarations in method signatures!
+
 ;; TODO: complete README add gif etc.
 ;; TODO: melpa recipe
 ;; TODO: track (point) and use to go
@@ -70,6 +71,10 @@
 
     (:type "variable" :language "elisp"
            :regex "\\\(defvar\\b\\s*JJJ\\b\\s?" :tests ("(defvar test " "(defvar test\n"))
+
+    (:type "variable" :language "elisp"
+           :regex "\\\(defcustom\\b\\s*JJJ\\b\\s?" :tests ("(defcustom test " "(defcustom test\n"))
+
     (:type "variable" :language "elisp"
            :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)"))
     (:type "variable" :language "elisp"
@@ -283,7 +288,7 @@ If not found, then return dumb-jump-default-profile"
          (exclude-args (if (s-ends-with? "/.dumbjump" proj-config)
                            (dumb-jump-read-exclusions proj-config)
                            ""))
-         (raw-results (dumb-jump-run-command look-for proj-root regexes include-args exclude-args cur-line-num))
+         (raw-results (dumb-jump-run-command look-for proj-root regexes include-args exclude-args cur-file cur-line-num))
          (results (-map (lambda (r) (plist-put r :target look-for)) raw-results)))
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
@@ -344,11 +349,12 @@ If not found, then return dumb-jump-default-profile"
 
         (matches (dumb-jump-current-file-results cur-file match-sorted))
         (var-to-jump (car matches)) ;; TODO: this and next line needs to be improved
-        (do-var-jump (and (or (= (length matches) 1) (string= ctx-type "variable")) var-to-jump)))
+        ;; TODO: handle if ctx-type is null but ALL results are variable
+        (do-var-jump (and (or (= (length matches) 1) (string= ctx-type "variable") (string= ctx-type "")) var-to-jump)))
     ;(message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s" ctx-type var-to-jump matches match-sorted)
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump)
-      (dumb-jump-prompt-user-for-choice look-for proj-root results))))
+      (dumb-jump-prompt-user-for-choice look-for proj-root match-cur-file-front))))
 
 (defun dumb-jump-read-exclusions (config-file)
   (let* ((root (f-dirname config-file))
@@ -390,25 +396,29 @@ If not found, then return dumb-jump-default-profile"
   (let ((matched (-filter (lambda (r) (string= path (plist-get r :path))) results)))
     matched))
 
-(defun dumb-jump-run-command (look-for proj regexes include-args exclude-args line-num)
+(defun dumb-jump-run-command (look-for proj regexes include-args exclude-args cur-file line-num)
   "Run the grep command based on the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command look-for proj regexes include-args exclude-args))
          (rawresults (shell-command-to-string cmd)))
     ;(dumb-jump-message "RUNNING CMD '%s'" cmd)
     (if (s-blank? cmd)
        nil
-      (dumb-jump-parse-grep-response rawresults line-num))))
+      (dumb-jump-parse-grep-response rawresults cur-file line-num))))
 
-(defun dumb-jump-parse-grep-response (resp cur-line-num)
+(defun dumb-jump-parse-grep-response (resp cur-file cur-line-num)
   "Takes a grep response RESP and parses into a list of plists"
-  (let ((parsed (butlast (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp)))))
-    (-mapcat
-      (lambda (x)
-        (let* ((line-num (string-to-number (nth 1 x)))
-              (diff (- cur-line-num line-num)))
-
-        (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 2 x) :diff ,diff))))
-      parsed)))
+  (let* ((parsed (butlast (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp))))
+         (results (-mapcat
+                  (lambda (x)
+                    (let* ((line-num (string-to-number (nth 1 x)))
+                           (diff (- cur-line-num line-num)))
+                      (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 2 x) :diff ,diff))))
+                  parsed)))
+    (-filter
+     (lambda (x) (not (and
+                       (string= (plist-get x :path) cur-file)
+                       (= (plist-get x :line) cur-line-num))))
+     results)))
 
 (defun dumb-jump-get-ctx-type-by-language (lang pt-ctx)
   "Detect the type of context by the language"
