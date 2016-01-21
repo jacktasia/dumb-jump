@@ -15,10 +15,9 @@
 (require 's)
 (require 'dash)
 
-;; TODO: must match look-for too!
-
 ;; TODO: if it's not nil point context and there's no results then ask user if we should try all...
-;; TODO: add more tests for rules for declarations in method signatures
+;; TODO: add more tests for rules for declarations in method signatures!
+
 ;; TODO: complete README add gif etc.
 ;; TODO: melpa recipe
 ;; TODO: track (point) and use to go
