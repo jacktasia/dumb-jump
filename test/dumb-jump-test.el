@@ -102,6 +102,13 @@
     (should (string= (buffer-file-name) js-file))
     (should (= (line-number-at-pos) 3))))
 
+
+(ert-deftest dumb-jump-goto-file-point-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (dumb-jump-goto-file-point js-file 10)
+    (should (string= (buffer-file-name) js-file))
+    (should (= (point) 10))))
+
 (ert-deftest dumb-jump-test-rules-test ()
   (let ((rule-failures (dumb-jump-test-rules)))
     (should (= (length rule-failures) 0))))
