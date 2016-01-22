@@ -400,14 +400,18 @@ If not found, then return dumb-jump-default-profile"
   "Run the grep command based on the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command look-for proj regexes include-args exclude-args))
          (rawresults (shell-command-to-string cmd)))
-    ;(dumb-jump-message "RUNNING CMD '%s'" cmd)
+    ;(message-prin1 "RUNNING CMD '%s' RESULTS: %s" cmd rawresults)
     (if (s-blank? cmd)
        nil
       (dumb-jump-parse-grep-response rawresults cur-file line-num))))
 
 (defun dumb-jump-parse-grep-response (resp cur-file cur-line-num)
   "Takes a grep response RESP and parses into a list of plists"
-  (let* ((parsed (butlast (-map (lambda (line) (s-split ":" line)) (s-split "\n" resp))))
+  (let* ((resp-no-warnings (-filter (lambda (x)
+                                      (and (not (s-starts-with? "grep:" x))
+                                           (not (s-contains? "No such file or" x))))
+                                    (s-split "\n" resp)))
+         (parsed (butlast (-map (lambda (line) (s-split ":" line)) resp-no-warnings)))
          (results (-mapcat
                   (lambda (x)
                     (let* ((line-num (string-to-number (nth 1 x)))
