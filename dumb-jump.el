@@ -100,6 +100,9 @@
     (:type "variable" :language "go"
            :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
 
+    (:type "variable" :language "go"
+           :regex "\\s*JJJ\\s*:=\\s*" :tests ("test := 1234"))
+
     (:type "function" :language "go"
            :regex "func\\s+\\\([^\\\)]*\\\)\\s+JJJ\\s*\\\("
            :tests ("func (s *blah) test(filename string) string {"))
@@ -136,7 +139,9 @@ and type to use for generating the grep command"
   '((:language "elisp" :ext "el")
     (:language "javascript" :ext "js")
     (:language "javascript" :ext "jsx")
-    (:language "javascript" :ext "html"))
+    (:language "javascript" :ext "html")
+    (:language "python" :ext "py")
+    (:language "go" :ext "go"))
   "Mapping of programming lanaguage(s) to file extensions"
   :group 'dumb-jump)
 
