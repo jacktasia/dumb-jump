@@ -15,6 +15,7 @@
 (require 's)
 (require 'dash)
 
+;; TODO: rules should have (optional?) tests that fail :fails
 ;; TODO: if it's not nil point context and there's no results then ask user if we should try all...
 ;; TODO: add more tests for rules for declarations in method signatures!
 
@@ -98,10 +99,10 @@
 
     ;; go
     (:type "variable" :language "go"
-           :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
+           :regex "\\s*\\bJJJ\\s*=\\s*" :tests ("test = 1234"))
 
     (:type "variable" :language "go"
-           :regex "\\s*JJJ\\s*:=\\s*" :tests ("test := 1234"))
+           :regex "\\s*\\bJJJ\\s*:=\\s*" :tests ("test := 1234"))
 
     (:type "function" :language "go"
            :regex "func\\s+\\\([^\\\)]*\\\)\\s+JJJ\\s*\\\("
@@ -117,7 +118,7 @@
 
     ;; javascript
     (:type "variable" :language "javascript"
-           :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
+           :regex "\\s*\\bJJJ\\s*=\\s*" :tests ("test = 1234"))
 
     (:type "variable" :language "javascript"
            :regex "\\bfunction.+\\\(?\\s*JJJ\\s*,?\\s*\\\)?" :tests ("function (test)" "function (test, blah)" "function(blah, test)"))
@@ -125,10 +126,10 @@
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
     (:type "function" :language "javascript"
-           :regex "\\s*JJJ\\s*:\\s*function\\s*\\\("
+           :regex "\\s*\\bJJJ\\s*:\\s*function\\s*\\\("
            :tests ("test: function()"))
     (:type "function" :language "javascript"
-           :regex "\\s*JJJ\\s*=\\s*function\\s*\\\("
+           :regex "\\s*\\bJJJ\\s*=\\s*function\\s*\\\("
            :tests ("test = function()")) )
 
   "List of regex patttern templates organized by language
@@ -345,18 +346,22 @@ If not found, then return dumb-jump-default-profile"
       (dumb-jump-message "Un-handled results: %s " (prin1-to-string results))))))
 
 (defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for)
-  (let* ((match-gt0 (-filter (lambda (x) (> (plist-get x :diff) 0)) results))
-        (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) match-gt0))
+  (let* ((match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
         ; moves current file results to the front of the list
         (match-cur-file-front (-concat
-                               (-filter (lambda (x) (string= (plist-get x :path) cur-file)) match-sorted)
+                               (-filter (lambda (x) (and (> (plist-get x :diff) 0)
+                                                         (string= (plist-get x :path) cur-file))) match-sorted)
+
+                               (-filter (lambda (x) (and (<= (plist-get x :diff) 0)
+                                                         (string= (plist-get x :path) cur-file))) match-sorted)
+
                                (-filter (lambda (x) (not (string= (plist-get x :path) cur-file))) match-sorted)))
 
-        (matches (dumb-jump-current-file-results cur-file match-sorted))
-        (var-to-jump (car matches)) ;; TODO: this and next line needs to be improved
+        (matches (dumb-jump-current-file-results cur-file match-cur-file-front))
+        (var-to-jump (car matches))
         ;; TODO: handle if ctx-type is null but ALL results are variable
         (do-var-jump (and (or (= (length matches) 1) (string= ctx-type "variable") (string= ctx-type "")) var-to-jump)))
-    ;(message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s" ctx-type var-to-jump matches match-sorted)
+    ;(message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s | results: %s" ctx-type var-to-jump matches match-sorted results)
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump)
       (dumb-jump-prompt-user-for-choice look-for proj-root match-cur-file-front))))
