@@ -15,6 +15,9 @@
 (require 's)
 (require 'dash)
 
+
+;; TODO: default excludes (.git..?) by language
+;; TODO: support es6 javascript
 ;; TODO: rules should have (optional?) tests that fail :fails
 ;; TODO: if it's not nil point context and there's no results then ask user if we should try all...
 ;; TODO: add more tests for rules for declarations in method signatures!
