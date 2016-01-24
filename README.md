@@ -34,10 +34,11 @@ The recommended way to install Dumb Jump *will be* via package.el
 ## Usage
 
 ### Basic
-There are two interactive Dumb Jump functions:
 
-* `dumb-jump-go` core functionality. Attempts to jump to the definition for the thing under point
-* `dumb-jump-back` jumps back to where you were when you jumped. These are chained so if you go down a rabbit how you can get back out or where you want to be.
+`(dumb-jump-mode)` will enable the keybindings for two interactive Dumb Jump functions:
+
+* `dumb-jump-go` <kbd>C-M g</kbd> core functionality. Attempts to jump to the definition for the thing under point
+* `dumb-jump-back` <kbd>C-M p</kbd> jumps back to where you were when you jumped. These are chained so if you go down a rabbit how you can get back out or where you want to be.
 
 ## Configuration
 

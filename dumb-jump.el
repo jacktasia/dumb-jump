@@ -16,9 +16,9 @@
 (require 'dash)
 
 
+;; TODO: proper keybinding support
 ;; TODO: default excludes (.git..?) by language
 ;; TODO: support es6 javascript
-;; TODO: proper keybinding support
 ;; TODO: rules should have (optional?) tests that fail :fails
 
 ;; TODO: if it's not nil point context and there's no results then ask user if we should try all...
@@ -34,6 +34,13 @@
   "Easily jump to project function and variable definitions"
   :group 'tools
   :group 'convenience)
+
+;;;###autoload
+(defvar dumb-jump-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-M-g") 'dumb-jump-go )
+    (define-key map (kbd "C-M-p") 'dumb-jump-back)
+    map))
 
 (defcustom dumb-jump-grep-prefix
   "LANG=C grep"
@@ -523,8 +530,11 @@ If not found, then return dumb-jump-default-profile"
         (-filter (lambda (x) (string= (plist-get x ':type) "function")) results)
       results)))
 
-(global-set-key (kbd "C-M-g") 'dumb-jump-go )
-(global-set-key (kbd "C-M-p") 'dumb-jump-back)
+;;;###autoload
+(define-minor-mode dumb-jump-mode
+  "Minor mode for jumping to variable and function definitions"
+  :global t
+  :keymap dumb-jump-mode-map)
 
 (provide 'dumb-jump)
 ;;; dumb-jump.el ends here
