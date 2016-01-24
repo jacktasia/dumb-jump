@@ -35,15 +35,13 @@ The recommended way to install Dumb Jump *will be* via package.el
 ### Basic
 There are two interactive Dumb Jump functions:
 
-* `dumb-jump-go` core functionality. Attemptes to jump to the definition for the thing under point
+* `dumb-jump-go` core functionality. Attempts to jump to the definition for the thing under point
 * `dumb-jump-back` jumps back to where you were when you jumped. These are chained so if you go down a rabbit how you can get back out or where you want to be.
 
 ## Customize
 
 * `(setq dumb-jump-quiet t)` in your `.emacs` if Dumb Jump is too chatty.
 * To support more languages and/or definition types `add-to-list` on `dumb-jump-find-rules` (see source code).
-
-Adding support for
 
 ## Contributing
 
