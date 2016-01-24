@@ -31,6 +31,11 @@
          (excludes (dumb-jump-read-exclusions config-file)))
     (should (string= excludes expected))))
 
+(ert-deftest dumb-jump-exclude-path-blank-test ()
+  (let* ((config-file (f-join test-data-dir-proj1 ".dumbjump-blank"))
+         (excludes (dumb-jump-read-exclusions config-file)))
+    (should (string= excludes ""))))
+
 (ert-deftest dumb-jump-language-to-ext-test ()
   (should (-contains? (dumb-jump-get-file-exts-by-language "elisp") "el")))
 

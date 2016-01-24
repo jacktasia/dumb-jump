@@ -382,7 +382,9 @@ If not found, then return dumb-jump-default-profile"
                                                     dir)))
                                    (f-join root use-dir)))
                                exclude-lines)))
-    (dumb-jump-arg-joiner "--exclude-dir" exclude-paths)))
+    (if exclude-lines
+      (dumb-jump-arg-joiner "--exclude-dir" exclude-paths)
+      "")))
 
 (defun dumb-jump-result-follow (result)
   (let ((pos (s-index-of (plist-get result :target) (plist-get result :context)))

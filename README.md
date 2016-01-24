@@ -47,6 +47,11 @@ Dumb Jump will automatically look for a project root by ... If it's not finding 
 
 ##### Example `.dumbjump`
 
+    -tests
+    -node_modules
+    -build
+    -images
+
 ##### `.emacs` options
 
 * `(setq dumb-jump-default-project "~/code")` to change default project if one is not found (defaults to `~`)
