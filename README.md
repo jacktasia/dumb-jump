@@ -7,10 +7,10 @@
 
 Dumb Jump uses `grep` <sup id="a1">[1](#f1)</sup> to find potential definitions of a variable/function (under point) via a set of regular expressions based on the file extension of the current buffer. Once there is a list of potential candidates they are run through a set of heuristic methods to find the best candidate to jump to. Right now these methods are general and shared among languages but in the future will almost certainly have to be customized to increase accuracy and support more languages.
 
-It *seems* like in most situations for JavaScript, Emacs Lisp, Python, and go it does a good job of finding what you want. It can be slow if a project is large, but it can usually be sped up by creating a `.dumbjump` file in your project's root directory with paths that should be excluded (see configuration).
+It *seems* like in most situations for JavaScript, Emacs Lisp, Python, and go it does a good job of finding what you want. It can be slow if a project is large, but it can usually be sped up by creating a `.dumbjump` file in your project's root directory with paths that should be excluded ([see configuration](#configuration)).
 
 <a name="f1"></a>
-**1.** I could see support for `ack` or `ag` support instead, but `grep` is pretty much everywhere, so I felt it made sense to go first.
+<sup>**1.** I could see support for `ack` or `ag` support instead, but `grep` is pretty much everywhere, so I felt it made sense to go first.</sup>
 
 
 ## Why?
@@ -27,11 +27,11 @@ Here is a list of potential alternatives packages for emacs:
 
 Most of these were sourced from this [emacs StackExchange answer](http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project)
 
-## Usage
+## Installing
 
 The recommended way to install Dumb Jump *will be* via package.el
 
-## Configuration
+## Usage
 
 ### Basic
 There are two interactive Dumb Jump functions:
@@ -39,9 +39,19 @@ There are two interactive Dumb Jump functions:
 * `dumb-jump-go` core functionality. Attempts to jump to the definition for the thing under point
 * `dumb-jump-back` jumps back to where you were when you jumped. These are chained so if you go down a rabbit how you can get back out or where you want to be.
 
-## Customize
+## Configuration
 
-* `(setq dumb-jump-quiet t)` in your `.emacs` if Dumb Jump is too chatty.
+Excluding directories:
+
+Dumb Jump will automatically look for a project root by ... If it's not finding one then either put a `.dumbjump` file in your project root and optionally add excluded directories to make it faster.
+
+##### Example `.dumbjump`
+
+##### `.emacs` options
+
+* `(setq dumb-jump-default-project "~/code")` to change default project if one is not found (defaults to `~`)
+* `(setq dumb-jump-quiet t)` if Dumb Jump is too chatty.
+*
 * To support more languages and/or definition types `add-to-list` on `dumb-jump-find-rules` (see source code).
 
 ## Contributing
