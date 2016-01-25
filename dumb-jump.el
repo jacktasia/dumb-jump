@@ -21,6 +21,7 @@
 ;; TODO: support es6 javascript
 ;; TODO: rules should have (optional?) tests that fail :fails
 
+;; TODO: support includes in `.dumbjump` -- offer to auto download for common languages/libraries
 ;; TODO: if it's not nil point context and there's no results then ask user if we should try all...
 ;; TODO: add more tests for rules for declarations in method signatures!
 ;; TODO: complete README add gif etc.
@@ -68,7 +69,7 @@
   :group 'dumb-jump)
 
 (defcustom dumb-jump-ignore-context
-  nil
+  t
   "Should we ignore context when jumping?"
   :group 'dumb-jump)
 
@@ -132,7 +133,8 @@
            :regex "\\s*\\bJJJ\\s*=\\s*" :tests ("test = 1234"))
 
     (:type "variable" :language "javascript"
-           :regex "\\bfunction.+\\\(?\\s*JJJ\\s*,?\\s*\\\)?" :tests ("function (test)" "function (test, blah)" "function(blah, test)"))
+           :regex "\\bfunction\\s*[^\\(]*\\\(\\s*.*JJJ\\s*,?\\s*\\\)?"
+           :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah) {" "function(blah, test)"))
     (:type "function" :language "javascript"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
@@ -186,8 +188,9 @@ immediately to the right of a symbol then it's probably a function call"
   "Helper function when debuging applies prin1-to-string to all ARGS"
   (apply 'message str (-map 'prin1-to-string args)))
 
-(defun dumb-jump-find-start-pos (line look-for cur-pos)
-  (let ((is-found nil))
+(defun dumb-jump-find-start-pos (line-in look-for cur-pos)
+  (let ((is-found nil)
+        (line (s-replace "\t" (s-repeat tab-width " ") line-in)))
     (while (and (> cur-pos 0) (not is-found))
       (let* ((char (substring line cur-pos (1+ cur-pos)))
              (is-at (s-index-of char look-for)))
@@ -404,14 +407,16 @@ If not found, then return dumb-jump-default-profile"
 (defun dumb-jump-goto-file-line (thefile theline pos)
   "Open THEFILE and go line THELINE"
   ;(dumb-jump-message "Going to file '%s' line %s" thefile theline)
-  (find-file thefile)
+  (unless (string= thefile (buffer-file-name))
+    (find-file thefile))
   (goto-char (point-min))
-  (forward-line (- theline 1))
+  (forward-line (1- theline))
   (forward-char pos))
 
 (defun dumb-jump-goto-file-point (thefile point)
   "Open THEFILE and goto  POINT"
-  (find-file thefile)
+  (unless (string= thefile (buffer-file-name))
+    (find-file thefile))
   (goto-char point))
 
 (defun dumb-jump-current-file-results (path results)
@@ -490,7 +495,7 @@ If not found, then return dumb-jump-default-profile"
   (let* ((raw-rules
           (dumb-jump-get-rules-by-language lang))
          (ctx-type (if dumb-jump-ignore-context
-                       nil
+                     nil
                      ctx-type))
          (ctx-rules
           (if ctx-type
@@ -512,7 +517,7 @@ If not found, then return dumb-jump-default-profile"
 
 (defun dumb-jump-generate-command (look-for proj regexes include-args exclude-args)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
-  (let* ((filled-regexes (-map (lambda (x) (s-replace "JJJ" look-for x))regexes))
+  (let* ((filled-regexes (-map (lambda (x) (s-replace "JJJ" look-for x)) regexes))
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
     (if (= (length regexes) 0)
         ""

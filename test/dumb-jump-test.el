@@ -57,8 +57,9 @@
 
 (ert-deftest dumb-jump-generate-command-with-ctx-test ()
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
-        (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
-        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' ."))
+         (dumb-jump-ignore-context nil) ;; overriding the default
+         (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
+         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' ."))
     ;; the point context being passed should match a "function" type so only the one command
     (should (string= expected  (dumb-jump-generate-command "tester" "." regexes "" "")))))
 
