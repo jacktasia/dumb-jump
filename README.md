@@ -10,7 +10,7 @@ Dumb Jump uses `grep` <sup id="a1">[1](#f1)</sup> to find potential definitions 
 It *seems* like in most situations for JavaScript, Emacs Lisp, Python, and go it does a good job of finding what you want. It can be slow if a project is large, but it can usually be sped up by creating a `.dumbjump` file in your project's root directory with paths that should be excluded ([see configuration](#configuration)).
 
 <a name="f1"></a>
-<sup>**1.** I could see support for `ack` or `ag` support instead, but `grep` is pretty much everywhere, so I felt it made sense to go first.</sup>
+<sup>**1.** I could see support for `ack` or `ag` as well, but `grep` is pretty much everywhere, so I felt it made sense to go first.</sup>
 
 
 ## Why?
@@ -38,11 +38,11 @@ The recommended way to install Dumb Jump *will be* via package.el
 `(dumb-jump-mode)` will enable the keybindings for two interactive Dumb Jump functions:
 
 * `dumb-jump-go` <kbd>C-M g</kbd> core functionality. Attempts to jump to the definition for the thing under point
-* `dumb-jump-back` <kbd>C-M p</kbd> jumps back to where you were when you jumped. These are chained so if you go down a rabbit how you can get back out or where you want to be.
+* `dumb-jump-back` <kbd>C-M p</kbd> jumps back to where you were when you jumped. These are chained so if you go down a rabbit hole you can get back out or where you want to be.
 
 ## Configuration
 
-Excluding directories:
+##### Excluding project directories
 
 Dumb Jump will automatically look for a project root by ... If it's not finding one then either put a `.dumbjump` file in your project root and optionally add excluded directories to make it faster.
 
