@@ -260,8 +260,8 @@ Optionally pass t to see a list of all failed rules"
 ;; this should almost always take (buffer-file-name)
 (defun dumb-jump-get-project-root (filepath)
   "Keep looking at the parent dir of FILEPATH until a
-denoter file/dir is found then return that directory
-If not found, then return dumb-jump-default-profile"
+denoter file/dir is found then return that root directory
+and the file that was found. If not found, then use dumb-jump-default-profile"
   (let ((test-path filepath)
         (proj-file nil)
         (proj-root nil))
