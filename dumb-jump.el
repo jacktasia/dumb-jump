@@ -429,8 +429,7 @@ and the file that was found. If not found, then use dumb-jump-default-profile"
   (let* ((cmd (dumb-jump-generate-command look-for proj regexes include-args exclude-args))
          (rawresults (shell-command-to-string cmd)))
     ;(message-prin1 "RUNNING CMD '%s' RESULTS: %s" cmd rawresults)
-    (if (s-blank? cmd)
-       nil
+    (unless (s-blank? cmd)
       (dumb-jump-parse-grep-response rawresults cur-file line-num))))
 
 (defun dumb-jump-parse-grep-response (resp cur-file cur-line-num)
