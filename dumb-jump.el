@@ -17,22 +17,6 @@
 (require 's)
 (require 'dash)
 
-
-;; TODO: proper keybinding support
-;; TODO: default excludes (.git..?) by language
-;; TODO: support es6 javascript
-;; TODO: rules should have (optional?) tests that fail :fails
-
-;; TODO: support includes in `.dumbjump` -- offer to auto download for common languages/libraries
-;; TODO: if it's not nil point context and there's no results then ask user if we should try all...
-;; TODO: add more tests for rules for declarations in method signatures!
-;; TODO: complete README add gif etc.
-;; TODO: melpa recipe
-;; TODO: track (point) and use to go
-;; TODO: answer here: http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project
-;; TODO: make dumb-jump-test-rules run on boot?
-;; TODO: prefix private functions with dj/ or simliar
-
 (defgroup dumb-jump nil
   "Easily jump to project function and variable definitions"
   :group 'tools
@@ -264,7 +248,7 @@ Optionally pass t to see a list of all failed rules"
 denoter file/dir is found or uses dumb-jump-default-profile"
   (f-expand
     (or
-      (locate-dominating-file filepath#'dumb-jump-get-config)
+      (locate-dominating-file filepath #'dumb-jump-get-config)
       dumb-jump-default-project)))
 
 (defun dumb-jump-get-config (dir)
