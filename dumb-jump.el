@@ -7,7 +7,9 @@
 ;; Keywords: programming
 ;;; Commentary:
 
-;; Dumb Jump is an Emacs "jump to definition" package with support for multiple programming languages that favors "just working" over speed or accuracy.  This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes.
+;; Dumb Jump is an Emacs "jump to definition" package with support for multiple programming languages that favors
+;; "just working" over speed or accuracy.  This means minimal -- and ideally zero -- configuration with absolutely
+;; no stored indexes (TAGS) or persistent background processes.
 
 ;;; Code:
 (require 'org)
@@ -69,7 +71,7 @@
   :group 'dumb-jump)
 
 (defcustom dumb-jump-ignore-context
-  t
+  nil
   "Should we ignore context when jumping?"
   :group 'dumb-jump)
 
@@ -257,27 +259,19 @@ Optionally pass t to see a list of all failed rules"
       (dumb-jump-result-follow (nth (1- choice) results))
       (dumb-jump-message "Sorry, that's an invalid choice."))))
 
-;; this should almost always take (buffer-file-name)
 (defun dumb-jump-get-project-root (filepath)
   "Keep looking at the parent dir of FILEPATH until a
-denoter file/dir is found then return that root directory
-and the file that was found. If not found, then use dumb-jump-default-profile"
-  (let ((test-path filepath)
-        (proj-file nil)
-        (proj-root nil))
-    (while (and (null proj-root)
-                (not (null test-path)))
-      (setq test-path (f-dirname test-path))
-      (unless (null test-path)
-        (-each dumb-jump-project-denoters
-          (lambda (denoter)
-            (when (f-exists? (f-join test-path denoter))
-              (when (null proj-root)
-                (setq proj-file denoter)
-                (setq proj-root test-path)))))))
-    (if (null proj-root)
-      `(:root ,(f-long dumb-jump-default-project) :file nil)
-      `(:root ,proj-root :file ,(f-join test-path proj-file)))))
+denoter file/dir is found or uses dumb-jump-default-profile"
+  (f-expand
+    (or
+      (locate-dominating-file filepath#'dumb-jump-get-config)
+      dumb-jump-default-project)))
+
+(defun dumb-jump-get-config (dir)
+  (car (-filter
+        (lambda (f)
+          (f-exists? (f-join dir f)))
+        dumb-jump-project-denoters)))
 
 (defun dumb-jump-get-language-by-filename (filename)
   "Get the programming language from the FILENAME"
@@ -293,9 +287,8 @@ and the file that was found. If not found, then use dumb-jump-default-profile"
          (cur-line (thing-at-point 'line t))
          (cur-line-num (line-number-at-pos))
          (look-for (thing-at-point 'symbol t))
-         (proj-info (dumb-jump-get-project-root cur-file))
-         (proj-root (plist-get proj-info :root))
-         (proj-config (plist-get proj-info :file))
+         (proj-root (dumb-jump-get-project-root cur-file))
+         (proj-config (dumb-jump-get-config proj-root))
          (lang (dumb-jump-get-language-by-filename cur-file))
 ;         (pt-ctx (dumb-jump-get-point-context cur-line look-for))
          (pt-ctx (if (not (string= cur-line look-for))
@@ -305,8 +298,8 @@ and the file that was found. If not found, then use dumb-jump-default-profile"
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
          (regexes (dumb-jump-get-contextual-regexes lang ctx-type))
          (include-args (dumb-jump-get-ext-includes lang))
-         (exclude-args (if (s-ends-with? "/.dumbjump" proj-config)
-                           (dumb-jump-read-exclusions proj-config)
+         (exclude-args (if (s-ends-with? ".dumbjump" proj-config)
+                           (dumb-jump-read-exclusions proj-root proj-config)
                            ""))
          (raw-results (dumb-jump-run-command look-for proj-root regexes include-args exclude-args cur-file cur-line-num))
          (results (-map (lambda (r) (plist-put r :target look-for)) raw-results)))
@@ -380,9 +373,8 @@ and the file that was found. If not found, then use dumb-jump-default-profile"
         (dumb-jump-result-follow var-to-jump)
       (dumb-jump-prompt-user-for-choice look-for proj-root match-cur-file-front))))
 
-(defun dumb-jump-read-exclusions (config-file)
-  (let* ((root (f-dirname config-file))
-         (contents (f-read-text config-file))
+(defun dumb-jump-read-exclusions (root config-file)
+  (let* ((contents (f-read-text (f-join root config-file)))
          (lines (s-split "\n" contents))
          (exclude-lines (-filter (lambda (f) (s-starts-with? "-" f)) lines))
          (exclude-paths (-map (lambda (f)

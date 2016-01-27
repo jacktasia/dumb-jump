@@ -27,13 +27,12 @@
 
 (ert-deftest dumb-jump-exclude-path-test ()
   (let* ((expected (concat " --exclude-dir " (f-join test-data-dir-proj1 "ignored") " "))
-         (config-file (f-join test-data-dir-proj1 ".dumbjump"))
-         (excludes (dumb-jump-read-exclusions config-file)))
+         (root (dumb-jump-get-project-root test-data-dir-proj1))
+         (excludes (dumb-jump-read-exclusions test-data-dir-proj1  ".dumbjump")))
     (should (string= excludes expected))))
 
 (ert-deftest dumb-jump-exclude-path-blank-test ()
-  (let* ((config-file (f-join test-data-dir-proj1 ".dumbjump-blank"))
-         (excludes (dumb-jump-read-exclusions config-file)))
+  (let* ((excludes (dumb-jump-read-exclusions test-data-dir-proj1 ".dumbjump-blank")))
     (should (string= excludes ""))))
 
 (ert-deftest dumb-jump-language-to-ext-test ()
@@ -97,10 +96,10 @@
 
 (ert-deftest dumb-jump-find-proj-root-test ()
   (let* ((js-file (f-join test-data-dir-proj1 "src" "js"))
-         (proj-info (dumb-jump-get-project-root js-file))
-         (found-project (plist-get proj-info :root)))
+         (found-project (dumb-jump-get-project-root js-file)))
     (should (f-exists? found-project))
-    (should (string= found-project test-data-dir-proj1))))
+    (should (string= found-project test-data-dir-proj1))
+    (should (string= ".dumbjump" (dumb-jump-get-config found-project)))))
 
 (ert-deftest dumb-jump-goto-file-line-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
