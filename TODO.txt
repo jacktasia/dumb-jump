@@ -1,4 +1,3 @@
-;; TODO: proper keybinding support
 ;; TODO: default excludes (.git..?) by language
 ;; TODO: support es6 javascript
 ;; TODO: rules should have (optional?) tests that fail :fails
@@ -6,9 +5,7 @@
 ;; TODO: support includes in `.dumbjump` -- offer to auto download for common languages/libraries
 ;; TODO: if it's not nil point context and there's no results then ask user if we should try all...
 ;; TODO: add more tests for rules for declarations in method signatures!
-;; TODO: complete README add gif etc.
-;; TODO: melpa recipe
 ;; TODO: track (point) and use to go
 ;; TODO: answer here: http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project
-;; TODO: make dumb-jump-test-rules run on boot?
+;; TODO: make dumb-jump-test-rules run on boot? or interactive
 ;; TODO: prefix private functions with dj/ or simliar
