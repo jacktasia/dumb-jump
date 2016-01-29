@@ -152,9 +152,8 @@ and type to use for generating the grep command"
     (:language "javascript" :type "variable" :right "." :left nil)
     (:language "javascript" :type "variable" :right ";" :left nil)
 
-    (:language "elisp" :type "function" :right " " :left " ")
-    (:language "elisp" :type "function" :right " " :left "(")
-    (:language "elisp" :type "variable" :right ")" :left " "))
+    (:language "elisp" :type "function" :right nil :left "(")
+    (:language "elisp" :type "variable" :right ")" :left nil))
 
   "List of under points contexts for each language. This helps limit
 the number of regular expressions we use if we know that if there's a '('
@@ -377,7 +376,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (thef (plist-get result :path))
         (line (plist-get result :line)))
     (when thef
-      (add-to-list 'dumb-jump-last-location `(:line ,(line-number-at-pos) :path ,(buffer-file-name) :pos ,pos :point ,(point)))
+      (add-to-list 'dumb-jump-last-location
+                   `(:line ,(line-number-at-pos) :path ,(buffer-file-name) :pos ,pos :point ,(point)))
       (dumb-jump-goto-file-line thef line pos))))
 
 (defun dumb-jump-goto-file-line (thefile theline pos)
@@ -435,10 +435,12 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (usable-ctxs
           (if (> (length contexts) 0)
               (-filter (lambda (ctx)
-                         (or (string= (plist-get ctx :left)
-                                      (plist-get pt-ctx :left))
-                             (string= (plist-get ctx :right)
-                                      (plist-get pt-ctx :right))))
+                         (and (or (null (plist-get ctx :left))
+                                  (string= (plist-get ctx :left)
+                                           (plist-get pt-ctx :left)))
+                              (or (null (plist-get ctx :right))
+                                  (string= (plist-get ctx :right)
+                                      (plist-get pt-ctx :right)))))
                        contexts)
             nil))
          (use-ctx (= (length (-filter
