@@ -292,16 +292,15 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (interactive)
   (if dumb-jump-last-location
     (let* ((last-loc (car dumb-jump-last-location))
-          (path (plist-get last-loc :path)))
+           (path (plist-get last-loc :path))
+           (point (plist-get last-loc :point)))
       (dumb-jump-message "Jumping back to%s line %s"
                (if (not (string= path (buffer-file-name)))
                    (concat " " (f-filename path))
                  "")
                (number-to-string (plist-get last-loc :line)))
       (setq dumb-jump-last-location (cdr dumb-jump-last-location))
-      (dumb-jump-goto-file-point
-       (plist-get last-loc :path)
-       (plist-get last-loc :point)))
+      (dumb-jump-goto-file-point path point))
     (dumb-jump-message "Nowhere to jump back to.")))
 
 (defun dumb-jump-go () ; TODO: rename to dumb-jump-to-definition,
