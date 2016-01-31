@@ -266,6 +266,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       (format ".%s file" (f-ext filename)))))
 
 (defun dumb-jump-fetch-results ()
+  "Build up a list of results by examining the current context and calling grep"
   (let* ((cur-file (buffer-file-name))
          (cur-line (thing-at-point 'line t))
          (cur-line-num (line-number-at-pos))
@@ -335,6 +336,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       (dumb-jump-message "Un-handled results: %s " (prin1-to-string results))))))
 
 (defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for)
+  "Figure which of the RESULTS to jump to. Favoring the CUR-FILE"
   (let* ((match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
         ; moves current file results to the front of the list
         (match-cur-file-front (-concat
@@ -356,6 +358,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       (dumb-jump-prompt-user-for-choice look-for proj-root match-cur-file-front))))
 
 (defun dumb-jump-read-exclusions (root config-file)
+  "Build up the exclude-dir argument of the grep command by reading the config file"
   (let* ((contents (f-read-text (f-join root config-file)))
          (lines (s-split "\n" contents))
          (exclude-lines (-filter (lambda (f) (s-starts-with? "-" f)) lines))
@@ -371,6 +374,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       "")))
 
 (defun dumb-jump-result-follow (result)
+  "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump."
   (let ((pos (s-index-of (plist-get result :target) (plist-get result :context)))
         (thef (plist-get result :path))
         (line (plist-get result :line)))
@@ -381,7 +385,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-goto-file-line (thefile theline pos)
   "Open THEFILE and go line THELINE"
-  ;(dumb-jump-message "Going to file '%s' line %s" thefile theline)
+  ;(dumb-jump-message "Jumping to file '%s' line %s" thefile theline)
   (unless (string= thefile (buffer-file-name))
     (find-file thefile))
   (goto-char (point-min))
