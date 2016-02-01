@@ -125,12 +125,17 @@
     ;(message "%s" (prin1-to-string rule-failures))
     (should (= (length rule-failures) 1))))
 
+(ert-deftest dumb-jump-match-test ()
+  (should (not (dumb-jump-re-match nil "asdf")))
+  (should (dumb-jump-re-match "^asdf$" "asdf"))
+  (should (string= (car (dumb-jump-re-match "^[0-9]+$" "123")) "123")))
+
 (ert-deftest dumb-jump-context-point-test ()
-  (let* ((sentence "mainWindow.loadUrl('file://' + __dirname + '/dt/inspector.html?electron=true');")
+  (let* ((sentence "mainWindow.loadUrl('file://')")
          (func "loadUrl")
          (ctx (dumb-jump-get-point-context sentence func 15)))
-         (should (string= (plist-get ctx :left) "."))
-         (should (string= (plist-get ctx :right) "("))))
+         (should (string= (plist-get ctx :left) "mainWindow."))
+         (should (string= (plist-get ctx :right) "('file://')"))))
 
 (ert-deftest dumb-jump-context-point-type-test ()
   (let* ((sentence "mainWindow.loadUrl('file://' + __dirname + '/dt/inspector.html?electron=true');")

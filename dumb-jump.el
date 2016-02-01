@@ -146,14 +146,14 @@ and type to use for generating the grep command"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-language-contexts
-  '((:language "javascript" :type "function" :right "(" :left nil)
-    (:language "javascript" :type "variable" :right nil :left "(")
-    (:language "javascript" :type "variable" :right ")" :left "(")
-    (:language "javascript" :type "variable" :right "." :left nil)
-    (:language "javascript" :type "variable" :right ";" :left nil)
+  '((:language "javascript" :type "function" :right "^(" :left nil)
+    (:language "javascript" :type "variable" :right nil :left "($")
+    (:language "javascript" :type "variable" :right "^)" :left "($")
+    (:language "javascript" :type "variable" :right "^\\." :left nil)
+    (:language "javascript" :type "variable" :right "^;" :left nil)
 
-    (:language "elisp" :type "function" :right nil :left "(")
-    (:language "elisp" :type "variable" :right ")" :left nil))
+    (:language "elisp" :type "function" :right nil :left "($")
+    (:language "elisp" :type "variable" :right "^)" :left nil))
 
   "List of under points contexts for each language. This helps limit
 the number of regular expressions we use if we know that if there's a '('
@@ -209,12 +209,11 @@ Optionally pass t to see a list of all failed rules"
          (func-len (length func))
          (sen-len (length line))
          (right-loc-start (+ loc func-len))
-         (right-loc-end (+ right-loc-start 1))
-         (left (substring line (max (- loc 1) 0) loc))
+         (right-loc-end (length line))
+         (left (substring line 0 loc))
          (right (if (> right-loc-end sen-len)
                     ""
                   (substring line right-loc-start right-loc-end))))
-
        (org-combine-plists (plist-put nil :left left)
                            (plist-put nil :right right))))
 
@@ -430,6 +429,11 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                        (= (plist-get x :line) cur-line-num))))
      results)))
 
+(defun dumb-jump-re-match (re s)
+  "Does regular expression RE match string S. If RE is nil return nil"
+  (when (and re s)
+    (s-match re s)))
+
 (defun dumb-jump-get-ctx-type-by-language (lang pt-ctx)
   "Detect the type of context by the language"
   (let* ((contexts (-filter
@@ -439,10 +443,10 @@ denoter file/dir is found or uses dumb-jump-default-profile"
           (if (> (length contexts) 0)
               (-filter (lambda (ctx)
                          (and (or (null (plist-get ctx :left))
-                                  (string= (plist-get ctx :left)
+                                  (dumb-jump-re-match (plist-get ctx :left)
                                            (plist-get pt-ctx :left)))
                               (or (null (plist-get ctx :right))
-                                  (string= (plist-get ctx :right)
+                                  (dumb-jump-re-match (plist-get ctx :right)
                                       (plist-get pt-ctx :right)))))
                        contexts)
             nil))
