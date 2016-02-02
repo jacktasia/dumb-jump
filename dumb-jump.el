@@ -174,6 +174,7 @@ immediately to the right of a symbol then it's probably a function call"
   (apply 'message str (-map 'prin1-to-string args)))
 
 (defun dumb-jump-find-start-pos (line-in look-for cur-pos)
+  "Find start column position of LOOK-FOR in LINE-IN using CUR-POS as a hint"
   (let ((is-found nil)
         (line (s-replace "\t" (s-repeat tab-width " ") line-in)))
     (while (and (> cur-pos 0) (not is-found))
@@ -201,10 +202,12 @@ Optionally pass t to see a list of all failed rules"
     failures))
 
 (defun dumb-jump-message (str &rest args)
+  "Log message to the *Messages* buffer if not using dumb-jump-quiet"
   (when (not dumb-jump-quiet)
     (apply 'message str args)))
 
 (defun dumb-jump-get-point-context (line func cur-pos)
+  "Get the context to the left and right of FUNC in LINE using CUR-POS as hint"
   (let* ((loc (dumb-jump-find-start-pos line func cur-pos))
          (func-len (length func))
          (sen-len (length line))
