@@ -292,6 +292,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
 (defun dumb-jump-back ()
+  "Jump back to where the last jump was done"
   (interactive)
   (if dumb-jump-last-location
     (let* ((last-loc (car dumb-jump-last-location))
@@ -464,6 +465,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       (plist-get (car usable-ctxs) :type))))
 
 (defun dumb-jump-get-ext-includes (language)
+  "Generate the --include grep argument of file extensions by LANGUAGE"
   (let ((exts (dumb-jump-get-file-exts-by-language language)))
     (dumb-jump-arg-joiner
      "--include"
@@ -473,6 +475,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       exts))))
 
 (defun dumb-jump-arg-joiner (prefix values)
+  "Helper to generate command arg with its PREFIX for each value in VALUES"
   (let ((args (s-join (format " %s " prefix) values)))
     (if args
       (format " %s %s " prefix args)
