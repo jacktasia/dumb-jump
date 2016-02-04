@@ -482,6 +482,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       "")))
 
 (defun dumb-jump-get-contextual-regexes (lang ctx-type)
+  "Get list of search regular expressions by LANG and CTX-TYPE (variable, function, etc)"
   (let* ((raw-rules
           (dumb-jump-get-rules-by-language lang))
          (ctx-type (if dumb-jump-ignore-context
