@@ -30,7 +30,17 @@
     map))
 
 (defcustom dumb-jump-grep-prefix
-  "LANG=C grep"
+  "LANG=C"
+  "Prefix to grep command. Seemingly makes it faster for pure text."
+  :group 'dumb-jump)
+
+(defcustom dumb-jump-grep-cmd
+  "grep"
+  "Prefix to grep command. Seemingly makes it faster for pure text."
+  :group 'dumb-jump)
+
+(defcustom dumb-jump-zgrep-cmd
+  "zgrep"
   "Prefix to grep command. Seemingly makes it faster for pure text."
   :group 'dumb-jump)
 
@@ -161,7 +171,7 @@ immediately to the right of a symbol then it's probably a function call"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-project-denoters
-  '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile")
+  '(".dumbjump" ".projectile" "^.git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile" "PkgInfo" "-pkg.el")
   "Files and directories that signify a directory is a project root"
   :group 'dumb-jump)
 
@@ -258,14 +268,17 @@ denoter file/dir is found or uses dumb-jump-default-profile"
           (f-exists? (f-join dir f)))
         dumb-jump-project-denoters)))
 
-(defun dumb-jump-get-language-by-filename (filename)
+(defun dumb-jump-get-language-by-filename (file)
   "Get the programming language from the FILENAME"
-  (let ((result (-filter
+  (let* ((filename (if (s-ends-with? ".gz" file)
+                       (f-no-ext file)
+                     file))
+         (result (-filter
                  (lambda (f) (s-ends-with? (concat "." (plist-get f :ext)) filename))
                  dumb-jump-language-file-exts)))
     (if result
         (plist-get (car result) :language)
-      (format ".%s file" (f-ext filename)))))
+      (format ".%s file" (f-ext file)))))
 
 (defun dumb-jump-fetch-results ()
   "Build up a list of results by examining the current context and calling grep"
@@ -408,7 +421,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-run-command (look-for proj regexes include-args exclude-args cur-file line-num)
   "Run the grep command based on the needle LOOKFOR in the directory TOSEARCH"
-  (let* ((cmd (dumb-jump-generate-command look-for proj regexes include-args exclude-args))
+  (let* ((cmd (dumb-jump-generate-command look-for cur-file proj regexes include-args exclude-args))
          (rawresults (shell-command-to-string cmd)))
     ;(message-prin1 "RUNNING CMD '%s' RESULTS: %s" cmd rawresults)
     (unless (s-blank? cmd)
@@ -506,13 +519,16 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     ;(message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
     regexes))
 
-(defun dumb-jump-generate-command (look-for proj regexes include-args exclude-args)
+(defun dumb-jump-generate-command (look-for cur-file proj regexes include-args exclude-args)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
   (let* ((filled-regexes (-map (lambda (x) (s-replace "JJJ" look-for x)) regexes))
+         (cmd (concat dumb-jump-grep-prefix " " (if (s-ends-with? ".gz" cur-file)
+                                                    dumb-jump-zgrep-cmd
+                                                  dumb-jump-grep-cmd)))
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
     (if (= (length regexes) 0)
         ""
-        (concat dumb-jump-grep-prefix " " dumb-jump-grep-args exclude-args include-args regex-args proj))))
+        (concat cmd " "  dumb-jump-grep-args exclude-args include-args regex-args proj))))
 
 (defun dumb-jump-get-file-exts-by-language (language)
   "Get list of file extensions for a language"
