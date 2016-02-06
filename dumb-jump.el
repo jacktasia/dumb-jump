@@ -12,7 +12,6 @@
 ;; no stored indexes (TAGS) or persistent background processes.
 
 ;;; Code:
-(require 'org)
 (require 'f)
 (require 's)
 (require 'dash)
@@ -227,8 +226,7 @@ Optionally pass t to see a list of all failed rules"
          (right (if (> right-loc-end sen-len)
                     ""
                   (substring line right-loc-start right-loc-end))))
-       (org-combine-plists (plist-put nil :left left)
-                           (plist-put nil :right right))))
+    `(:left ,left :right ,right)))
 
 (defun dumb-jump-generate-prompt-text (look-for proj results)
   (let* ((title (format "Multiple results for '%s':\n\n" look-for))
