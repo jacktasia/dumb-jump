@@ -297,12 +297,12 @@
           (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
             (dumb-jump-result-follow result))))
 
-(ert-deftest dumb-jump-message-prin1-test ()
+(ert-deftest dumb-jump-dumb-jump-message-prin1-test ()
   (noflet ((message (input arg arg2)
                     (should (string= input "%s %s"))
                     (should (string= arg "(:path \"test\" :line 24)"))
                     (should (string= arg2 "3"))))
-          (message-prin1 "%s %s" '(:path "test" :line 24) 3)))
+          (dumb-jump-message-prin1 "%s %s" '(:path "test" :line 24) 3)))
 
 (ert-deftest dumb-jump-message-test ()
   (noflet ((message (input arg arg2)

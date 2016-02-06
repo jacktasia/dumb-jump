@@ -179,7 +179,7 @@ immediately to the right of a symbol then it's probably a function call"
   "The default project to search for searching if a denoter is not found in parent of file"
   :group 'dumb-jump)
 
-(defun message-prin1 (str &rest args)
+(defun dumb-jump-message-prin1 (str &rest args)
   "Helper function when debuging applies prin1-to-string to all ARGS"
   (apply 'message str (-map 'prin1-to-string args)))
 
@@ -332,7 +332,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (proj-root (plist-get info :root))
          (lang (plist-get info :lang))
          (result-count (length results)))
-    ; (message-prin1 "lang:%s type:%s results: %s" lang ctx-type results)
+    ; (dumb-jump-message-prin1 "lang:%s type:%s results: %s" lang ctx-type results)
     (cond
 ;     ((and (not (listp results)) (s-blank? results))
      ((> fetch-time dumb-jump-max-find-time)
@@ -368,7 +368,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (var-to-jump (car matches))
         ;; TODO: handle if ctx-type is null but ALL results are variable
         (do-var-jump (and (or (= (length matches) 1) (string= ctx-type "variable") (string= ctx-type "")) var-to-jump)))
-    ;(message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s | results: %s" ctx-type var-to-jump matches match-sorted results)
+    ;(dumb-jump-message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s | results: %s" ctx-type var-to-jump matches match-sorted results)
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump)
       (dumb-jump-prompt-user-for-choice look-for proj-root match-cur-file-front))))
@@ -423,7 +423,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   "Run the grep command based on the needle LOOKFOR in the directory TOSEARCH"
   (let* ((cmd (dumb-jump-generate-command look-for cur-file proj regexes include-args exclude-args))
          (rawresults (shell-command-to-string cmd)))
-    ;(message-prin1 "RUNNING CMD '%s' RESULTS: %s" cmd rawresults)
+    ;(dumb-jump-message-prin1 "RUNNING CMD '%s' RESULTS: %s" cmd rawresults)
     (unless (s-blank? cmd)
       (dumb-jump-parse-grep-response rawresults cur-file line-num))))
 
@@ -473,7 +473,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                               usable-ctxs))
                      (length usable-ctxs))))
 
-    ;(message-prin1 "pt-ctx: %s | usable-ctxs: %s" pt-ctx usable-ctxs)
+    ;(dumb-jump-message-prin1 "pt-ctx: %s | usable-ctxs: %s" pt-ctx usable-ctxs)
     (when (and usable-ctxs use-ctx)
       (plist-get (car usable-ctxs) :type))))
 
@@ -516,7 +516,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
            (lambda (r)
              (format "'%s'" (plist-get r ':regex)))
            rules)))
-    ;(message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
+    ;(dumb-jump-message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
     regexes))
 
 (defun dumb-jump-generate-command (look-for cur-file proj regexes include-args exclude-args)
