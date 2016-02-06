@@ -23,7 +23,7 @@ Here is a list of potential alternatives packages for emacs:
 * [GNU Global](http://www.gnu.org/software/global/) supports multiple languages
 * [Tern](http://ternjs.net/) for JavaScript
 * [elpy](https://github.com/jorgenschaefer/elpy) for Python
-* [rob](https://github.com/dgutov/robe) for Ruby
+* [robe](https://github.com/dgutov/robe) for Ruby
 
 Most of these were sourced from this [emacs StackExchange answer](http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project)
 
