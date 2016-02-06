@@ -1,6 +1,6 @@
 # dumb-jump
 
-[![Join the chat at https://gitter.im/jacktasia/dumb-jump](https://badges.gitter.im/jacktasia/dumb-jump.svg)](https://gitter.im/jacktasia/dumb-jump?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/jacktasia/dumb-jump.svg)](https://travis-ci.org/jacktasia/dumb-jump) [![Coverage Status](https://coveralls.io/repos/jacktasia/dumb-jump/badge.svg?branch=master&service=github)](https://coveralls.io/github/jacktasia/dumb-jump?branch=master)
+[![Join the chat at https://gitter.im/jacktasia/dumb-jump](https://badges.gitter.im/jacktasia/dumb-jump.svg)](https://gitter.im/jacktasia/dumb-jump?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/jacktasia/dumb-jump.svg)](https://travis-ci.org/jacktasia/dumb-jump) [![Coverage Status](https://coveralls.io/repos/jacktasia/dumb-jump/badge.svg?branch=master&service=github)](https://coveralls.io/github/jacktasia/dumb-jump?branch=master) [![MELPA](http://melpa.org/packages/dumb-jump-badge.svg)](http://melpa.org/#/dumb-jump)
 
 ## About
 **Dumb Jump** is an Emacs "jump to definition" package with support for multiple programming languages that favors "just working" over speed or accuracy. This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes.
@@ -29,13 +29,13 @@ Most of these were sourced from this [emacs StackExchange answer](http://emacs.s
 
 ## Installing
 
-The recommended way to install Dumb Jump *will be* via package.el
+The recommended way to install Dumb Jump is via package.el
 
 ## Usage
 
 ### Basic
 
-`(dumb-jump-mode)` will enable the keybindings for two interactive Dumb Jump functions:
+Adding `(dumb-jump-mode)` to your `.emacs` will enable the keybindings for two interactive Dumb Jump functions:
 
 * `dumb-jump-go` <kbd>C-M g</kbd> core functionality. Attempts to jump to the definition for the thing under point
 * `dumb-jump-back` <kbd>C-M p</kbd> jumps back to where you were when you jumped. These are chained so if you go down a rabbit hole you can get back out or where you want to be.
