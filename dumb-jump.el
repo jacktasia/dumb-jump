@@ -146,6 +146,7 @@ and type to use for generating the grep command"
 
 (defcustom dumb-jump-language-file-exts
   '((:language "elisp" :ext "el")
+    (:language "elisp" :ext "el.gz")
     (:language "javascript" :ext "js")
     (:language "javascript" :ext "jsx")
     (:language "javascript" :ext "html")
