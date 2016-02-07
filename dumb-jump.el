@@ -35,7 +35,17 @@
 
 (defcustom dumb-jump-grep-cmd
   "grep"
-  "Prefix to grep command. Seemingly makes it faster for pure text."
+  "The path to grep. By default assumes it is in path."
+  :group 'dumb-jump)
+
+(defcustom dumb-jump-ag-prefix
+  ""
+  "A prefix for when using ag"
+  :group 'dumb-jump)
+
+(defcustom dumb-jump-ag-cmd
+  "ag"
+  "The the path to the silver searcher. By default assumes it is in path. If not found  WILL fallback to grep"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-zgrep-cmd
@@ -295,11 +305,11 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
          (regexes (dumb-jump-get-contextual-regexes lang ctx-type))
-         (include-args (dumb-jump-get-ext-includes lang))
+         ;(include-args (dumb-jump-get-ext-includes lang))
          (exclude-args (if (s-ends-with? ".dumbjump" proj-config)
                            (dumb-jump-read-exclusions proj-root proj-config)
-                           ""))
-         (raw-results (dumb-jump-run-command look-for proj-root regexes include-args exclude-args cur-file cur-line-num))
+                           nil))
+         (raw-results (dumb-jump-run-command look-for proj-root regexes lang exclude-args cur-file cur-line-num))
          (results (-map (lambda (r) (plist-put r :target look-for)) raw-results)))
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
@@ -384,9 +394,12 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                                                     dir)))
                                    (f-join root use-dir)))
                                exclude-lines)))
+    ;; (if exclude-lines
+    ;;   (dumb-jump-arg-joiner "--exclude-dir" exclude-paths)
+    ;;   "")))
     (if exclude-lines
-      (dumb-jump-arg-joiner "--exclude-dir" exclude-paths)
-      "")))
+        exclude-paths
+      nil)))
 
 (defun dumb-jump-result-follow (result)
   "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump."
@@ -418,9 +431,9 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (let ((matched (-filter (lambda (r) (string= path (plist-get r :path))) results)))
     matched))
 
-(defun dumb-jump-run-command (look-for proj regexes include-args exclude-args cur-file line-num)
+(defun dumb-jump-run-command (look-for proj regexes lang exclude-args cur-file line-num)
   "Run the grep command based on the needle LOOKFOR in the directory TOSEARCH"
-  (let* ((cmd (dumb-jump-generate-command look-for cur-file proj regexes include-args exclude-args))
+  (let* ((cmd (dumb-jump-generate-command look-for cur-file proj regexes lang exclude-args))
          (rawresults (shell-command-to-string cmd)))
     ;(dumb-jump-message-prin1 "RUNNING CMD '%s' RESULTS: %s" cmd rawresults)
     (unless (s-blank? cmd)
@@ -489,7 +502,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-arg-joiner (prefix values)
   "Helper to generate command arg with its PREFIX for each value in VALUES"
   (let ((args (s-join (format " %s " prefix) values)))
-    (if args
+    (if (and args values)
       (format " %s %s " prefix args)
       "")))
 
@@ -518,16 +531,24 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     ;(dumb-jump-message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
     regexes))
 
-(defun dumb-jump-generate-command (look-for cur-file proj regexes include-args exclude-args)
+(defun dumb-jump-generate-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
   (let* ((filled-regexes (-map (lambda (x) (s-replace "JJJ" look-for x)) regexes))
          (cmd (concat dumb-jump-grep-prefix " " (if (s-ends-with? ".gz" cur-file)
                                                     dumb-jump-zgrep-cmd
                                                   dumb-jump-grep-cmd)))
+         (exclude-args (dumb-jump-arg-joiner "--exclude-dir" exclude-paths))
+         (include-args (dumb-jump-get-ext-includes lang))
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
     (if (= (length regexes) 0)
         ""
-        (concat cmd " "  dumb-jump-grep-args exclude-args include-args regex-args proj))))
+        (dumb-jump-concat-command cmd dumb-jump-grep-args exclude-args include-args regex-args proj))))
+
+(defun dumb-jump-concat-command (&rest parts)
+  (s-join " " (-map #'s-trim
+                    (-filter
+                     (lambda (part) (> (length part) 0))
+                     parts))))
 
 (defun dumb-jump-get-file-exts-by-language (language)
   "Get list of file extensions for a language"

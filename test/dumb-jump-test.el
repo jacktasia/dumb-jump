@@ -28,14 +28,14 @@
     (should (equal (dumb-jump-current-file-results "blah" results) expected))))
 
 (ert-deftest dumb-jump-exclude-path-test ()
-  (let* ((expected (concat " --exclude-dir " (f-join test-data-dir-proj1 "ignored") " "))
+  (let* ((expected (list (f-join test-data-dir-proj1 "ignored")))
          (root (dumb-jump-get-project-root test-data-dir-proj1))
          (excludes (dumb-jump-read-exclusions test-data-dir-proj1  ".dumbjump")))
-    (should (string= excludes expected))))
+    (should (equal excludes expected))))
 
 (ert-deftest dumb-jump-exclude-path-blank-test ()
   (let* ((excludes (dumb-jump-read-exclusions test-data-dir-proj1 ".dumbjump-blank")))
-    (should (string= excludes ""))))
+    (should (null excludes))))
 
 (ert-deftest dumb-jump-language-to-ext-test ()
   (should (-contains? (dumb-jump-get-file-exts-by-language "elisp") "el")))
@@ -47,16 +47,16 @@
 
 (ert-deftest dumb-jump-generate-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(defcustom\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
-    (should (string= expected  (dumb-jump-generate-command  "tester" "blah.el" "." regexes "" "")))))
+        (expected "LANG=C grep -REn --include \\*.el --include \\*.el.gz -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(defcustom\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
+    (should (string= expected  (dumb-jump-generate-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-command-no-ctx-funcs-only-test ()
   (let* ((dumb-jump-functions-only t)
         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' .")
         (zexpected "LANG=C zgrep -REn -e '\\(defun\\s+tester\\b\\s*' ."))
-    (should (string= expected  (dumb-jump-generate-command  "tester" "blah.el" "." regexes "" "")))
-    (should (string= zexpected  (dumb-jump-generate-command  "tester" "blah.el.gz" "." regexes "" "")))))
+    (should (string= expected  (dumb-jump-generate-command  "tester" "blah.el" "." regexes "" nil)))
+    (should (string= zexpected  (dumb-jump-generate-command  "tester" "blah.el.gz" "." regexes "" nil)))))
 
 (ert-deftest dumb-jump-generate-command-with-ctx-test ()
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
@@ -64,7 +64,7 @@
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
          (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' ."))
     ;; the point context being passed should match a "function" type so only the one command
-    (should (string= expected  (dumb-jump-generate-command "tester" "blah.el" "." regexes "" "")))))
+    (should (string= expected  (dumb-jump-generate-command "tester" "blah.el" "." regexes "" nil)))))
 
 (ert-deftest dumb-jump-generate-command-with-ctx-but-ignored-test ()
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
@@ -73,10 +73,10 @@
          (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(defcustom\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
 
     ;; the point context being passed is ignored so ALL should return
-    (should (string= expected  (dumb-jump-generate-command "tester" "blah.el" "." regexes "" "")))))
+    (should (string= expected  (dumb-jump-generate-command "tester" "blah.el" "." regexes "" nil)))))
 
 (ert-deftest dumb-jump-generate-bad-command-test ()
-    (should (s-blank? (dumb-jump-generate-command "tester" "blah.el" "." nil "" " --exclude-dir skaldjf"))))
+    (should (s-blank? (dumb-jump-generate-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump2.el:28:(defvar dumb-jump-grep)")
@@ -310,6 +310,10 @@
                     (should (string= arg "two"))
                     (should (string= arg2 "three"))))
           (dumb-jump-message "%s %s" "two" "three")))
+
+(ert-deftest dumb-jump-concat-command-test ()
+  (should (string= (dumb-jump-concat-command " test1 " "test2 " "   test3")
+                   "test1 test2 test3")))
 
 (ert-deftest dumb-jump-find-start-pos-test ()
   (let ((cur-pos 9)
