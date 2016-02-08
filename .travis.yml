@@ -1,10 +1,6 @@
 language: generic
-sudo: true
-matrix:
-  include:
-    - os: linux
-      dist: trusty
-      sudo: required
+sudo: required
+dist: trusty
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y silversearcher-ag
