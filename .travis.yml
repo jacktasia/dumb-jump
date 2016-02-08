@@ -1,6 +1,6 @@
 language: generic
 before_install:
-  - sudo add-apt-repository ppa:gekkio/ag
+  - sudo add-apt-repository ppa:gekkio/ag -y
   - sudo apt-get -qq update
   - sudo apt-get install -y silversearcher-ag
   - curl -fsSkL https://gist.github.com/rejeep/ebcd57c3af83b049833b/raw > x.sh && source ./x.sh
