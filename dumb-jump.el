@@ -48,6 +48,11 @@
   "The the path to the silver searcher. By default assumes it is in path. If not found  WILL fallback to grep"
   :group 'dumb-jump)
 
+(defcustom dumb-jump-force-grep
+  nil
+  "When t will use grep even if ag is available"
+  :group 'dumb-jump)
+
 (defcustom dumb-jump-zgrep-cmd
   "zgrep"
   "Prefix to grep command. Seemingly makes it faster for pure text."
@@ -192,6 +197,9 @@ immediately to the right of a symbol then it's probably a function call"
 (defun dumb-jump-message-prin1 (str &rest args)
   "Helper function when debuging applies prin1-to-string to all ARGS"
   (apply 'message str (-map 'prin1-to-string args)))
+
+(defun dumb-jump-ag-installed? ()
+  (s-contains? "ag version" (shell-command-to-string (concat dumb-jump-ag-cmd " --version"))))
 
 (defun dumb-jump-find-start-pos (line-in look-for cur-pos)
   "Find start column position of LOOK-FOR in LINE-IN using CUR-POS as a hint"
@@ -345,7 +353,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     (cond
 ;     ((and (not (listp results)) (s-blank? results))
      ((> fetch-time dumb-jump-max-find-time)
-      (dumb-jump-message "Took over %ss to find '%s'. Please add a .dumbjump file to '%s' with path exclusions"
+      (dumb-jump-message "Took over %ss to find '%s'. Please install ag or add a .dumbjump file to '%s' with path exclusions"
                (number-to-string dumb-jump-max-find-time) look-for proj-root))
      ((s-ends-with? " file" lang)
       (dumb-jump-message "Could not find rules for '%s'." lang))
@@ -433,11 +441,17 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-run-command (look-for proj regexes lang exclude-args cur-file line-num)
   "Run the grep command based on the needle LOOKFOR in the directory TOSEARCH"
-  (let* ((cmd (dumb-jump-generate-command look-for cur-file proj regexes lang exclude-args))
+  (let* ((has-ag (dumb-jump-ag-installed?))
+         (use-grep (or (not has-ag) dumb-jump-force-grep))
+         (cmd (if use-grep
+                  (dumb-jump-generate-grep-command look-for cur-file proj regexes lang exclude-args)
+                  (dumb-jump-generate-ag-command look-for cur-file proj regexes lang exclude-args)))
          (rawresults (shell-command-to-string cmd)))
     ;(dumb-jump-message-prin1 "RUNNING CMD '%s' RESULTS: %s" cmd rawresults)
     (unless (s-blank? cmd)
-      (dumb-jump-parse-grep-response rawresults cur-file line-num))))
+      (if use-grep
+          (dumb-jump-parse-grep-response rawresults cur-file line-num)
+        (dumb-jump-parse-ag-response rawresults cur-file line-num)))))
 
 (defun dumb-jump-parse-grep-response (resp cur-file cur-line-num)
   "Takes a grep response RESP and parses into a list of plists"
@@ -451,6 +465,22 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                     (let* ((line-num (string-to-number (nth 1 x)))
                            (diff (- cur-line-num line-num)))
                       (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 2 x) :diff ,diff))))
+                  parsed)))
+    (-filter
+     (lambda (x) (not (and
+                       (string= (plist-get x :path) cur-file)
+                       (= (plist-get x :line) cur-line-num))))
+     results)))
+
+(defun dumb-jump-parse-ag-response (resp cur-file cur-line-num)
+  "Takes a ag response RESP and parses into a list of plists"
+  (let* ((resp-lines (s-split "\n" resp))
+         (parsed (butlast (-map (lambda (line) (s-split ":" line)) resp-lines)))
+         (results (-mapcat
+                  (lambda (x)
+                    (let* ((line-num (string-to-number (nth 1 x)))
+                           (diff (- cur-line-num line-num)))
+                      (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 3 x) :diff ,diff))))
                   parsed)))
     (-filter
      (lambda (x) (not (and
@@ -526,14 +556,27 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (regexes
           (-map
            (lambda (r)
-             (format "'%s'" (plist-get r ':regex)))
+             (plist-get r ':regex))
            rules)))
     ;(dumb-jump-message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
     regexes))
 
-(defun dumb-jump-generate-command (look-for cur-file proj regexes lang exclude-paths)
+(defun dumb-jump-generate-ag-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
   (let* ((filled-regexes (-map (lambda (x) (s-replace "JJJ" look-for x)) regexes))
+         (cmd (concat dumb-jump-ag-cmd " --vimgrep" (if (s-ends-with? ".gz" cur-file)
+                                                            " --search-zip"
+                                                          "")))
+         (exclude-args (dumb-jump-arg-joiner "--ignore-dir" (-map (lambda (p) (s-replace proj "" p)) exclude-paths)))
+         (regex-args (format "'%s'" (s-join "|" filled-regexes))))
+    (if (= (length regexes) 0)
+        ""
+        (dumb-jump-concat-command cmd exclude-args regex-args proj))))
+
+(defun dumb-jump-generate-grep-command (look-for cur-file proj regexes lang exclude-paths)
+  "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
+  (let* ((filled-regexes (-map (lambda (x) (s-replace "JJJ" look-for x))
+                               (-map (lambda (r) (format "'%s'" r)) regexes)))
          (cmd (concat dumb-jump-grep-prefix " " (if (s-ends-with? ".gz" cur-file)
                                                     dumb-jump-zgrep-cmd
                                                   dumb-jump-grep-cmd)))

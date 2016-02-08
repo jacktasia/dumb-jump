@@ -45,38 +45,47 @@
         (expected " --include \\*.js --include \\*.jsx --include \\*.html "))
     (should (string= expected args))))
 
-(ert-deftest dumb-jump-generate-command-no-ctx-test ()
+(ert-deftest dumb-jump-generate-grep-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
         (expected "LANG=C grep -REn --include \\*.el --include \\*.el.gz -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(defcustom\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
-    (should (string= expected  (dumb-jump-generate-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+    (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
-(ert-deftest dumb-jump-generate-command-no-ctx-funcs-only-test ()
+(ert-deftest dumb-jump-generate-ag-command-no-ctx-test ()
+  (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+        (expected "ag --vimgrep '\\(defun\\s+tester\\b\\s*|\\(defvar\\b\\s*tester\\b\\s?|\\(defcustom\\b\\s*tester\\b\\s?|\\(setq\\b\\s*tester\\b\\s*|\\(tester\\s+|\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
+    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+
+
+(ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
   (let* ((dumb-jump-functions-only t)
         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' .")
         (zexpected "LANG=C zgrep -REn -e '\\(defun\\s+tester\\b\\s*' ."))
-    (should (string= expected  (dumb-jump-generate-command  "tester" "blah.el" "." regexes "" nil)))
-    (should (string= zexpected  (dumb-jump-generate-command  "tester" "blah.el.gz" "." regexes "" nil)))))
+    (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "" nil)))
+    (should (string= zexpected  (dumb-jump-generate-grep-command  "tester" "blah.el.gz" "." regexes "" nil)))))
 
-(ert-deftest dumb-jump-generate-command-with-ctx-test ()
+(ert-deftest dumb-jump-generate-grep-command-with-ctx-test ()
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context nil) ;; overriding the default
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
          (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' ."))
     ;; the point context being passed should match a "function" type so only the one command
-    (should (string= expected  (dumb-jump-generate-command "tester" "blah.el" "." regexes "" nil)))))
+    (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
 
-(ert-deftest dumb-jump-generate-command-with-ctx-but-ignored-test ()
+(ert-deftest dumb-jump-generate-grep-command-with-ctx-but-ignored-test ()
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context t)
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
          (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b\\s*' -e '\\(defvar\\b\\s*tester\\b\\s?' -e '\\(defcustom\\b\\s*tester\\b\\s?' -e '\\(setq\\b\\s*tester\\b\\s*' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
 
     ;; the point context being passed is ignored so ALL should return
-    (should (string= expected  (dumb-jump-generate-command "tester" "blah.el" "." regexes "" nil)))))
+    (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
 
-(ert-deftest dumb-jump-generate-bad-command-test ()
-    (should (s-blank? (dumb-jump-generate-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
+(ert-deftest dumb-jump-generate-bad-grep-command-test ()
+    (should (s-blank? (dumb-jump-generate-grep-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
+
+(ert-deftest dumb-jump-generate-bad-ag-command-test ()
+    (should (s-blank? (dumb-jump-generate-ag-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump2.el:28:(defvar dumb-jump-grep)")
@@ -86,8 +95,24 @@
     (should (= (plist-get test-result :diff) 2))
     (should (= (plist-get test-result ':line) 26))))
 
+(ert-deftest dumb-jump-ag-parse-test ()
+  (let* ((resp "./dumb-jump.el:22:1:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:1:(defvar dumb-jump-grep-prefix )\n./dumb-jump2.el:28:1:(defvar dumb-jump-grep)")
+         (parsed (dumb-jump-parse-ag-response resp "dumb-jump2.el" 28))
+         (test-result (nth 1 parsed)))
+    (should (= (plist-get test-result :diff) 2))
+    (should (= (plist-get test-result :diff) 2))
+    (should (= (plist-get test-result ':line) 26))))
+
 (ert-deftest dumb-jump-run-cmd-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""  "blah.el" 3))
+        (first-result (car results)))
+    (should (s-contains? "/fake.el" (plist-get first-result :path)))
+    (should (= (plist-get first-result :line) 6))))
+
+(ert-deftest dumb-jump-run-grep-cmd-test ()
+  (let* ((dumb-jump-force-grep t)
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
          (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""  "blah.el" 3))
         (first-result (car results)))
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
@@ -278,7 +303,7 @@
                                         '())
                (dumb-jump-message (input arg1 arg2 arg3)
                         (should (= (string-to-number arg1) dumb-jump-max-find-time))
-                        (should (string= input "Took over %ss to find '%s'. Please add a .dumbjump file to '%s' with path exclusions"))))
+                        (should (string= input "Took over %ss to find '%s'. Please install ag or add a .dumbjump file to '%s' with path exclusions"))))
 
                (dumb-jump-go)))))
 

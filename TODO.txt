@@ -18,3 +18,7 @@ vs
 ;; TODO: answer here: http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project
 ;; TODO: make dumb-jump-test-rules run on boot? or interactive
 ;; TODO: prefix private functions with dj/ or simliar
+
+ag --vimgrep '\(defvar\b\s*resp-no-warnings\b\s?|\(defcustom\b\s*resp-no-warnings\b\s?|\(setq\b\s*resp-no-warnings\b\s*|\(resp-no-warnings\s+|\(defun\s*.+\(?\s*resp-no-warnings\b\s*\)?' /Users/visitor/code/dumb-jump
+
+ag --vimgrep --search-zip '\(defun\s+python-syntax-stringify\b\s*' /Applications/Emacs.app/Contents
