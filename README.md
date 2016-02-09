@@ -26,7 +26,9 @@ Most of these were sourced from this [emacs StackExchange answer](http://emacs.s
 
 ## Installing
 
-The recommended way to install Dumb Jump is via package.el
+The recommended way to install Dumb Jump is via `package.el`. It's available on [MELPA](http://melpa.org/#/dumb-jump):
+
+    M-x package-install dumb-jump
 
 ## Usage
 
