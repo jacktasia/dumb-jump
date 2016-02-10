@@ -186,7 +186,7 @@ immediately to the right of a symbol then it's probably a function call"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-project-denoters
-  '(".dumbjump" ".projectile" "^.git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile" "PkgInfo" "-pkg.el")
+  '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile" "PkgInfo" "-pkg.el")
   "Files and directories that signify a directory is a project root"
   :group 'dumb-jump)
 
