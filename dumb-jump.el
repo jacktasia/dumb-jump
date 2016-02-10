@@ -119,6 +119,14 @@
            :regex "class\\s*JJJ\\s*\\\(?"
            :tests ("class test(object):"))
 
+    ;; php
+    (:type "function" :language "php"
+           :regex "function\\s*JJJ\\s*\\\("
+           :tests ("function test()" "function test ()"))
+    (:type "variable" :language "php"
+           :regex "JJJ\\s*=\\s*"
+           :tests ("$test = 1234"))
+
     ;; go
     (:type "variable" :language "go"
            :regex "\\s*\\bJJJ\\s*=\\s*" :tests ("test = 1234"))
@@ -165,6 +173,8 @@ and type to use for generating the grep command"
     (:language "javascript" :ext "js")
     (:language "javascript" :ext "jsx")
     (:language "javascript" :ext "html")
+    (:language "php" :ext "php")
+    (:language "php" :ext "inc")
     (:language "python" :ext "py")
     (:language "go" :ext "go"))
   "Mapping of programming lanaguage(s) to file extensions"
@@ -561,9 +571,14 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     ;(dumb-jump-message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
     regexes))
 
+(defun dumb-jump-populate-regexes (look-for regexes)
+  (-map (lambda (x)
+          (s-replace "JJJ" (regexp-quote look-for) x))
+        regexes))
+
 (defun dumb-jump-generate-ag-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
-  (let* ((filled-regexes (-map (lambda (x) (s-replace "JJJ" look-for x)) regexes))
+  (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes))
          (cmd (concat dumb-jump-ag-cmd " --vimgrep" (if (s-ends-with? ".gz" cur-file)
                                                             " --search-zip"
                                                           "")))
@@ -575,8 +590,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-generate-grep-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
-  (let* ((filled-regexes (-map (lambda (x) (s-replace "JJJ" look-for x))
-                               (-map (lambda (r) (format "'%s'" r)) regexes)))
+  (let* ((filled-regexes (-map (lambda (r) (format "'%s'" r))
+                               (dumb-jump-populate-regexes look-for regexes)))
          (cmd (concat dumb-jump-grep-prefix " " (if (s-ends-with? ".gz" cur-file)
                                                     dumb-jump-zgrep-cmd
                                                   dumb-jump-grep-cmd)))
