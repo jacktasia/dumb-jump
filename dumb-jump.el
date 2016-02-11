@@ -119,6 +119,14 @@
            :regex "class\\s*JJJ\\s*\\\(?"
            :tests ("class test(object):"))
 
+    ;; ruby
+    (:type "variable" :language "ruby"
+           :regex "\\s*JJJ\\s*=\\s*" :tests ("test = 1234"))
+
+    (:type "function" :language "ruby"
+           :regex "\\bdef\\s*JJJ\\s*\\\("
+           :tests ("def test(asdf)" "def test()"))
+
     ;; php
     (:type "function" :language "php"
            :regex "function\\s*JJJ\\s*\\\("
@@ -175,6 +183,7 @@ and type to use for generating the grep command"
     (:language "javascript" :ext "html")
     (:language "php" :ext "php")
     (:language "php" :ext "inc")
+    (:language "ruby" :ext "rb")
     (:language "python" :ext "py")
     (:language "go" :ext "go"))
   "Mapping of programming lanaguage(s) to file extensions"
