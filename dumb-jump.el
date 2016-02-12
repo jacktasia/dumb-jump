@@ -498,7 +498,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                   (lambda (x)
                     (let* ((line-num (string-to-number (nth 1 x)))
                            (diff (- cur-line-num line-num)))
-                      (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 3 x) :diff ,diff))))
+                      (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 2 x) :diff ,diff))))
                   parsed)))
     (--filter
      (not (and
@@ -585,7 +585,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-generate-ag-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes))
-         (cmd (concat dumb-jump-ag-cmd " --vimgrep" (if (s-ends-with? ".gz" cur-file)
+         (cmd (concat dumb-jump-ag-cmd " --nocolor --nogroup" (if (s-ends-with? ".gz" cur-file)
                                                             " --search-zip"
                                                           "")))
          (exclude-args (dumb-jump-arg-joiner "--ignore-dir" (-map (lambda (p) (s-replace proj "" p)) exclude-paths)))
