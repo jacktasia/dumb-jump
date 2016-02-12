@@ -299,9 +299,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       dumb-jump-default-project)))
 
 (defun dumb-jump-get-config (dir)
-  (car (-filter
-        (lambda (f)
-          (f-exists? (f-join dir f)))
+  (car (--filter
+          (f-exists? (f-join dir it))
         dumb-jump-project-denoters)))
 
 (defun dumb-jump-get-language-by-filename (file)
@@ -392,13 +391,13 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (let* ((match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
         ; moves current file results to the front of the list
         (match-cur-file-front (-concat
-                               (-filter (lambda (x) (and (> (plist-get x :diff) 0)
-                                                         (string= (plist-get x :path) cur-file))) match-sorted)
+                               (--filter (and (> (plist-get it :diff) 0)
+                                              (string= (plist-get it :path) cur-file)) match-sorted)
 
-                               (-filter (lambda (x) (and (<= (plist-get x :diff) 0)
-                                                         (string= (plist-get x :path) cur-file))) match-sorted)
+                               (--filter (and (<= (plist-get it :diff) 0)
+                                              (string= (plist-get it :path) cur-file)) match-sorted)
 
-                               (-filter (lambda (x) (not (string= (plist-get x :path) cur-file))) match-sorted)))
+                               (--filter (not (string= (plist-get it :path) cur-file)) match-sorted)))
 
         (matches (dumb-jump-current-file-results cur-file match-cur-file-front))
         (var-to-jump (car matches))
@@ -501,10 +500,10 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                            (diff (- cur-line-num line-num)))
                       (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 3 x) :diff ,diff))))
                   parsed)))
-    (-filter
-     (lambda (x) (not (and
-                       (string= (plist-get x :path) cur-file)
-                       (= (plist-get x :line) cur-line-num))))
+    (--filter
+     (not (and
+           (string= (plist-get it :path) cur-file)
+           (= (plist-get it :line) cur-line-num)))
      results)))
 
 (defun dumb-jump-re-match (re s)
@@ -514,9 +513,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-get-ctx-type-by-language (lang pt-ctx)
   "Detect the type of context by the language"
-  (let* ((contexts (-filter
-                    (lambda (x) (string= (plist-get x ':language) lang))
-                    dumb-jump-language-contexts))
+  (let* ((contexts (--filter (string= (plist-get it ':language) lang) dumb-jump-language-contexts))
          (usable-ctxs
           (if (> (length contexts) 0)
               (-filter (lambda (ctx)
@@ -528,9 +525,9 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                                       (plist-get pt-ctx :right)))))
                        contexts)
             nil))
-         (use-ctx (= (length (-filter
-                              (lambda (x) (string= (plist-get x ':type)
-                                                   (and usable-ctxs (plist-get (car usable-ctxs) :type))))
+         (use-ctx (= (length (--filter
+                              (string= (plist-get it ':type)
+                                       (and usable-ctxs (plist-get (car usable-ctxs) :type)))
                               usable-ctxs))
                      (length usable-ctxs))))
 
@@ -613,8 +610,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-concat-command (&rest parts)
   (s-join " " (-map #'s-trim
-                    (-filter
-                     (lambda (part) (> (length part) 0))
+                    (--filter
+                     (> (length it) 0)
                      parts))))
 
 (defun dumb-jump-get-file-exts-by-language (language)
