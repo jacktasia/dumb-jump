@@ -135,6 +135,10 @@
            :regex "JJJ\\s*=\\s*"
            :tests ("$test = 1234"))
 
+    ;; faust
+    (:type "function" :language "faust"
+           :regex "^\\s*JJJ\\((.+)\\)*\\s*=" :tests ("test = 1234"))
+
     ;; go
     (:type "variable" :language "go"
            :regex "\\s*\\bJJJ\\s*=\\s*" :tests ("test = 1234"))
@@ -178,6 +182,8 @@ and type to use for generating the grep command"
 (defcustom dumb-jump-language-file-exts
   '((:language "elisp" :ext "el")
     (:language "elisp" :ext "el.gz")
+    (:language "faust" :ext "dsp")
+    (:language "faust" :ext "lib")
     (:language "javascript" :ext "js")
     (:language "javascript" :ext "jsx")
     (:language "javascript" :ext "html")

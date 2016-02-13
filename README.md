@@ -19,6 +19,7 @@ There is currently basic support for the following languages:
 * Go
 * PHP
 * Ruby
+* Faust
 
 If you have any issues with the existing languages, or you want support for another one, then please open an issue. PRs are also welcome.
 
