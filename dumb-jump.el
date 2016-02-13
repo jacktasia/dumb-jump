@@ -137,7 +137,8 @@
 
     ;; faust
     (:type "function" :language "faust"
-           :regex "^\\s*JJJ\\((.+)\\)*\\s*=" :tests ("test = 1234"))
+           :regex "^\s*JJJ(\(.+\))*\s*="
+           :tests ("test = osc + 0.5;" "test(freq) = osc(freq) + 0.5;"))
 
     ;; go
     (:type "variable" :language "go"
