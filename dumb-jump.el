@@ -338,11 +338,19 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
          (regexes (dumb-jump-get-contextual-regexes lang ctx-type))
-         ;(include-args (dumb-jump-get-ext-includes lang))
-         (exclude-args (if (s-ends-with? ".dumbjump" proj-config)
-                           (dumb-jump-read-exclusions proj-root proj-config)
-                           nil))
-         (raw-results (dumb-jump-run-command look-for proj-root regexes lang exclude-args cur-file cur-line-num))
+         (config (when (s-ends-with? ".dumbjump" proj-config)
+                           (dumb-jump-read-config proj-root proj-config)))
+         (exclude-paths (when config
+                           (plist-get config :exclude)))
+         (include-paths (when config
+                           (plist-get config :include)))
+
+         ; TODO: when wanting to search include-paths too (needs more testing)
+         ;(search-paths (-concat (list proj-root) include-paths))
+         (search-paths (-concat (list proj-root)))
+         (raw-results (--mapcat
+                       (dumb-jump-run-command look-for it regexes lang exclude-paths cur-file cur-line-num)
+                       search-paths))
          (results (-map (lambda (r) (plist-put r :target look-for)) raw-results)))
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
@@ -415,24 +423,28 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (dumb-jump-result-follow var-to-jump)
       (dumb-jump-prompt-user-for-choice look-for proj-root match-cur-file-front))))
 
-(defun dumb-jump-read-exclusions (root config-file)
-  "Build up the exclude-dir argument of the grep command by reading the config file"
+(defun dumb-jump-read-config (root config-file)
+;  "Build up the exclude-dir argument of the grep command by reading the config file"
+  "Get options (exclusions, inclusions) from config file .dumbjump CONFIG-FILE in the project ROOT"
   (let* ((contents (f-read-text (f-join root config-file)))
          (lines (s-split "\n" contents))
          (exclude-lines (-filter (lambda (f) (s-starts-with? "-" f)) lines))
+         (include-lines (-filter (lambda (f) (s-starts-with? "+" f)) lines))
          (exclude-paths (-map (lambda (f)
                                  (let* ((dir (substring f 1))
                                        (use-dir (if (s-starts-with? "/" dir)
                                                     (substring dir 1)
                                                     dir)))
                                    (f-join root use-dir)))
-                               exclude-lines)))
-    ;; (if exclude-lines
-    ;;   (dumb-jump-arg-joiner "--exclude-dir" exclude-paths)
-    ;;   "")))
-    (if exclude-lines
-        exclude-paths
-      nil)))
+                               exclude-lines))
+         (include-paths (-map (lambda (f)
+                                (let* ((dir (substring f 1)))
+                                  (if (s-starts-with? "/" dir)
+                                      dir ;; absolute paths are allowed
+                                    ;; TODO: warn if an include path is already a child of proj-root
+                                    (f-join root dir))))
+                              include-lines)))
+    `(:exclude ,exclude-paths :include ,include-paths)))
 
 (defun dumb-jump-result-follow (result)
   "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump."
@@ -592,7 +604,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-generate-ag-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes))
-         (cmd (concat dumb-jump-ag-cmd " --nocolor --nogroup" (if (s-ends-with? ".gz" cur-file)
+         ;; TODO: --search-zip always? in case the include is the in gz area like emacs lisp code.
+         (cmd (concat dumb-jump-ag-cmd " --nocolor --nogroup " (if (s-ends-with? ".gz" cur-file)
                                                             " --search-zip"
                                                           "")))
          (exclude-args (dumb-jump-arg-joiner "--ignore-dir" (-map (lambda (p) (s-replace proj "" p)) exclude-paths)))

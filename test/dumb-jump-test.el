@@ -30,12 +30,13 @@
 (ert-deftest dumb-jump-exclude-path-test ()
   (let* ((expected (list (f-join test-data-dir-proj1 "ignored")))
          (root (dumb-jump-get-project-root test-data-dir-proj1))
-         (excludes (dumb-jump-read-exclusions test-data-dir-proj1  ".dumbjump")))
-    (should (equal excludes expected))))
+         (config (dumb-jump-read-config test-data-dir-proj1  ".dumbjump")))
+    (should (equal (plist-get config :exclude)  expected))))
 
 (ert-deftest dumb-jump-exclude-path-blank-test ()
-  (let* ((excludes (dumb-jump-read-exclusions test-data-dir-proj1 ".dumbjump-blank")))
-    (should (null excludes))))
+  (let* ((config (dumb-jump-read-config test-data-dir-proj1 ".dumbjump-blank")))
+    (should (null (plist-get config :exclude)))
+    (should (null (plist-get config :include)))))
 
 (ert-deftest dumb-jump-language-to-ext-test ()
   (should (-contains? (dumb-jump-get-file-exts-by-language "elisp") "el")))
@@ -54,7 +55,6 @@
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
         (expected "ag --nocolor --nogroup '\\(defun\\s+tester\\b\\s*|\\(defvar\\b\\s*tester\\b\\s?|\\(defcustom\\b\\s*tester\\b\\s?|\\(setq\\b\\s*tester\\b\\s*|\\(tester\\s+|\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
     (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
-
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
   (let* ((dumb-jump-functions-only t)
