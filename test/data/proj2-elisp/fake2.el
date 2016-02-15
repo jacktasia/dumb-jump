@@ -21,4 +21,6 @@
         ""
         (when-var-is-in-sig my-arg2))))
 
+(func-in-lib 1 2)
+
 ;; end of file

@@ -331,7 +331,6 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (proj-root (dumb-jump-get-project-root cur-file))
          (proj-config (dumb-jump-get-config proj-root))
          (lang (dumb-jump-get-language-by-filename cur-file))
-;         (pt-ctx (dumb-jump-get-point-context cur-line look-for))
          (pt-ctx (if (not (string= cur-line look-for))
                      (dumb-jump-get-point-context cur-line look-for (current-column))
                  nil))
@@ -344,11 +343,11 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                            (plist-get config :exclude)))
          (include-paths (when config
                            (plist-get config :include)))
-
-         ; TODO: when wanting to search include-paths too (needs more testing)
-         ;(search-paths (-concat (list proj-root) include-paths))
-         (search-paths (-concat (list proj-root)))
+         ; we will search proj root and all include paths
+         (search-paths (-distinct (-concat (list proj-root) include-paths)))
+         ; run command for all
          (raw-results (--mapcat
+                       ;; TODO: should only pass exclude paths to actual project root
                        (dumb-jump-run-command look-for it regexes lang exclude-paths cur-file cur-line-num)
                        search-paths))
          (results (-map (lambda (r) (plist-put r :target look-for)) raw-results)))
@@ -512,7 +511,12 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-parse-ag-response (resp cur-file cur-line-num)
   "Takes a ag response RESP and parses into a list of plists"
   (let* ((resp-lines (s-split "\n" resp))
-         (parsed (butlast (-map (lambda (line) (s-split ":" line)) resp-lines)))
+         (parsed (butlast (--map (let ((parts (s-split ":" it)))
+                                   ;; when ag searches file not dir it will return no path in the resp line so add
+                                   (if (= 2 (length parts))
+                                       (-concat (list cur-file) parts)
+                                     parts))
+                                 resp-lines)))
          (results (-mapcat
                   (lambda (x)
                     (let* ((line-num (string-to-number (nth 1 x)))
