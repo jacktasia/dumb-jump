@@ -54,6 +54,8 @@ Dumb Jump will automatically look for a project root by ... If it's not finding 
     -node_modules
     -build
     -images
+    +../some-lib/src
+    +/usr/lib/src
 
 ##### `.emacs` options
 
