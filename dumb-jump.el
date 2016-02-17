@@ -381,9 +381,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (proj-root (plist-get info :root))
          (lang (plist-get info :lang))
          (result-count (length results)))
-    ; (dumb-jump-message-prin1 "lang:%s type:%s results: %s" lang ctx-type results)
     (cond
-;     ((and (not (listp results)) (s-blank? results))
      ((> fetch-time dumb-jump-max-find-time)
       (dumb-jump-message "Took over %ss to find '%s'. Please install ag or add a .dumbjump file to '%s' with path exclusions"
                (number-to-string dumb-jump-max-find-time) look-for proj-root))
