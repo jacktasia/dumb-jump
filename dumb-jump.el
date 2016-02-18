@@ -164,7 +164,6 @@
            :regex "\\s*\\bJJJ\\s*=\\s*" :tests ("test = 1234"))
 
     (:type "variable" :language "javascript"
-           ;; TODO: \\b before JJJ?
            :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*JJJ\\s*,?\\s*\\\)?"
            :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah) {" "function(blah, test)"))
     (:type "function" :language "javascript"
