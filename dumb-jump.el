@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015 jack angers
 ;; Author: jack angers
 ;; Version: 1.0
-;; Package-Requires: ((f "0.17.3") (s "1.9.0") (dash "2.9.0"))
+;; Package-Requires: ((f "0.17.3") (s "1.11.0") (dash "2.9.0"))
 ;; Keywords: programming
 ;;; Commentary:
 
@@ -164,6 +164,7 @@
            :regex "\\s*\\bJJJ\\s*=\\s*" :tests ("test = 1234"))
 
     (:type "variable" :language "javascript"
+           ;; TODO: \\b before JJJ?
            :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*JJJ\\s*,?\\s*\\\)?"
            :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah) {" "function(blah, test)"))
     (:type "function" :language "javascript"
@@ -326,14 +327,16 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   "Build up a list of results by examining the current context and calling grep"
   (let* ((cur-file (buffer-file-name))
          (cur-line (thing-at-point 'line t))
+         (look-for-start (- (car (bounds-of-thing-at-point 'symbol))
+                            (point-at-bol)))
          (cur-line-num (line-number-at-pos))
          (look-for (thing-at-point 'symbol t))
          (proj-root (dumb-jump-get-project-root cur-file))
          (proj-config (dumb-jump-get-config proj-root))
          (lang (dumb-jump-get-language-by-filename cur-file))
          (pt-ctx (if (not (string= cur-line look-for))
-                     (dumb-jump-get-point-context cur-line look-for (current-column))
-                 nil))
+                     (dumb-jump-get-point-context cur-line look-for look-for-start)
+                   nil))
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
          (regexes (dumb-jump-get-contextual-regexes lang ctx-type))
@@ -350,7 +353,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                        ;; TODO: should only pass exclude paths to actual project root
                        (dumb-jump-run-command look-for it regexes lang exclude-paths cur-file cur-line-num)
                        search-paths))
-         (results (-map (lambda (r) (plist-put r :target look-for)) raw-results)))
+
+         (results (--map (plist-put it :target look-for) raw-results)))
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
 (defun dumb-jump-back ()
@@ -445,7 +449,14 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-result-follow (result)
   "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump."
-  (let ((pos (s-index-of (plist-get result :target) (plist-get result :context)))
+  (let* ((target-boundary (s-matched-positions-all
+                           (concat "\\b" (regexp-quote (plist-get result :target)) "\\b")
+                           (plist-get result :context)))
+         ;; column pos is either via tpos from ag or by using the regex above or last using old s-index-of
+         (pos (if target-boundary
+                  (car (car target-boundary))
+                (s-index-of (plist-get result :target) (plist-get result :context))))
+
         (thef (plist-get result :path))
         (line (plist-get result :line)))
     (when thef
@@ -607,7 +618,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes))
          ;; TODO: --search-zip always? in case the include is the in gz area like emacs lisp code.
-         (cmd (concat dumb-jump-ag-cmd " --nocolor --nogroup " (if (s-ends-with? ".gz" cur-file)
+         (cmd (concat dumb-jump-ag-cmd " --nocolor --nogroup" (if (s-ends-with? ".gz" cur-file)
                                                             " --search-zip"
                                                           "")))
          (exclude-args (dumb-jump-arg-joiner "--ignore-dir" (-map (lambda (p) (s-replace proj "" p)) exclude-paths)))

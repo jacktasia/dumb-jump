@@ -221,6 +221,19 @@
                                         (should (string= (plist-get result :path) go-js-file))))
         (dumb-jump-go)))))
 
+
+(ert-deftest dumb-jump-go-js2-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 11)
+      ;(end-of-line)
+      (forward-char 76)
+     ;(backward-char 2)
+      (noflet ((dumb-jump-goto-file-line (thef line pos)
+               (should (string= thef js-file))))
+        (dumb-jump-go)))))
+
 (ert-deftest dumb-jump-go-sig-def-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)

@@ -1,3 +1,5 @@
+(bounds-of-thing-at-point THING)
+
 1)
 ;; TODO; When there's multiple options use the compilations view for selecting the file
 ;; TODO: built-in :tests for contexts like rules
