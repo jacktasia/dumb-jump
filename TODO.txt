@@ -10,7 +10,6 @@ vs
 ;; TODO: rules should have (optional?) tests that fail :fails
 
 3)
-;; TODO: answer here: http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project
 ;; TODO: make dumb-jump-test-rules run on boot? or interactive
 ;; TODO: prefix private functions with dj/ or simliar
 
