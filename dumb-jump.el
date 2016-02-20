@@ -424,7 +424,6 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       (dumb-jump-prompt-user-for-choice look-for proj-root match-cur-file-front))))
 
 (defun dumb-jump-read-config (root config-file)
-;  "Build up the exclude-dir argument of the grep command by reading the config file"
   "Get options (exclusions, inclusions) from config file .dumbjump CONFIG-FILE in the project ROOT"
   (let* ((contents (f-read-text (f-join root config-file)))
          (lines (s-split "\n" contents))
@@ -609,6 +608,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     regexes))
 
 (defun dumb-jump-populate-regexes (look-for regexes)
+  "Take list of REGEXES and populate the LOOK-FOR target and return that list"
   (-map (lambda (x)
           (s-replace "JJJ" (regexp-quote look-for) x))
         regexes))
@@ -641,6 +641,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (dumb-jump-concat-command cmd dumb-jump-grep-args exclude-args include-args regex-args proj))))
 
 (defun dumb-jump-concat-command (&rest parts)
+  "Concat the PARTS of a command if each part has a length"
   (s-join " " (-map #'s-trim
                     (--filter
                      (> (length it) 0)
