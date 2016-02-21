@@ -283,6 +283,7 @@ Optionally pass t to see a list of all failed rules"
     (concat title (s-join "\n" choices) "\n\nChoice: ")))
 
 (defun dumb-jump-parse-input (total input)
+  "Return INPUT if it is less than TOTAL and gte 1"
   (let* ((choice (string-to-number input)))
     (when (and
            (<= choice total)
@@ -290,6 +291,7 @@ Optionally pass t to see a list of all failed rules"
       choice)))
 
 (defun dumb-jump-prompt-user-for-choice (look-for proj results)
+  "Prompt a user to pick between multiple RESULTS and go to LOOK-FOR if valid"
   (let* ((prompt-text (dumb-jump-generate-prompt-text look-for proj results))
          (input (read-from-minibuffer prompt-text))
          (choice (dumb-jump-parse-input (length results) input)))
