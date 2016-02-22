@@ -3,6 +3,7 @@
 (require 's)
 (require 'dash)
 (require 'noflet)
+(require 'popup)
 
 (setq test-data-dir (f-expand "./test/data"))
 (setq test-data-dir-elisp (f-join test-data-dir "proj2-elisp"))
@@ -173,33 +174,14 @@
          (ctx-type (dumb-jump-get-ctx-type-by-language "javascript" pt-ctx)))
     (should (string= ctx-type "function"))))
 
-(ert-deftest dumb-jump-multiple-choice-input-test ()
-  (progn
-    (should (= (dumb-jump-parse-input 5 "4") 4))
-    (should (= (dumb-jump-parse-input 50 "1") 1))
-    (should (null (dumb-jump-parse-input 50 "242")))
-    (should (null (dumb-jump-parse-input 5 "0")))
-    (should (null (dumb-jump-parse-input 500 "asdf")))
-    (should (null (dumb-jump-parse-input 5 "6")))))
-
-(ert-deftest dumb-jump-multiple-choice-text-test ()
-  (let* ((choice-txt (dumb-jump-generate-prompt-text "asdf" "/usr/blah" '((:path "/usr/blah/test.txt" :line "54"))))
-         (expected "Multiple results for 'asdf':\n\n1. /test.txt:54\n\nChoice: "))
-    (should (string= choice-txt expected))))
-
-(ert-deftest dumb-jump-prompt-user-for-choice-invalid-test ()
-  (noflet ((read-from-minibuffer (input) "2")
-           (dumb-jump-message (input)
-             (should (string= input "Sorry, that's an invalid choice."))))
-
-    (dumb-jump-prompt-user-for-choice "asdf" "/usr/blah" '((:path "/usr/blah/test.txt" :line "54")))))
-
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-test ()
-  (noflet ((read-from-minibuffer (input) "2")
-           (dumb-jump-result-follow (result)
-                                    (should (string= (plist-get result :path) "/usr/blah/test2.txt"))))
-
-    (dumb-jump-prompt-user-for-choice "asdf" "/usr/blah" '((:path "/usr/blah/test.txt" :line "54") (:path "/usr/blah/test2.txt" :line "52")))))
+  (let* ((results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()") (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
+    (noflet ((dumb-jump-result-follow (r)
+                                      (should (string= (plist-get r :path) "/usr/blah/test2.txt"))
+                                      (should (= (plist-get r :line) 52)))
+             (popup-menu* (choices)
+                          "/test2.txt:52 var thing = function()"))
+    (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
 (ert-deftest dumb-jump-fetch-results-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))

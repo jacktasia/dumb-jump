@@ -11,3 +11,9 @@ $scope.resized = function(path, w, h) {
   }
   return $scope.resizeHost + encodeURIComponent(path) + '?w=' + w + '&h=' + h;
 };
+
+someFunc();
+
+
+
+//

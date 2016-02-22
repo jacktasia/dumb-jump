@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015 jack angers
 ;; Author: jack angers
 ;; Version: 1.0
-;; Package-Requires: ((f "0.17.3") (s "1.11.0") (dash "2.9.0"))
+;; Package-Requires: ((f "0.17.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 ;;; Commentary:
 
@@ -15,6 +15,7 @@
 (require 'f)
 (require 's)
 (require 'dash)
+(require 'popup)
 
 (defgroup dumb-jump nil
   "Easily jump to project function and variable definitions"
@@ -273,31 +274,19 @@ Optionally pass t to see a list of all failed rules"
                   (substring line right-loc-start right-loc-end))))
     `(:left ,left :right ,right)))
 
-(defun dumb-jump-generate-prompt-text (look-for proj results)
-  (let* ((title (format "Multiple results for '%s':\n\n" look-for))
-         (choices (-map-indexed (lambda (index result)
-                                  (format "%d. %s:%s" (1+ index)
-                                          (s-replace proj "" (plist-get result :path))
-                                          (plist-get result :line)))
-                                results)))
-    (concat title (s-join "\n" choices) "\n\nChoice: ")))
-
-(defun dumb-jump-parse-input (total input)
-  "Return INPUT if it is less than TOTAL and gte 1"
-  (let* ((choice (string-to-number input)))
-    (when (and
-           (<= choice total)
-           (>= choice 1))
-      choice)))
-
-(defun dumb-jump-prompt-user-for-choice (look-for proj results)
-  "Prompt a user to pick between multiple RESULTS and go to LOOK-FOR if valid"
-  (let* ((prompt-text (dumb-jump-generate-prompt-text look-for proj results))
-         (input (read-from-minibuffer prompt-text))
-         (choice (dumb-jump-parse-input (length results) input)))
-    (if choice
-      (dumb-jump-result-follow (nth (1- choice) results))
-      (dumb-jump-message "Sorry, that's an invalid choice."))))
+(defun dumb-jump-prompt-user-for-choice (proj results)
+  (let* ((choices (-map (lambda (result)
+                          (format "%s:%s %s"
+                                  (s-replace proj "" (plist-get result :path))
+                                  (plist-get result :line)
+                                  (s-trim (plist-get result :context))))
+                        results))
+         (input (popup-menu* choices))
+         (result-index (--find-index (string= input it) choices))
+         (result (when result-index
+                   (nth result-index results))))
+    (when result
+      (dumb-jump-result-follow result))))
 
 (defun dumb-jump-get-project-root (filepath)
   "Keep looking at the parent dir of FILEPATH until a
@@ -423,7 +412,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     ;(dumb-jump-message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s | results: %s" ctx-type var-to-jump matches match-sorted results)
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump)
-      (dumb-jump-prompt-user-for-choice look-for proj-root match-cur-file-front))))
+      (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front))))
 
 (defun dumb-jump-read-config (root config-file)
   "Get options (exclusions, inclusions) from config file .dumbjump CONFIG-FILE in the project ROOT"
