@@ -363,9 +363,13 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       (dumb-jump-goto-file-point path point))
     (dumb-jump-message "Nowhere to jump back to.")))
 
-(defun dumb-jump-go () ; TODO: rename to dumb-jump-to-definition,
-  "Go to the function/variable declaration for thing at point"
+(defun dumb-jump-preview-go ()
   (interactive)
+  (dumb-jump-go t))
+
+(defun dumb-jump-go (&optional use-tooltip)
+  "Go to the function/variable declaration for thing at point"
+  (interactive "P")
   (let* ((start-time (float-time))
          (info (dumb-jump-fetch-results))
          (end-time (float-time))
@@ -382,7 +386,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
      ((s-ends-with? " file" lang)
       (dumb-jump-message "Could not find rules for '%s'." lang))
      ((= result-count 1)
-      (dumb-jump-result-follow (car results)))
+      (dumb-jump-result-follow (car results) use-tooltip))
      ((> result-count 1)
       ;; multiple results so let the user pick from a list
       ;; unless the match is in the current file
@@ -436,7 +440,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                               include-lines)))
     `(:exclude ,exclude-paths :include ,include-paths)))
 
-(defun dumb-jump-result-follow (result)
+(defun dumb-jump-result-follow (result &optional use-tooltip)
   "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump."
   (let* ((target-boundary (s-matched-positions-all
                            (concat "\\b" (regexp-quote (plist-get result :target)) "\\b")
@@ -451,7 +455,12 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     (when thef
       (add-to-list 'dumb-jump-last-location
                    `(:line ,(line-number-at-pos) :path ,(buffer-file-name) :pos ,pos :point ,(point)))
-      (dumb-jump-goto-file-line thef line pos))))
+      (if use-tooltip
+          (popup-tip (format "%s:%s %s"
+                                  (plist-get result :path)
+                                  (plist-get result :line)
+                                  (s-trim (plist-get result :context))))
+          (dumb-jump-goto-file-line thef line pos)))))
 
 (defun dumb-jump-goto-file-line (thefile theline pos)
   "Open THEFILE and go line THELINE"
