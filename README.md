@@ -41,6 +41,7 @@ Adding `(dumb-jump-mode)` to your `.emacs` will enable the keybindings for two i
 
 * `dumb-jump-go` <kbd>C-M g</kbd> core functionality. Attempts to jump to the definition for the thing under point
 * `dumb-jump-back` <kbd>C-M p</kbd> jumps back to where you were when you jumped. These are chained so if you go down a rabbit hole you can get back out or where you want to be.
+* `dumb-jump-quick-look` <kbd>C-M q</kbd> like `dumb-jump-go` but shows tooltip with `file`, `line`, and `context`
 
 ## Configuration
 
