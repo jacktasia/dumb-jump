@@ -1,4 +1,4 @@
-;;; dumb-jump.el --- Dumb jumping to variable and function definitions
+;;; dumb-jump.el --- jump to variable and function definitions with no configuration
 
 ;; Copyright (C) 2015 jack angers
 ;; Author: jack angers
