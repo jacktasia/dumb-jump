@@ -27,6 +27,7 @@
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-M-g") 'dumb-jump-go )
     (define-key map (kbd "C-M-p") 'dumb-jump-back)
+    (define-key map (kbd "C-M-q") 'dumb-jump-quick-look)
     map))
 
 (defcustom dumb-jump-grep-prefix
@@ -363,7 +364,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       (dumb-jump-goto-file-point path point))
     (dumb-jump-message "Nowhere to jump back to.")))
 
-(defun dumb-jump-preview-go ()
+(defun dumb-jump-quick-look ()
   (interactive)
   (dumb-jump-go t))
 
@@ -386,17 +387,17 @@ denoter file/dir is found or uses dumb-jump-default-profile"
      ((s-ends-with? " file" lang)
       (dumb-jump-message "Could not find rules for '%s'." lang))
      ((= result-count 1)
-      (dumb-jump-result-follow (car results) use-tooltip))
+      (dumb-jump-result-follow (car results) use-tooltip proj-root))
      ((> result-count 1)
       ;; multiple results so let the user pick from a list
       ;; unless the match is in the current file
-      (dumb-jump-handle-results results (plist-get info :file) proj-root (plist-get info :ctx-type) look-for))
+      (dumb-jump-handle-results results (plist-get info :file) proj-root (plist-get info :ctx-type) look-for use-tooltip))
      ((= result-count 0)
       (dumb-jump-message "'%s' %s %s declaration not found." look-for lang (plist-get info :ctx-type)))
      (t
       (dumb-jump-message "Un-handled results: %s " (prin1-to-string results))))))
 
-(defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for)
+(defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for use-tooltip)
   "Figure which of the RESULTS to jump to. Favoring the CUR-FILE"
   (let* ((match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
         ; moves current file results to the front of the list
@@ -415,7 +416,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (do-var-jump (and (or (= (length matches) 1) (string= ctx-type "variable") (string= ctx-type "")) var-to-jump)))
     ;(dumb-jump-message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s | results: %s" ctx-type var-to-jump matches match-sorted results)
     (if do-var-jump
-        (dumb-jump-result-follow var-to-jump)
+        (dumb-jump-result-follow var-to-jump use-tooltip proj-root)
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front))))
 
 (defun dumb-jump-read-config (root config-file)
@@ -440,7 +441,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                               include-lines)))
     `(:exclude ,exclude-paths :include ,include-paths)))
 
-(defun dumb-jump-result-follow (result &optional use-tooltip)
+(defun dumb-jump-result-follow (result &optional use-tooltip proj)
   "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump."
   (let* ((target-boundary (s-matched-positions-all
                            (concat "\\b" (regexp-quote (plist-get result :target)) "\\b")
@@ -457,7 +458,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                    `(:line ,(line-number-at-pos) :path ,(buffer-file-name) :pos ,pos :point ,(point)))
       (if use-tooltip
           (popup-tip (format "%s:%s %s"
-                                  (plist-get result :path)
+                                  (s-replace proj "" (plist-get result :path))
                                   (plist-get result :line)
                                   (s-trim (plist-get result :context))))
           (dumb-jump-goto-file-line thef line pos)))))
