@@ -375,6 +375,12 @@
           (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
             (dumb-jump-result-follow result))))
 
+(ert-deftest dumb-jump-message-result-follow-tooltip-test ()
+  (noflet ((popup-tip (s)
+                      (should (string= s "/file.js:62 var isNow = true"))))
+          (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
+            (dumb-jump-result-follow result t "src"))))
+
 (ert-deftest dumb-jump-populate-regexes-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*")) '("testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*")) '("\\$testvar\\s*=\\s*"))))
