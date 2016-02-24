@@ -312,11 +312,11 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                  dumb-jump-language-file-exts)))
     (if result
         (plist-get (car result) :language)
-      (format ".%s file" (f-ext file)))))
+      (format ".%s file" (or (f-ext file) "?")))))
 
 (defun dumb-jump-fetch-results ()
   "Build up a list of results by examining the current context and calling grep"
-  (let* ((cur-file (buffer-file-name))
+  (let* ((cur-file (or (buffer-file-name) ""))
          (cur-line (thing-at-point 'line t))
          (look-for-start (- (car (bounds-of-thing-at-point 'symbol))
                             (point-at-bol)))
