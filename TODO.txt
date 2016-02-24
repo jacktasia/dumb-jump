@@ -1,9 +1,8 @@
 1)
-;; TODO; When there's multiple options use the compilations view for selecting the file
+;; TODO: `ag` word boundary character class matches on `-` so jumping to `dumb-jump-message` sees BOTH `dumb-jump-message` and `dumb-jump-message-prin1`
+;; TODO: When there's multiple options use the compilations view for selecting the file
 ;; TODO: built-in :tests for contexts like rules
-;; TODO: always run all context types and then selection of that information
-vs
-;; TODO: if it's not nil point context and there's no results then ask user if we should try all...
+;; TODO: split up context type searches if only one or both apply?
 
 2)
 ;; TODO: support es6 javascript - (add to list of easy PRs)
