@@ -50,6 +50,11 @@
   "The the path to the silver searcher. By default assumes it is in path. If not found  WILL fallback to grep"
   :group 'dumb-jump)
 
+(defcustom dumb-jump-ag-word-boundary
+  "(?![\\w-])"
+  "`\\b` acts differently in ag vs grep. When this matters use `\\j` instead. grep will do `\\b` and ag this value"
+  :group 'dumb-jump)
+
 (defcustom dumb-jump-force-grep
   nil
   "When t will use grep even if ag is available"
@@ -91,7 +96,8 @@
   :group 'dumb-jump)
 
 (defcustom dumb-jump-find-rules
-  '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\b\\s*"
+  '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\j\\s*"
+           ;; \\j usage see `dumb-jump-ag-word-boundary`
            :tests ("(defun test (blah)" "(defun test\n"))
 
     (:type "variable" :language "elisp"
@@ -250,7 +256,8 @@ Optionally pass t to see a list of all failed rules"
       (lambda (rule)
         (-each (plist-get rule :tests)
           (lambda (test)
-            (let* ((cmd (concat " echo '" test "' | grep -En -e '"  (s-replace "JJJ" "test" (plist-get rule :regex)) "'"))
+            (let* ((cmd (concat " echo '" test "' | grep -En -e '"
+                                (dumb-jump-populate-regex (plist-get rule :regex) "test" nil) "'"))
                    (resp (shell-command-to-string cmd)))
               (when (not (s-contains? test resp))
                 (add-to-list 'failures (format fail-tmpl test resp cmd rule))))
@@ -483,10 +490,12 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (let ((matched (-filter (lambda (r) (string= path (plist-get r :path))) results)))
     matched))
 
+(defun dumb-jump-use-ag? ()
+  (and (dumb-jump-ag-installed?) (not dumb-jump-force-grep)))
+
 (defun dumb-jump-run-command (look-for proj regexes lang exclude-args cur-file line-num)
   "Run the grep command based on the needle LOOKFOR in the directory TOSEARCH"
-  (let* ((has-ag (dumb-jump-ag-installed?))
-         (use-grep (or (not has-ag) dumb-jump-force-grep))
+  (let* ((use-grep (not (dumb-jump-use-ag?)))
          (cmd (if use-grep
                   (dumb-jump-generate-grep-command look-for cur-file proj regexes lang exclude-args)
                   (dumb-jump-generate-ag-command look-for cur-file proj regexes lang exclude-args)))
@@ -608,15 +617,19 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     ;(dumb-jump-message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
     regexes))
 
-(defun dumb-jump-populate-regexes (look-for regexes)
+(defun dumb-jump-populate-regex (it look-for use-ag)
+  (s-replace "\\j" (if use-ag dumb-jump-ag-word-boundary "\\b")
+             (s-replace "JJJ" (regexp-quote look-for) it)))
+
+(defun dumb-jump-populate-regexes (look-for regexes use-ag)
   "Take list of REGEXES and populate the LOOK-FOR target and return that list"
-  (-map (lambda (x)
-          (s-replace "JJJ" (regexp-quote look-for) x))
+  (-map (lambda (regex)
+          (dumb-jump-populate-regex regex look-for use-ag))
         regexes))
 
 (defun dumb-jump-generate-ag-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
-  (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes))
+  (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes t))
          ;; TODO: --search-zip always? in case the include is the in gz area like emacs lisp code.
          (cmd (concat dumb-jump-ag-cmd " --nocolor --nogroup" (if (s-ends-with? ".gz" cur-file)
                                                             " --search-zip"
@@ -630,7 +643,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-generate-grep-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
   (let* ((filled-regexes (-map (lambda (r) (format "'%s'" r))
-                               (dumb-jump-populate-regexes look-for regexes)))
+                               (dumb-jump-populate-regexes look-for regexes nil)))
          (cmd (concat dumb-jump-grep-prefix " " (if (s-ends-with? ".gz" cur-file)
                                                     dumb-jump-zgrep-cmd
                                                   dumb-jump-grep-cmd)))

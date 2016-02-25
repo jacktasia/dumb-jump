@@ -54,7 +54,7 @@
 
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "ag --nocolor --nogroup '\\(defun\\s+tester\\b\\s*|\\(defvar\\b\\s*tester\\b\\s?|\\(defcustom\\b\\s*tester\\b\\s?|\\(setq\\b\\s*tester\\b\\s*|\\(tester\\s+|\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
+        (expected "ag --nocolor --nogroup '\\(defun\\s+tester(?![\\w-])\\s*|\\(defvar\\b\\s*tester\\b\\s?|\\(defcustom\\b\\s*tester\\b\\s?|\\(setq\\b\\s*tester\\b\\s*|\\(tester\\s+|\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
     (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
@@ -382,8 +382,8 @@
             (dumb-jump-result-follow result t "src"))))
 
 (ert-deftest dumb-jump-populate-regexes-test ()
-  (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*")) '("testvar\\s*=\\s*")))
-  (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*")) '("\\$testvar\\s*=\\s*"))))
+  (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") nil) '("testvar\\s*=\\s*")))
+  (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") nil) '("\\$testvar\\s*=\\s*"))))
 
 (ert-deftest dumb-jump-message-prin1-test ()
   (noflet ((message (input arg arg2)
