@@ -491,6 +491,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     matched))
 
 (defun dumb-jump-use-ag? ()
+  "Return t if we should use ag. That is, ag is installed AND grep is not forced"
   (and (dumb-jump-ag-installed?) (not dumb-jump-force-grep)))
 
 (defun dumb-jump-run-command (look-for proj regexes lang exclude-args cur-file line-num)
@@ -618,6 +619,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     regexes))
 
 (defun dumb-jump-populate-regex (it look-for use-ag)
+  "Populate IT regex template with LOOK-FOR"
   (s-replace "\\j" (if use-ag dumb-jump-ag-word-boundary "\\b")
              (s-replace "JJJ" (regexp-quote look-for) it)))
 
