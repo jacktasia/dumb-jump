@@ -305,6 +305,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       dumb-jump-default-project)))
 
 (defun dumb-jump-get-config (dir)
+  "If a project denoter is in DIR then return it. Otherwise nil"
   (car (--filter
           (f-exists? (f-join dir it))
         dumb-jump-project-denoters)))
@@ -372,6 +373,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     (dumb-jump-message "Nowhere to jump back to.")))
 
 (defun dumb-jump-quick-look ()
+  "Run dump-jump-go in quick look mode. That is, show a tooltip of where it would jump instead"
   (interactive)
   (dumb-jump-go t))
 
