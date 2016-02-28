@@ -283,6 +283,7 @@ Optionally pass t to see a list of all failed rules"
     `(:left ,left :right ,right)))
 
 (defun dumb-jump-prompt-user-for-choice (proj results)
+  "Puts list of RESULTS in a popup-menu for user to select. Filters PROJ path from files for display"
   (let* ((choices (-map (lambda (result)
                           (format "%s:%s %s"
                                   (s-replace proj "" (plist-get result :path))
