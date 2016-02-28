@@ -233,6 +233,7 @@ immediately to the right of a symbol then it's probably a function call"
   (apply 'message str (-map 'prin1-to-string args)))
 
 (defun dumb-jump-ag-installed? ()
+  "Return t if ag is installed"
   (s-contains? "ag version" (shell-command-to-string (concat dumb-jump-ag-cmd " --version"))))
 
 (defun dumb-jump-find-start-pos (line-in look-for cur-pos)
