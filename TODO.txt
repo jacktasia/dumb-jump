@@ -1,5 +1,6 @@
 1)
-;; TODO: `ag` word boundary character class matches on `-` so jumping to `dumb-jump-message` sees BOTH `dumb-jump-message` and `dumb-jump-message-prin1`
+;; TODO: fix off my one error with defvar use special \\j
+;; TODO: have method to test ag regex rules too
 ;; TODO: When there's multiple options use the compilations view for selecting the file
 ;; TODO: built-in :tests for contexts like rules
 ;; TODO: split up context type searches if only one or both apply?
