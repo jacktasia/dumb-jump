@@ -54,7 +54,7 @@
 
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "ag --nocolor --nogroup '\\(defun\\s+tester(?![\\w-])\\s*|\\(defvar\\b\\s*tester\\b\\s?|\\(defcustom\\b\\s*tester\\b\\s?|\\(setq\\b\\s*tester\\b\\s*|\\(tester\\s+|\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
+        (expected "ag --nocolor --nogroup \"\\(defun\\s+tester(?![\\w-])\\s*|\\(defvar\\b\\s*tester\\b\\s?|\\(defcustom\\b\\s*tester\\b\\s?|\\(setq\\b\\s*tester\\b\\s*|\\(tester\\s+|\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?\" ."))
     (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
@@ -97,7 +97,7 @@
     (should (= (plist-get test-result ':line) 26))))
 
 (ert-deftest dumb-jump-ag-parse-test ()
-  (let* ((resp "./dumb-jump.el:22:1:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:1:(defvar dumb-jump-grep-prefix )\n./dumb-jump2.el:28:1:(defvar dumb-jump-grep)")
+  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump2.el:28:1:(defvar dumb-jump-grep)")
          (parsed (dumb-jump-parse-ag-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
     (should (= (plist-get test-result :diff) 2))

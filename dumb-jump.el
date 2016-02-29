@@ -535,9 +535,12 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (let* ((resp-lines (s-split "\n" resp))
          (parsed (butlast (--map (let ((parts (s-split ":" it)))
                                    ;; when ag searches file not dir it will return no path in the resp line so add
-                                   (if (= 2 (length parts))
-                                       (-concat (list cur-file) parts)
-                                     parts))
+                                   (cond ((= 2 (length parts))
+                                          (-concat (list cur-file) parts))
+                                         ((= 4 (length parts)) ; windows
+                                          (list (concat (car parts) ":" (nth 1 parts)) (nth 2 parts) (nth 3 parts)))
+                                         (t
+                                          parts)))
                                  resp-lines)))
          (results (-mapcat
                   (lambda (x)
@@ -641,7 +644,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                                                             " --search-zip"
                                                           "")))
          (exclude-args (dumb-jump-arg-joiner "--ignore-dir" (-map (lambda (p) (s-replace proj "" p)) exclude-paths)))
-         (regex-args (format "'%s'" (s-join "|" filled-regexes))))
+         (regex-args (format "\"%s\"" (s-join "|" filled-regexes))))
     (if (= (length regexes) 0)
         ""
         (dumb-jump-concat-command cmd exclude-args regex-args proj))))
