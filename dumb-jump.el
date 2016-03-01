@@ -96,21 +96,22 @@
   :group 'dumb-jump)
 
 (defcustom dumb-jump-find-rules
-  '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\j\\s*"
+  '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\j"
            ;; \\j usage see `dumb-jump-ag-word-boundary`
            :tests ("(defun test (blah)" "(defun test\n"))
 
     (:type "variable" :language "elisp"
-           :regex "\\\(defvar\\b\\s*JJJ\\b\\s?" :tests ("(defvar test " "(defvar test\n"))
+           :regex "\\\(defvar\\b\\s*JJJ\\j" :tests ("(defvar test " "(defvar test\n"))
 
     (:type "variable" :language "elisp"
-           :regex "\\\(defcustom\\b\\s*JJJ\\b\\s?" :tests ("(defcustom test " "(defcustom test\n"))
+           :regex "\\\(defcustom\\b\\s*JJJ\\j" :tests ("(defcustom test " "(defcustom test\n"))
 
     (:type "variable" :language "elisp"
-           :regex "\\\(setq\\b\\s*JJJ\\b\\s*" :tests ("(setq test 123)"))
+           :regex "\\\(setq\\b\\s*JJJ\\j" :tests ("(setq test 123)"))
     (:type "variable" :language "elisp"
            :regex "\\\(JJJ\\s+" :tests ("(let ((test 123)))"))
 
+    ;; variable in method signature
     (:type "variable" :language "elisp"
            :regex "\\(defun\\s*.+\\\(?\\s*JJJ\\b\\s*\\\)?"
            :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)"))
@@ -259,6 +260,23 @@ Optionally pass t to see a list of all failed rules"
           (lambda (test)
             (let* ((cmd (concat " echo '" test "' | grep -En -e '"
                                 (dumb-jump-populate-regex (plist-get rule :regex) "test" nil) "'"))
+                   (resp (shell-command-to-string cmd)))
+              (when (not (s-contains? test resp))
+                (add-to-list 'failures (format fail-tmpl test resp cmd rule))))
+                ))))
+    failures))
+
+(defun dumb-jump-test-ag-rules ()
+  "Test all the rules and return count of those that fail
+Optionally pass t to see a list of all failed rules"
+  (let ((failures '())
+        (fail-tmpl "FAILURE '%s' not in response '%s' | CMD: '%s' | rule: '%s'"))
+    (-each dumb-jump-find-rules
+      (lambda (rule)
+        (-each (plist-get rule :tests)
+          (lambda (test)
+            (let* ((cmd (concat " echo '" test "' | ag --nocolor --nogroup \""
+                                (dumb-jump-populate-regex (plist-get rule :regex) "test" nil) "\""))
                    (resp (shell-command-to-string cmd)))
               (when (not (s-contains? test resp))
                 (add-to-list 'failures (format fail-tmpl test resp cmd rule))))
