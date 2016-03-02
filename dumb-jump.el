@@ -184,10 +184,10 @@
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
     (:type "function" :language "javascript"
-           :regex "\\s*\\bJJJ\\s*:\\s*function\\s*\\\("
+           :regex "\\bJJJ\\s*:\\s*function\\s*\\\("
            :tests ("test: function()"))
     (:type "function" :language "javascript"
-           :regex "\\s*\\bJJJ\\s*=\\s*function\\s*\\\("
+           :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
            :tests ("test = function()")) )
 
   "List of regex patttern templates organized by language
@@ -538,13 +538,24 @@ denoter file/dir is found or uses dumb-jump-default-profile"
           (dumb-jump-parse-grep-response rawresults cur-file line-num)
         (dumb-jump-parse-ag-response rawresults cur-file line-num)))))
 
+(defun dumb-jump-parse-response-line (resp-line cur-file)
+  (let* ((parts (--remove  (string= it "")
+                           (s-split ":?[0-9]+:" resp-line)))
+         (line-num-raw (s-match ":?\\([0-9]+\\):" resp-line)))
+    (when (and parts line-num-raw)
+      (if (= (length parts) 2)
+          (list (nth 0 parts) (nth 1 line-num-raw) (nth 1 parts))
+        ; this case is when they are searching a particular file...
+          (list cur-file (nth 1 line-num-raw) (nth 0 parts))))))
+
+
 (defun dumb-jump-parse-grep-response (resp cur-file cur-line-num)
   "Takes a grep response RESP and parses into a list of plists"
   (let* ((resp-no-warnings (-filter (lambda (x)
                                       (and (not (s-starts-with? "grep:" x))
                                            (not (s-contains? "No such file or" x))))
                                     (s-split "\n" resp)))
-         (parsed (butlast (-map (lambda (line) (s-split ":" line)) resp-no-warnings)))
+         (parsed (butlast (--map (dumb-jump-parse-response-line it cur-file) resp-no-warnings)))
          (results (-mapcat
                   (lambda (x)
                     (let* ((line-num (string-to-number (nth 1 x)))
@@ -560,15 +571,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-parse-ag-response (resp cur-file cur-line-num)
   "Takes a ag response RESP and parses into a list of plists"
   (let* ((resp-lines (s-split "\n" resp))
-         (parsed (butlast (--map (let ((parts (s-split ":" it)))
-                                   ;; when ag searches file not dir it will return no path in the resp line so add
-                                   (cond ((= 2 (length parts))
-                                          (-concat (list cur-file) parts))
-                                         ((= 4 (length parts)) ; windows
-                                          (list (concat (car parts) ":" (nth 1 parts)) (nth 2 parts) (nth 3 parts)))
-                                         (t
-                                          parts)))
-                                 resp-lines)))
+         (parsed (butlast (--map (dumb-jump-parse-response-line it cur-file) resp-lines)))
          (results (-mapcat
                   (lambda (x)
                     (let* ((line-num (string-to-number (nth 1 x)))
