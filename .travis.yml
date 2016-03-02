@@ -10,5 +10,6 @@ env:
   - EVM_EMACS=emacs-24.4-travis
   - EVM_EMACS=emacs-24.5-travis
 script:
+  - grep --version
   - emacs --version
   - make test
