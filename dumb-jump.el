@@ -56,7 +56,7 @@
   :group 'dumb-jump)
 
 (defcustom dumb-jump-grep-word-boundary
-  "(?:$|[^\\w-])"
+  "($|[^\\w-])"
   "`\\b` thinks `-` is a word boundary. When this matters use `\\j` instead and grep will use this value."
   :group 'dumb-jump)
 
