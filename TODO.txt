@@ -1,13 +1,11 @@
+
 1)
-;; TODO: fix off my one error with defvar use special \\j
-;; TODO: have method to test ag regex rules too
 ;; TODO: When there's multiple options use the compilations view for selecting the file
 ;; TODO: built-in :tests for contexts like rules
 ;; TODO: split up context type searches if only one or both apply?
 
 2)
 ;; TODO: support es6 javascript - (add to list of easy PRs)
-;; TODO: rules should have (optional?) tests that fail :fails
 
 3)
 ;; TODO: make dumb-jump-test-rules run on boot? or interactive

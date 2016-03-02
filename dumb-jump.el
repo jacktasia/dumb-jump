@@ -52,7 +52,12 @@
 
 (defcustom dumb-jump-ag-word-boundary
   "(?![\\w-])"
-  "`\\b` acts differently in ag vs grep. When this matters use `\\j` instead. grep will do `\\b` and ag this value"
+  "`\\b` thinks `-` is a word boundary. When this matters use `\\j` instead and ag will use this value."
+  :group 'dumb-jump)
+
+(defcustom dumb-jump-grep-word-boundary
+  "(?:$|[^\\w-])"
+  "`\\b` thinks `-` is a word boundary. When this matters use `\\j` instead and grep will use this value."
   :group 'dumb-jump)
 
 (defcustom dumb-jump-force-grep
@@ -98,7 +103,7 @@
 (defcustom dumb-jump-find-rules
   '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\j"
            ;; \\j usage see `dumb-jump-ag-word-boundary`
-           :tests ("(defun test (blah)" "(defun test\n"))
+           :tests ("(defun test (blah)" "(defun test\n") :not ("(defun test-asdf (blah)" "(defun test-blah\n"))
 
     (:type "variable" :language "elisp"
            :regex "\\\(defvar\\b\\s*JJJ\\j" :tests ("(defvar test " "(defvar test\n"))
@@ -249,36 +254,40 @@ immediately to the right of a symbol then it's probably a function call"
           (setq cur-pos (1- cur-pos)))))
     (1+ cur-pos)))
 
-(defun dumb-jump-test-rules ()
+(defun dumb-jump-test-rules (&optional run-not-tests)
   "Test all the rules and return count of those that fail
 Optionally pass t to see a list of all failed rules"
   (let ((failures '())
-        (fail-tmpl "FAILURE '%s' not in response '%s' | CMD: '%s' | rule: '%s'"))
+        (fail-tmpl "grep %s FAILURE '%s' not in response '%s' | CMD: '%s' | regex: '%s'"))
     (-each dumb-jump-find-rules
       (lambda (rule)
-        (-each (plist-get rule :tests)
+        (-each (plist-get rule (if run-not-tests :not :tests))
           (lambda (test)
             (let* ((cmd (concat " echo '" test "' | grep -En -e '"
                                 (dumb-jump-populate-regex (plist-get rule :regex) "test" nil) "'"))
                    (resp (shell-command-to-string cmd)))
-              (when (not (s-contains? test resp))
-                (add-to-list 'failures (format fail-tmpl test resp cmd rule))))
+              (when (or
+                     (and (not run-not-tests) (not (s-contains? test resp)))
+                     (and run-not-tests (> (length resp) 0)))
+                (add-to-list 'failures (format fail-tmpl (if run-not-tests "not" "") test resp cmd (plist-get rule :regex)))))
                 ))))
     failures))
 
-(defun dumb-jump-test-ag-rules ()
+(defun dumb-jump-test-ag-rules (&optional run-not-tests)
   "Test all the rules and return count of those that fail
 Optionally pass t to see a list of all failed rules"
   (let ((failures '())
-        (fail-tmpl "FAILURE '%s' not in response '%s' | CMD: '%s' | rule: '%s'"))
+        (fail-tmpl "ag FAILURE '%s' not in response '%s' | CMD: '%s' | rule: '%s'"))
     (-each dumb-jump-find-rules
       (lambda (rule)
-        (-each (plist-get rule :tests)
+        (-each (plist-get rule (if run-not-tests :not :tests))
           (lambda (test)
             (let* ((cmd (concat " echo '" test "' | ag --nocolor --nogroup \""
-                                (dumb-jump-populate-regex (plist-get rule :regex) "test" nil) "\""))
+                                (dumb-jump-populate-regex (plist-get rule :regex) "test" t) "\""))
                    (resp (shell-command-to-string cmd)))
-              (when (not (s-contains? test resp))
+              (when (or
+                     (and (not run-not-tests) (not (s-contains? test resp)))
+                     (and run-not-tests (> (length resp) 0)))
                 (add-to-list 'failures (format fail-tmpl test resp cmd rule))))
                 ))))
     failures))
@@ -645,7 +654,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-populate-regex (it look-for use-ag)
   "Populate IT regex template with LOOK-FOR"
-  (s-replace "\\j" (if use-ag dumb-jump-ag-word-boundary "\\b")
+  (s-replace "\\j" (if use-ag dumb-jump-ag-word-boundary dumb-jump-grep-word-boundary)
              (s-replace "JJJ" (regexp-quote look-for) it)))
 
 (defun dumb-jump-populate-regexes (look-for regexes use-ag)

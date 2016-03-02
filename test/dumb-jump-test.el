@@ -49,7 +49,7 @@
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn --include \\*.el --include \\*.el.gz -e '\\(defun\\s+tester\\b' -e '\\(defvar\\b\\s*tester\\b' -e '\\(defcustom\\b\\s*tester\\b' -e '\\(setq\\b\\s*tester\\b' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
+        (expected "LANG=C grep -REn --include \\*.el --include \\*.el.gz -e '\\(defun\\s+tester(?:$|[^\\w-])' -e '\\(defvar\\b\\s*tester(?:$|[^\\w-])' -e '\\(defcustom\\b\\s*tester(?:$|[^\\w-])' -e '\\(setq\\b\\s*tester(?:$|[^\\w-])' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-test ()
@@ -60,8 +60,8 @@
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
   (let* ((dumb-jump-functions-only t)
         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b' .")
-        (zexpected "LANG=C zgrep -REn -e '\\(defun\\s+tester\\b' ."))
+        (expected "LANG=C grep -REn -e '\\(defun\\s+tester(?:$|[^\\w-])' .")
+        (zexpected "LANG=C zgrep -REn -e '\\(defun\\s+tester(?:$|[^\\w-])' ."))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "" nil)))
     (should (string= zexpected  (dumb-jump-generate-grep-command  "tester" "blah.el.gz" "." regexes "" nil)))))
 
@@ -69,7 +69,7 @@
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context nil) ;; overriding the default
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
-         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b' ."))
+         (expected "LANG=C grep -REn -e '\\(defun\\s+tester(?:$|[^\\w-])' ."))
     ;; the point context being passed should match a "function" type so only the one command
     (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
 
@@ -77,7 +77,7 @@
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context t)
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
-         (expected "LANG=C grep -REn -e '\\(defun\\s+tester\\b' -e '\\(defvar\\b\\s*tester\\b' -e '\\(defcustom\\b\\s*tester\\b' -e '\\(setq\\b\\s*tester\\b' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
+         (expected "LANG=C grep -REn -e '\\(defun\\s+tester(?:$|[^\\w-])' -e '\\(defvar\\b\\s*tester(?:$|[^\\w-])' -e '\\(defcustom\\b\\s*tester(?:$|[^\\w-])' -e '\\(setq\\b\\s*tester(?:$|[^\\w-])' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
 
     ;; the point context being passed is ignored so ALL should return
     (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
@@ -150,6 +150,14 @@
 
 (ert-deftest dumb-jump-test-ag-rules-test ()
   (let ((rule-failures (dumb-jump-test-ag-rules)))
+    (should (= (length rule-failures) 0))))
+
+(ert-deftest dumb-jump-test-rules-not-test () ;; :not tests
+  (let ((rule-failures (dumb-jump-test-rules t)))
+    (should (= (length rule-failures) 0))))
+
+(ert-deftest dumb-jump-test-ag-rules-not-test () ;; :not tests
+  (let ((rule-failures (dumb-jump-test-ag-rules t)))
     (should (= (length rule-failures) 0))))
 
 (ert-deftest dumb-jump-test-rules-fail-test ()
