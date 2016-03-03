@@ -544,9 +544,9 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (line-num-raw (s-match ":?\\([0-9]+\\):" resp-line)))
     (when (and parts line-num-raw)
       (if (= (length parts) 2)
-          (list (nth 0 parts) (nth 1 line-num-raw) (nth 1 parts))
+          (list (f-join (nth 0 parts)) (nth 1 line-num-raw) (nth 1 parts))
         ; this case is when they are searching a particular file...
-          (list cur-file (nth 1 line-num-raw) (nth 0 parts))))))
+          (list (f-join cur-file) (nth 1 line-num-raw) (nth 0 parts))))))
 
 
 (defun dumb-jump-parse-grep-response (resp cur-file cur-line-num)

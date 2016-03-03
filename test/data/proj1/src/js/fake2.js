@@ -4,7 +4,7 @@ var someVar = 13,
     someVar2 = 14;
 
 function workWithSomeVar(someVar) {
-    var someVar2 = 13;
+    var someVar2 = {a: 1, b: 2};
     console.log('someVar is', someVar);
     console.log('someVar is', someVar2);
 }
