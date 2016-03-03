@@ -442,3 +442,20 @@
                                         ;(should (string= (plist-get result :path) lib-file))
                                         (should (= (plist-get result :line) 4))))
         (dumb-jump-go)))))
+
+(ert-deftest dumb-jump-parse-response-line-test ()
+  (let ((t1 (dumb-jump-parse-response-line "/opt/test/foo.js:44: var test = 12;" "/opt/test/blah.js"))
+        (t2 (dumb-jump-parse-response-line "47: var test = 13;" "/opt/test/blah.js"))
+        (t3 (dumb-jump-parse-response-line "c:\\Users\\test\\foo.js:1: var test = 14;" "c:\\Users\\test\\foo.js"))
+        (t4 (dumb-jump-parse-response-line "c:\\Users\\test\\foo2.js:2:test = {a:1,b:1};" "c:\\Users\\test\\foo.js"))
+        (t5 (dumb-jump-parse-response-line "/opt/test/foo1.js:41: var test = {c:3, d: 4};" "/opt/test/b2.js")))
+    ;; normal
+    (should (equal t1 '("/opt/test/foo.js" "44" " var test = 12;")))
+    ;; no file name in response (searched single file)
+    (should (equal t2 '("/opt/test/blah.js" "47" " var test = 13;")))
+    ;; windows
+    (should (equal t3 '("c:\\Users\\test\\foo.js" "1" " var test = 14;")))
+    ;; windows w/ extra :
+    (should (equal t4 '("c:\\Users\\test\\foo2.js" "2" "test = {a:1,b:1};")))
+    ;; normal w/ extra :
+    (should (equal t5 '("/opt/test/foo1.js" "41" " var test = {c:3, d: 4};")))))
