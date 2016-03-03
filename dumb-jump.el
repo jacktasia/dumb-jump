@@ -123,7 +123,7 @@
 
     ;; python
     (:type "variable" :language "python"
-           :regex "\\s*JJJ\\s*=[^=]+$" :tests ("test = 1234") :not ("if test == 1234:"))
+           :regex "\\s*JJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test == 1234:"))
 
     (:type "function" :language "python"
            :regex "def\\s*JJJ\\s*\\\("
@@ -135,7 +135,7 @@
 
     ;; ruby
     (:type "variable" :language "ruby"
-           :regex "\\s*JJJ\\s*=[^=]+$" :tests ("test = 1234") :not ("if test == 1234"))
+           :regex "\\s*JJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test == 1234"))
 
     (:type "function" :language "ruby"
            :regex "\\bdef\\s*JJJ\\s*\\\("
@@ -156,7 +156,7 @@
 
     ;; go
     (:type "variable" :language "go"
-           :regex "\\s*\\bJJJ\\s*=[^=]+$" :tests ("test = 1234") :not ("if test == 1234 {"))
+           :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test == 1234 {"))
 
     (:type "variable" :language "go"
            :regex "\\s*\\bJJJ\\s*:=\\s*" :tests ("test := 1234"))
@@ -175,7 +175,7 @@
 
     ;; javascript
     (:type "variable" :language "javascript"
-           :regex "\\s*\\bJJJ\\s*=[^=]+$" :tests ("test = 1234") :not ("if (test === 1234)"))
+           :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if (test === 1234)"))
 
     (:type "variable" :language "javascript"
            :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*JJJ\\s*,?\\s*\\\)?"
