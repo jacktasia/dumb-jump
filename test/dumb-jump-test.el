@@ -49,12 +49,12 @@
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn --include \\*.el --include \\*.el.gz -e '\\(defun\\s+tester($|[^\\w-])' -e '\\(defvar\\b\\s*tester($|[^\\w-])' -e '\\(defcustom\\b\\s*tester($|[^\\w-])' -e '\\(setq\\b\\s*tester($|[^\\w-])' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
+        (expected "LANG=C grep -REn --include \\*.el --include \\*.el.gz -e '\\(defun\\s+tester($|[^\\w-])' -e '\\(defvar\\b\\s*tester($|[^\\w-])' -e '\\(defcustom\\b\\s*tester($|[^\\w-])' -e '\\(setq\\b\\s*tester($|[^\\w-])' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?' ."))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-test ()
   (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "ag --nocolor --nogroup \"\\(defun\\s+tester(?![\\w-])|\\(defvar\\b\\s*tester(?![\\w-])|\\(defcustom\\b\\s*tester(?![\\w-])|\\(setq\\b\\s*tester(?![\\w-])|\\(tester\\s+|\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?\" ."))
+        (expected "ag --nocolor --nogroup \"\\(defun\\s+tester(?![\\w-])|\\(defvar\\b\\s*tester(?![\\w-])|\\(defcustom\\b\\s*tester(?![\\w-])|\\(setq\\b\\s*tester(?![\\w-])|\\(tester\\s+|\\(defun\\s*.+\\(?\\s*tester(?![\\w-])\\s*\\)?\" ."))
     (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
@@ -77,7 +77,7 @@
   (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context t)
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
-         (expected "LANG=C grep -REn -e '\\(defun\\s+tester($|[^\\w-])' -e '\\(defvar\\b\\s*tester($|[^\\w-])' -e '\\(defcustom\\b\\s*tester($|[^\\w-])' -e '\\(setq\\b\\s*tester($|[^\\w-])' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester\\b\\s*\\)?' ."))
+         (expected "LANG=C grep -REn -e '\\(defun\\s+tester($|[^\\w-])' -e '\\(defvar\\b\\s*tester($|[^\\w-])' -e '\\(defcustom\\b\\s*tester($|[^\\w-])' -e '\\(setq\\b\\s*tester($|[^\\w-])' -e '\\(tester\\s+' -e '\\(defun\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?' ."))
 
     ;; the point context being passed is ignored so ALL should return
     (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
@@ -89,7 +89,7 @@
     (should (s-blank? (dumb-jump-generate-ag-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
-  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump2.el:28:(defvar dumb-jump-grep)")
+  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:(defvar some-var)")
          (parsed (dumb-jump-parse-grep-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
     (should (= (plist-get test-result :diff) 2))
@@ -97,7 +97,7 @@
     (should (= (plist-get test-result ':line) 26))))
 
 (ert-deftest dumb-jump-ag-parse-test ()
-  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar dumb-jump-grep-prefix )\n./dumb-jump2.el:28:1:(defvar dumb-jump-grep)")
+  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:1:(defvar some-var)")
          (parsed (dumb-jump-parse-ag-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
     (should (= (plist-get test-result :diff) 2))

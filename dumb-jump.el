@@ -112,14 +112,16 @@
            :regex "\\\(defcustom\\b\\s*JJJ\\j" :tests ("(defcustom test " "(defcustom test\n"))
 
     (:type "variable" :language "elisp"
-           :regex "\\\(setq\\b\\s*JJJ\\j" :tests ("(setq test 123)"))
+           :regex "\\\(setq\\b\\s*JJJ\\j" :tests ("(setq test 123)") :not ("setq test-blah 123)"))
+
     (:type "variable" :language "elisp"
-           :regex "\\\(JJJ\\s+" :tests ("(let ((test 123)))"))
+           :regex "\\\(JJJ\\s+" :tests ("(let ((test 123)))") :not ("(let ((test-2 123)))"))
 
     ;; variable in method signature
     (:type "variable" :language "elisp"
-           :regex "\\(defun\\s*.+\\\(?\\s*JJJ\\b\\s*\\\)?"
-           :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)"))
+           :regex "\\(defun\\s*.+\\\(?\\s*JJJ\\j\\s*\\\)?"
+           :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)")
+           :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
     ;; python
     (:type "variable" :language "python"
@@ -178,7 +180,7 @@
            :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if (test === 1234)"))
 
     (:type "variable" :language "javascript"
-           :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*JJJ\\s*,?\\s*\\\)?"
+           :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*JJJ\\j\\s*,?\\s*\\\)?"
            :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah) {" "function(blah, test)"))
     (:type "function" :language "javascript"
            :regex "function\\s*JJJ\\s*\\\("
