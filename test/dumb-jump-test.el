@@ -386,6 +386,13 @@
                            (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
                 (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
 
+(ert-deftest dumb-jump-message-get-results-test ()
+  (noflet ((buffer-modified-p (b)
+                              t))
+          (let ((results (dumb-jump-get-results)))
+            (should-not (plist-get results :results))
+            (should-not (plist-get results :file)))))
+
 (ert-deftest dumb-jump-message-result-follow-test ()
   (noflet ((dumb-jump-goto-file-line (path line pos)
                                      (should (string= path "src/file.js"))

@@ -354,6 +354,11 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (plist-get (car result) :language)
       (format ".%s file" (or (f-ext file) "?")))))
 
+(defun dumb-jump-get-results ()
+  (if (buffer-modified-p (current-buffer))
+      `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil)
+    (dumb-jump-fetch-results)))
+
 (defun dumb-jump-fetch-results ()
   "Build up a list of results by examining the current context and calling grep"
   (let* ((cur-file (or (buffer-file-name) ""))
@@ -413,7 +418,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   "Go to the function/variable declaration for thing at point"
   (interactive "P")
   (let* ((start-time (float-time))
-         (info (dumb-jump-fetch-results))
+         (info (dumb-jump-get-results))
          (end-time (float-time))
          (fetch-time (- end-time start-time))
          (results (plist-get info :results))
@@ -425,6 +430,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
      ((> fetch-time dumb-jump-max-find-time)
       (dumb-jump-message "Took over %ss to find '%s'. Please install ag or add a .dumbjump file to '%s' with path exclusions"
                (number-to-string dumb-jump-max-find-time) look-for proj-root))
+     ((and (null results) (null look-for))
+      (dumb-jump-message "Please save your file before jumping."))
      ((s-ends-with? " file" lang)
       (dumb-jump-message "Could not find rules for '%s'." lang))
      ((= result-count 1)

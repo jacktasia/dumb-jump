@@ -1,7 +1,6 @@
 
 1)
 ;; TODO: if no grep or ag warn user (windows test)
-;; TODO: if file you're dumping from is not saved then do NOT search
 ;; TODO: ignore #files#
 ;; TODO: When there's multiple options use the compilations view for selecting the file
 ;; TODO: built-in :tests for contexts like rules
