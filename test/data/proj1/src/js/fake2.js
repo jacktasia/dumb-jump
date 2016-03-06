@@ -21,3 +21,13 @@ function workWithSomeVar(blarg, someVar, blah3) {
     console.log('someVar is', someVar);
     console.log('someVar is', someVar2);
 }
+
+
+var backgroundColor = '#222';
+    if (isActive) {
+      backgroundColor = 'darkgreen';
+    } else if (canDrop) {
+      backgroundColor = 'darkkhaki';
+    }
+
+console.log(backgroundColor);

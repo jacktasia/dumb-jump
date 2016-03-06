@@ -17,3 +17,4 @@ someFunc();
 
 
 //
+console.log(backgroundColor);

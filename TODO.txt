@@ -1,8 +1,7 @@
 
 1)
 ;; TODO: if no grep or ag warn user (windows test)
-;; TODO: ignore #files#
-;; TODO: filter out search result with no look-for in the context (fix for greedy regexes somehow getting next line too)
+;; TODO: ignore #files# ?
 
 ;; TODO: When there's multiple options use the compilations view for selecting the file
 ;; TODO: built-in :tests for contexts like rules

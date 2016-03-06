@@ -544,9 +544,11 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (rawresults (shell-command-to-string cmd)))
     ;(dumb-jump-message-prin1 "RUNNING CMD '%s' RESULTS: %s" cmd rawresults)
     (unless (s-blank? cmd)
-      (if use-grep
-          (dumb-jump-parse-grep-response rawresults cur-file line-num)
-        (dumb-jump-parse-ag-response rawresults cur-file line-num)))))
+      (let ((results
+             (if use-grep
+                 (dumb-jump-parse-grep-response rawresults cur-file line-num)
+               (dumb-jump-parse-ag-response rawresults cur-file line-num))))
+        (--filter (s-contains? look-for (plist-get it :context)) results)))))
 
 (defun dumb-jump-parse-response-line (resp-line cur-file)
   (let* ((parts (--remove  (string= it "")
