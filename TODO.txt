@@ -1,6 +1,5 @@
 
 1)
-;; TODO: if no grep or ag warn user (windows test)
 ;; TODO: ignore #files# ?
 
 ;; TODO: When there's multiple options use the compilations view for selecting the file

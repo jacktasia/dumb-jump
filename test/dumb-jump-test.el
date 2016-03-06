@@ -386,12 +386,24 @@
                            (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
                 (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
 
-(ert-deftest dumb-jump-message-get-results-test ()
+(ert-deftest dumb-jump-message-get-results-unsaved-test ()
   (noflet ((buffer-modified-p (b)
-                              t))
+                              t)
+           (dumb-jump-message (input)
+                              (should (string= "Please save your file before jumping." input))))
+
           (let ((results (dumb-jump-get-results)))
-            (should-not (plist-get results :results))
-            (should-not (plist-get results :file)))))
+            (should (eq (plist-get results :issue) 'unsaved)))))
+
+(ert-deftest dumb-jump-message-get-results-nogrep-test ()
+  (noflet ((dumb-jump-ag-installed? ()
+                                    nil)
+           (dumb-jump-grep-installed? ()
+                                    nil)
+           (dumb-jump-message (input)
+                              (should (string= "Please install ag or grep!" input))))
+          (let ((results (dumb-jump-get-results)))
+            (should (eq (plist-get results :issue) 'nogrep)))))
 
 (ert-deftest dumb-jump-message-result-follow-test ()
   (noflet ((dumb-jump-goto-file-line (path line pos)

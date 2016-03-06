@@ -245,6 +245,10 @@ immediately to the right of a symbol then it's probably a function call"
   "Return t if ag is installed"
   (s-contains? "ag version" (shell-command-to-string (concat dumb-jump-ag-cmd " --version"))))
 
+(defun dumb-jump-grep-installed? ()
+  "Return t if ag is installed"
+  (s-match "[0-9]+\\.[0-9]+" (shell-command-to-string (concat dumb-jump-grep-cmd " --version"))))
+
 (defun dumb-jump-find-start-pos (line-in look-for cur-pos)
   "Find start column position of LOOK-FOR in LINE-IN using CUR-POS as a hint"
   (let ((is-found nil)
@@ -354,10 +358,15 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (plist-get (car result) :language)
       (format ".%s file" (or (f-ext file) "?")))))
 
+
 (defun dumb-jump-get-results ()
-  (if (buffer-modified-p (current-buffer))
-      `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil)
-    (dumb-jump-fetch-results)))
+  (cond
+   ((not (or (dumb-jump-grep-installed?) (dumb-jump-ag-installed?)))
+      `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil :issue ,(intern "nogrep")))
+   ((buffer-modified-p (current-buffer))
+      `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil :issue ,(intern "unsaved")))
+   (t
+    (dumb-jump-fetch-results))))
 
 (defun dumb-jump-fetch-results ()
   "Build up a list of results by examining the current context and calling grep"
@@ -424,14 +433,17 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (results (plist-get info :results))
          (look-for (plist-get info :symbol))
          (proj-root (plist-get info :root))
+         (issue (plist-get info :issue))
          (lang (plist-get info :lang))
          (result-count (length results)))
     (cond
      ((> fetch-time dumb-jump-max-find-time)
       (dumb-jump-message "Took over %ss to find '%s'. Please install ag or add a .dumbjump file to '%s' with path exclusions"
                (number-to-string dumb-jump-max-find-time) look-for proj-root))
-     ((and (null results) (null look-for))
+     ((eq issue 'unsaved)
       (dumb-jump-message "Please save your file before jumping."))
+     ((eq issue 'nogrep)
+      (dumb-jump-message "Please install ag or grep!"))
      ((s-ends-with? " file" lang)
       (dumb-jump-message "Could not find rules for '%s'." lang))
      ((= result-count 1)
