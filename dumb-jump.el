@@ -453,9 +453,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       ;; unless the match is in the current file
       (dumb-jump-handle-results results (plist-get info :file) proj-root (plist-get info :ctx-type) look-for use-tooltip))
      ((= result-count 0)
-      (dumb-jump-message "'%s' %s %s declaration not found." look-for lang (plist-get info :ctx-type)))
-     (t
-      (dumb-jump-message "Un-handled results: %s " (prin1-to-string results))))))
+      (dumb-jump-message "'%s' %s %s declaration not found." look-for lang (plist-get info :ctx-type))))))
 
 (defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for use-tooltip)
   "Figure which of the RESULTS to jump to. Favoring the CUR-FILE"

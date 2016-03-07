@@ -131,6 +131,13 @@
     (should (string= found-project test-data-dir-proj1))
     (should (string= ".dumbjump" (dumb-jump-get-config found-project)))))
 
+(ert-deftest dumb-jump-find-proj-root-default-test ()
+  (noflet ((locate-dominating-file (a b)
+                                   nil))
+    (let ((found-project (dumb-jump-get-project-root ""))
+          (expected (f-expand dumb-jump-default-project)))
+      (should (string= found-project expected)))))
+
 (ert-deftest dumb-jump-goto-file-line-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
     (dumb-jump-goto-file-line js-file 3 0)
