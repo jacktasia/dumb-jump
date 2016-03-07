@@ -180,9 +180,10 @@
            :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if (test === 1234)"))
 
     (:type "variable" :language "javascript"
-           :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*JJJ\\b\\s*,?\\s*\\\)?"
+           :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*\\bJJJ\\b\\s*,?\\s*\\\)?"
            :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah) {" "function(blah, test)")
-           :not ("function (testLen)" "function (test1, blah)" "function somefunc(testFirst, blah) {" "function(blah, testLast)"))
+           :not ("function (testLen)" "function (test1, blah)" "function somefunc(testFirst, blah) {" "function(blah, testLast)"
+                 "function (Lentest)" "function (blahtest, blah)" "function somefunc(Firsttest, blah) {" "function(blah, Lasttest)"))
     (:type "function" :language "javascript"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
