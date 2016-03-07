@@ -29,10 +29,17 @@
     (should (equal (dumb-jump-current-file-results "blah" results) expected))))
 
 (ert-deftest dumb-jump-exclude-path-test ()
-  (let* ((expected (list (f-join test-data-dir-proj1 "ignored")))
+  (let* ((expected (list (f-join test-data-dir-proj1 "ignored")
+                         (f-join test-data-dir-proj1 "ignored2")))
          (root (dumb-jump-get-project-root test-data-dir-proj1))
          (config (dumb-jump-read-config test-data-dir-proj1  ".dumbjump")))
     (should (equal (plist-get config :exclude)  expected))))
+
+(ert-deftest dumb-jump-include-path-test ()
+  (let* ((config (dumb-jump-read-config test-data-dir-proj1 ".dumbjump-include"))
+         (expected (list (f-join test-data-dir-proj1 "../fake-library")
+                         "/etc/var/some/code")))
+    (should (equal (plist-get config :include) expected))))
 
 (ert-deftest dumb-jump-exclude-path-blank-test ()
   (let* ((config (dumb-jump-read-config test-data-dir-proj1 ".dumbjump-blank")))
