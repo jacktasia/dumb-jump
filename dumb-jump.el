@@ -40,11 +40,6 @@
   "The path to grep. By default assumes it is in path."
   :group 'dumb-jump)
 
-(defcustom dumb-jump-ag-prefix
-  ""
-  "A prefix for when using ag"
-  :group 'dumb-jump)
-
 (defcustom dumb-jump-ag-cmd
   "ag"
   "The the path to the silver searcher. By default assumes it is in path. If not found  WILL fallback to grep"
@@ -184,15 +179,18 @@
            :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah) {" "function(blah, test)")
            :not ("function (testLen)" "function (test1, blah)" "function somefunc(testFirst, blah) {" "function(blah, testLast)"
                  "function (Lentest)" "function (blahtest, blah)" "function somefunc(Firsttest, blah) {" "function(blah, Lasttest)"))
+
     (:type "function" :language "javascript"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
+
     (:type "function" :language "javascript"
            :regex "\\bJJJ\\s*:\\s*function\\s*\\\("
            :tests ("test: function()"))
+
     (:type "function" :language "javascript"
            :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
-           :tests ("test = function()")) )
+           :tests ("test = function()")))
 
   "List of regex patttern templates organized by language
 and type to use for generating the grep command"
@@ -358,7 +356,6 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     (if result
         (plist-get (car result) :language)
       (format ".%s file" (or (f-ext file) "?")))))
-
 
 (defun dumb-jump-get-results ()
   (cond
