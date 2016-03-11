@@ -559,15 +559,14 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (--filter (s-contains? look-for (plist-get it :context)) results)))))
 
 (defun dumb-jump-parse-response-line (resp-line cur-file)
-  (let* ((parts (--remove  (string= it "")
-                           (s-split ":?[0-9]+:" resp-line)))
+  (let* ((parts (--remove (string= it "")
+                          (s-split ":?[0-9]+:" resp-line)))
          (line-num-raw (s-match ":?\\([0-9]+\\):" resp-line)))
     (when (and parts line-num-raw)
       (if (= (length parts) 2)
           (list (f-join (nth 0 parts)) (nth 1 line-num-raw) (nth 1 parts))
         ; this case is when they are searching a particular file...
-          (list (f-join cur-file) (nth 1 line-num-raw) (nth 0 parts))))))
-
+        (list (f-join cur-file) (nth 1 line-num-raw) (nth 0 parts))))))
 
 (defun dumb-jump-parse-grep-response (resp cur-file cur-line-num)
   "Takes a grep response RESP and parses into a list of plists"
@@ -652,27 +651,14 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-get-contextual-regexes (lang ctx-type)
   "Get list of search regular expressions by LANG and CTX-TYPE (variable, function, etc)"
-  (let* ((raw-rules
-          (dumb-jump-get-rules-by-language lang))
-         (ctx-type (if dumb-jump-ignore-context
-                     nil
-                     ctx-type))
+  (let* ((raw-rules (dumb-jump-get-rules-by-language lang))
+         (ctx-type (unless dumb-jump-ignore-context ctx-type))
          (ctx-rules
           (if ctx-type
-              (-filter (lambda (r)
-                         (string= (plist-get r :type)
-                                   ctx-type))
-                       raw-rules)
+              (--filter (string= (plist-get it :type) ctx-type) raw-rules)
             raw-rules))
-         (rules (if ctx-rules
-                    ctx-rules
-                  raw-rules))
-         (regexes
-          (-map
-           (lambda (r)
-             (plist-get r ':regex))
-           rules)))
-    ;(dumb-jump-message-prin1 "raw:%s\n ctx-ruls:%s\n rules:%s\n regexes:%s\n" raw-rules ctx-rules rules regexes)
+         (rules (or ctx-rules raw-rules))
+         (regexes (--map (plist-get it :regex) rules)))
     regexes))
 
 (defun dumb-jump-populate-regex (it look-for use-ag)
