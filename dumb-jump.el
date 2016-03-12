@@ -357,12 +357,17 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (plist-get (car result) :language)
       (format ".%s file" (or (f-ext file) "?")))))
 
+(defun dumb-jump-issue-result (issue)
+  `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil :issue ,(intern issue)))
+
 (defun dumb-jump-get-results ()
   (cond
    ((not (or (dumb-jump-grep-installed?) (dumb-jump-ag-installed?)))
-      `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil :issue ,(intern "nogrep")))
+    (dumb-jump-issue-result "nogrep"))
    ((buffer-modified-p (current-buffer))
-      `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil :issue ,(intern "unsaved")))
+    (dumb-jump-issue-result "unsaved"))
+   ((not (thing-at-point 'symbol))
+    (dumb-jump-issue-result "nosymbol"))
    (t
     (dumb-jump-fetch-results))))
 
@@ -442,6 +447,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       (dumb-jump-message "Please save your file before jumping."))
      ((eq issue 'nogrep)
       (dumb-jump-message "Please install ag or grep!"))
+     ((eq issue 'nosymbol)
+      (dumb-jump-message "No symbol under point."))
      ((s-ends-with? " file" lang)
       (dumb-jump-message "Could not find rules for '%s'." lang))
      ((= result-count 1)

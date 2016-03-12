@@ -402,8 +402,7 @@
 
 
 (ert-deftest dumb-jump-go-unsaved-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
-        (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
@@ -414,8 +413,7 @@
         (dumb-jump-go)))))
 
 (ert-deftest dumb-jump-go-nogrep-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
-        (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
@@ -425,6 +423,15 @@
                                           nil)
                (dumb-jump-message (input)
                                   (should (string= "Please install ag or grep!" input))))
+        (dumb-jump-go)))))
+
+(ert-deftest dumb-jump-go-nosymbol-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 1)
+      (noflet ((dumb-jump-message (input)
+                                  (should (string= "No symbol under point." input))))
         (dumb-jump-go)))))
 
 (ert-deftest dumb-jump-message-get-results-unsaved-test ()
@@ -476,6 +483,14 @@
 (ert-deftest dumb-jump-concat-command-test ()
   (should (string= (dumb-jump-concat-command " test1 " "test2 " "   test3")
                    "test1 test2 test3")))
+
+(ert-deftest dumb-jump-concat-command-test ()
+  (should (string= (dumb-jump-concat-command " test1 " "test2 " "   test3")
+                   "test1 test2 test3")))
+
+(ert-deftest dumb-jump-issue-result-test ()
+  (let ((result (dumb-jump-issue-result "unsaved")))
+    (should (eq (plist-get result :issue) 'unsaved))))
 
 (ert-deftest dumb-jump-find-start-pos-test ()
   (let ((cur-pos 9)
