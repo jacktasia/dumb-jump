@@ -484,10 +484,6 @@
   (should (string= (dumb-jump-concat-command " test1 " "test2 " "   test3")
                    "test1 test2 test3")))
 
-(ert-deftest dumb-jump-concat-command-test ()
-  (should (string= (dumb-jump-concat-command " test1 " "test2 " "   test3")
-                   "test1 test2 test3")))
-
 (ert-deftest dumb-jump-issue-result-test ()
   (let ((result (dumb-jump-issue-result "unsaved")))
     (should (eq (plist-get result :issue) 'unsaved))))

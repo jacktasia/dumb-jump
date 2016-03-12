@@ -675,9 +675,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-populate-regexes (look-for regexes use-ag)
   "Take list of REGEXES and populate the LOOK-FOR target and return that list"
-  (-map (lambda (regex)
-          (dumb-jump-populate-regex regex look-for use-ag))
-        regexes))
+  (--map (dumb-jump-populate-regex it look-for use-ag) regexes))
 
 (defun dumb-jump-generate-ag-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
@@ -686,7 +684,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (cmd (concat dumb-jump-ag-cmd " --nocolor --nogroup" (if (s-ends-with? ".gz" cur-file)
                                                             " --search-zip"
                                                           "")))
-         (exclude-args (dumb-jump-arg-joiner "--ignore-dir" (-map (lambda (p) (s-replace proj "" p)) exclude-paths)))
+         (exclude-args (dumb-jump-arg-joiner "--ignore-dir" (--map (s-replace proj "" it) exclude-paths)))
          (regex-args (format "\"%s\"" (s-join "|" filled-regexes))))
     (if (= (length regexes) 0)
         ""
@@ -708,21 +706,20 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-concat-command (&rest parts)
   "Concat the PARTS of a command if each part has a length"
-  (s-join " " (-map #'s-trim
-                    (--filter
-                     (> (length it) 0)
-                     parts))))
+  (s-join " " (-map #'s-trim (--filter (> (length it) 0) parts))))
 
 (defun dumb-jump-get-file-exts-by-language (language)
   "Get list of file extensions for a language"
-  (-map (lambda (x) (plist-get x :ext))
-        (-filter (lambda (x) (string= (plist-get x :language) language)) dumb-jump-language-file-exts)))
+  (--map (plist-get it :ext)
+         (--filter (string= (plist-get it :language) language)
+                  dumb-jump-language-file-exts)))
 
 (defun dumb-jump-get-rules-by-language (language)
   "Get list of rules for a language"
-  (let ((results (-filter (lambda (x) (string= (plist-get x ':language) language)) dumb-jump-find-rules)))
+  (let ((results (--filter (string= (plist-get it ':language) language)
+                           dumb-jump-find-rules)))
     (if dumb-jump-functions-only
-        (-filter (lambda (x) (string= (plist-get x ':type) "function")) results)
+        (--filter (string= (plist-get it ':type) "function") results)
       results)))
 
 ;;;###autoload
