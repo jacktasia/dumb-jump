@@ -566,6 +566,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (--filter (s-contains? look-for (plist-get it :context)) results)))))
 
 (defun dumb-jump-parse-response-line (resp-line cur-file)
+  "Parse a search program's single RESP-LINE for CUR-FILE into a list of (path line context)"
   (let* ((parts (--remove (string= it "")
                           (s-split ":?[0-9]+:" resp-line)))
          (line-num-raw (s-match ":?\\([0-9]+\\):" resp-line)))
