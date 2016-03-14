@@ -170,6 +170,12 @@
            :regex "type\\s+JJJ\\s+struct\\s+\\\{"
            :tests ("type test struct {"))
 
+    ;; javascript extended
+
+    (:type "function" :language "javascript"
+           :regex "(service|factory)\\\((['\\\"])JJJ\\2" :tags ("angular")
+           :tests ("module.factory(\\'test\\', [\\'$rootScope\\', function($rootScope) {"))
+
     ;; javascript
     (:type "variable" :language "javascript"
            :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if (test === 1234)"))
