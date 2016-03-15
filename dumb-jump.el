@@ -364,6 +364,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       (format ".%s file" (or (f-ext file) "?")))))
 
 (defun dumb-jump-issue-result (issue)
+  "Return a result property list with the ISSUE set as :issue property symbol"
   `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil :issue ,(intern issue)))
 
 (defun dumb-jump-get-results ()
