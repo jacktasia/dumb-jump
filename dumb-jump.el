@@ -368,6 +368,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil :issue ,(intern issue)))
 
 (defun dumb-jump-get-results ()
+  "Runs dumb-jump-fetch-results if searcher installed, buffer is saved, and there's a symbol under point"
   (cond
    ((not (or (dumb-jump-grep-installed?) (dumb-jump-ag-installed?)))
     (dumb-jump-issue-result "nogrep"))
@@ -379,7 +380,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     (dumb-jump-fetch-results))))
 
 (defun dumb-jump-fetch-results ()
-  "Build up a list of results by examining the current context and calling grep"
+  "Build up a list of results by examining the current context and calling grep or ag"
   (let* ((cur-file (or (buffer-file-name) ""))
          (cur-line (thing-at-point 'line t))
          (look-for-start (- (car (bounds-of-thing-at-point 'symbol))
