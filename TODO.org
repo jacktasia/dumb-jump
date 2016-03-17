@@ -1,7 +1,6 @@
 * Tasks
 ** TODO "sets" which to be enabled
-*** TODO angular
-*** TODO es6
+** TODO clojure support
 ** TODO ignore #files#
 ** TODO split up searches by context type?
 ** TODO built-in :tests for contexts like rules
