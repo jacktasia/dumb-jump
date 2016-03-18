@@ -142,6 +142,7 @@
     (:type "function" :language "php"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
+
     (:type "variable" :language "php"
            :regex "JJJ\\s*=\\s*"
            :tests ("$test = 1234"))
@@ -171,7 +172,6 @@
            :tests ("type test struct {"))
 
     ;; javascript extended
-
     (:type "function" :language "javascript"
            :regex "(service|factory)\\\((['\\\"])JJJ\\2" :tags ("angular")
            :tests ("module.factory(\\'test\\', [\\'$rootScope\\', function($rootScope) {"))
