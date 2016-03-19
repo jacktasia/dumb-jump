@@ -351,6 +351,20 @@ denoter file/dir is found or uses dumb-jump-default-profile"
           (f-exists? (f-join dir it))
         dumb-jump-project-denoters)))
 
+(defun dumb-jump-get-language (file)
+  (let* ((languages (-distinct
+                     (--map (plist-get it :language)
+                            dumb-jump-find-rules)))
+         (language (or (dumb-jump-get-language-by-filename file)
+                       (dumb-jump-get-language-from-mode))))
+    (if (member language languages)
+      language
+      (format ".%s file" (or (f-ext file) "?")))))
+
+
+(defun dumb-jump-get-language-from-mode ()
+  (s-replace "-mode" "" (symbol-name major-mode)))
+
 (defun dumb-jump-get-language-by-filename (file)
   "Get the programming language from the FILENAME"
   (let* ((filename (if (s-ends-with? ".gz" file)
@@ -359,9 +373,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (result (-filter
                  (lambda (f) (s-ends-with? (concat "." (plist-get f :ext)) filename))
                  dumb-jump-language-file-exts)))
-    (if result
-        (plist-get (car result) :language)
-      (format ".%s file" (or (f-ext file) "?")))))
+    (when result
+        (plist-get (car result) :language))))
 
 (defun dumb-jump-issue-result (issue)
   "Return a result property list with the ISSUE set as :issue property symbol"
@@ -389,7 +402,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (look-for (thing-at-point 'symbol t))
          (proj-root (dumb-jump-get-project-root cur-file))
          (proj-config (dumb-jump-get-config proj-root))
-         (lang (dumb-jump-get-language-by-filename cur-file))
+         (lang (dumb-jump-get-language cur-file))
          (pt-ctx (if (not (string= cur-line look-for))
                      (dumb-jump-get-point-context cur-line look-for look-for-start)
                    nil))
