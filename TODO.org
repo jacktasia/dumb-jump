@@ -1,6 +1,9 @@
 * Tasks
-** TODO "sets" which to be enabled
+** TODO refactor TODO. split About into 3 sections summary, how it works, and quality/success
+** TODO limit length of lines to 100 len
 ** TODO clojure support
+
+** TODO "sets" which need to be enabled
 ** TODO ignore #files#
 ** TODO split up searches by context type?
 ** TODO built-in :tests for contexts like rules
