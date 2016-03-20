@@ -352,6 +352,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         dumb-jump-project-denoters)))
 
 (defun dumb-jump-get-language (file)
+  "Get language from FILE extension and then fallback to using major-mode name"
   (let* ((languages (-distinct
                      (--map (plist-get it :language)
                             dumb-jump-find-rules)))
@@ -361,8 +362,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       language
       (format ".%s file" (or (f-ext file) "?")))))
 
-
 (defun dumb-jump-get-language-from-mode ()
+  "Extract the language from the major-mode name. Currently just everything before '-mode'"
   (s-replace "-mode" "" (symbol-name major-mode)))
 
 (defun dumb-jump-get-language-by-filename (file)
