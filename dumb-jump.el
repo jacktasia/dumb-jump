@@ -118,6 +118,12 @@
            :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)")
            :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
+    ;; clojure
+    (:type "function" :language "clojure" :regex "\\\(defn-?\\s+JJJ\\j"
+           ;; \\j usage see `dumb-jump-ag-word-boundary`
+           :tests ("(defn test (blah)" "(defn test\n" "(defn- test (blah)" "(defn- test\n")
+           :not ("(defn test-asdf (blah)" "(defn test-blah\n" "(defn- test-asdf (blah)" "(defn- test-blah\n"))
+
     ;; python
     (:type "variable" :language "python"
            :regex "\\s*JJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test == 1234:"))
@@ -205,6 +211,7 @@ and type to use for generating the grep command"
 (defcustom dumb-jump-language-file-exts
   '((:language "elisp" :ext "el")
     (:language "elisp" :ext "el.gz")
+    (:language "clojure" :ext "clj")
     (:language "faust" :ext "dsp")
     (:language "faust" :ext "lib")
     (:language "javascript" :ext "js")
@@ -393,6 +400,14 @@ denoter file/dir is found or uses dumb-jump-default-profile"
    (t
     (dumb-jump-fetch-results))))
 
+(defun dumb-jump-process-symbol-by-lang (lang look-for)
+  "Process LOOK-FOR by the LANG. For instance, clojure needs namespace part removed"
+  (cond
+   ((and (string= lang "clojure") (s-contains? "/" look-for))
+    (nth 1 (s-split "/" look-for)))
+   (t
+    look-for)))
+
 (defun dumb-jump-fetch-results ()
   "Build up a list of results by examining the current context and calling grep or ag"
   (let* ((cur-file (or (buffer-file-name) ""))
@@ -400,10 +415,11 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (look-for-start (- (car (bounds-of-thing-at-point 'symbol))
                             (point-at-bol)))
          (cur-line-num (line-number-at-pos))
-         (look-for (thing-at-point 'symbol t))
          (proj-root (dumb-jump-get-project-root cur-file))
          (proj-config (dumb-jump-get-config proj-root))
          (lang (dumb-jump-get-language cur-file))
+         (found-symbol (thing-at-point 'symbol t))
+         (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
          (pt-ctx (if (not (string= cur-line look-for))
                      (dumb-jump-get-point-context cur-line look-for look-for-start)
                    nil))

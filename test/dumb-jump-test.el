@@ -499,6 +499,12 @@
   (let ((result (dumb-jump-issue-result "unsaved")))
     (should (eq (plist-get result :issue) 'unsaved))))
 
+(ert-deftest dumb-jump-process-symbol-by-lang-test ()
+  (let ((result (dumb-jump-process-symbol-by-lang "elisp" "somefunc"))
+        (result2 (dumb-jump-process-symbol-by-lang "clojure" "myns/myfunc")))
+    (should (string= result "somefunc"))
+    (should (string= result2 "myfunc"))))
+
 (ert-deftest dumb-jump-find-start-pos-test ()
   (let ((cur-pos 9)
         (line "event event")
