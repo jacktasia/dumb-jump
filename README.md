@@ -5,9 +5,13 @@
 ## About
 **Dumb Jump** is an Emacs "jump to definition" package with support for multiple programming languages that favors "just working" over speed or accuracy. This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes.
 
+
+#### How  it works
 Dumb Jump uses [ag](https://github.com/ggreer/the_silver_searcher) (and falls back to `grep`) to find potential definitions of a variable/function (under point) via a set of regular expressions based on the file extension of the current buffer. Once there is a list of potential candidates they are run through a set of heuristic methods to find the best candidate to jump to. Right now these methods are general and shared among languages but in the future will almost certainly have to be customized to increase accuracy and support more languages.
 
-It *seems* like in most situations for currently [supported languages](#supported-languages) it does a good job of finding what you want. It can be slow if it needs to use `grep` and a project is large, but it can be sped up by [installing `ag`](https://github.com/ggreer/the_silver_searcher#installing) and/or creating a `.dumbjump` file in your project's root directory with paths that should be excluded ([see configuration](#configuration)).
+#### Success Rate
+For the currently [supported languages](#supported-languages) it seems to do a good job of finding what you want. If you find a case where it does not work as expected do not hesitate to [open an issue](https://github.com/jacktasia/dumb-jump/issues). It can be slow if it needs to use `grep` and a project is large, but it can be sped up by [installing `ag`](https://github.com/ggreer/the_silver_searcher#installing) and/or creating a `.dumbjump` file in your project's root directory with paths that should be excluded ([see configuration](#configuration)).
+
 
 ## Supported Languages
 

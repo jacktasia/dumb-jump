@@ -1,5 +1,4 @@
 * Tasks
-** TODO refactor TODO. split About into 3 sections summary, how it works, and quality/success
 ** TODO limit length of lines to 100 len
 ** TODO "sets" which need to be enabled
 ** TODO ignore #files#
