@@ -1,10 +1,11 @@
 ;;; dumb-jump.el --- jump to variable and function definitions with no configuration
 
-;; Copyright (C) 2015 jack angers
+;; Copyright (C) 2015-2016 jack angers
 ;; Author: jack angers
-;; Version: 1.0
+;; Version: 0.3.8
 ;; Package-Requires: ((f "0.17.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
+
 ;;; Commentary:
 
 ;; Dumb Jump is an Emacs "jump to definition" package with support for multiple programming languages that favors
