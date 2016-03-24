@@ -43,7 +43,7 @@
 
 (defcustom dumb-jump-ag-cmd
   "ag"
-  "The the path to the silver searcher. By default assumes it is in path. If not found  WILL fallback to grep"
+  "The the path to the silver searcher. By default assumes it is in path. If not found fallbacks to grep"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-ag-word-boundary
@@ -63,7 +63,7 @@
 
 (defcustom dumb-jump-zgrep-cmd
   "zgrep"
-  "Prefix to grep command. Seemingly makes it faster for pure text."
+  "The path to grep to use for gzipped files. By default assumes it is in path."
   :group 'dumb-jump)
 
 (defcustom dumb-jump-grep-args
@@ -73,7 +73,7 @@
 
 (defcustom dumb-jump-max-find-time
   2
-  "Number of seconds a grep/find command can take before being warned"
+  "Number of seconds a grep/find command can take before being warned to use ag and config"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-functions-only
@@ -83,12 +83,12 @@
 
 (defcustom dumb-jump-quiet
   nil
-  "Should dumb-jump say what it is doing to message"
+  "If non-nil it will not log anything to *Messages*"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-ignore-context
   nil
-  "Should we ignore context when jumping?"
+  "If non-nil will ignore the context of point when jumping"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-last-location
@@ -247,11 +247,11 @@ immediately to the right of a symbol then it's probably a function call"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-default-project "~"
-  "The default project to search for searching if a denoter is not found in parent of file"
+  "The default project to search within if a project root is not found"
   :group 'dumb-jump)
 
 (defun dumb-jump-message-prin1 (str &rest args)
-  "Helper function when debuging applies prin1-to-string to all ARGS"
+  "Helper function when debugging applies prin1-to-string to all ARGS"
   (apply 'message str (-map 'prin1-to-string args)))
 
 (defun dumb-jump-ag-installed? ()
