@@ -83,12 +83,12 @@
 
 (defcustom dumb-jump-quiet
   nil
-  "If non-nil it will not log anything to *Messages*"
+  "If non-nil Dumb Jump will not log anything to *Messages*"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-ignore-context
   nil
-  "If non-nil will ignore the context of point when jumping"
+  "If non-nil Dumb Jump will ignore the context of point when jumping"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-last-location
@@ -749,13 +749,13 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (s-join " " (-map #'s-trim (--filter (> (length it) 0) parts))))
 
 (defun dumb-jump-get-file-exts-by-language (language)
-  "Get list of file extensions for a language"
+  "Returns list of file extensions for a LANGUAGE"
   (--map (plist-get it :ext)
          (--filter (string= (plist-get it :language) language)
                   dumb-jump-language-file-exts)))
 
 (defun dumb-jump-get-rules-by-language (language)
-  "Get list of rules for a language"
+  "Returns a list of rules for the LANGUAGE"
   (let ((results (--filter (string= (plist-get it ':language) language)
                            dumb-jump-find-rules)))
     (if dumb-jump-functions-only
