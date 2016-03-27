@@ -10,7 +10,7 @@
 Dumb Jump uses [ag](https://github.com/ggreer/the_silver_searcher) (and falls back to `grep`) to find potential definitions of a function or variable under point. It uses a set of regular expressions based on the file extension, or `major-mode`, of the current buffer. Currently the `ack` matches are run through a shared set of heuristic methods to find the best candidate to jump to. If it can't decide it will present the user with a list in a pop-menu.
 
 #### Success Rate
-For the currently [supported languages](#supported-languages) it seems to do a good job of finding what you want. If you find a case where it does not work as expected do not hesitate to [open an issue](https://github.com/jacktasia/dumb-jump/issues). It can be slow if it needs to use `grep` and a project is large, but it can be sped up by [installing `ag`](https://github.com/ggreer/the_silver_searcher#installing) and/or creating a `.dumbjump` file in your project's root directory with paths that should be excluded ([see configuration](#configuration)).
+For the currently [supported languages](#supported-languages) it seems to do a good job of finding what you want. If you find a case where it does not work as expected do not hesitate to [open an issue](https://github.com/jacktasia/dumb-jump/issues). It can be slow if it needs to use `grep` and/or a project is large. Although it can be sped up by [installing `ag`](https://github.com/ggreer/the_silver_searcher#installing) and/or creating a `.dumbjump` file in your project's root directory with paths that should be excluded ([see configuration](#configuration)).
 
 
 ## Supported Languages
@@ -26,17 +26,15 @@ There is currently basic support for the following languages:
 * Clojure
 * Faust
 
-If you have any issues with the existing languages, or you want support for another one, then please open an issue. PRs are also welcome.
+If you have any issues with the existing languages, or you want support for another one, then please [open an issue](https://github.com/jacktasia/dumb-jump/issues). PRs are also welcome.
 
 ## Why?
 
-I wanted "jump to definition" functionality to "just work" in emacs. I use IntelliJ for Java and it's basically the only thing I miss when I switch back to emacs for work in any other language. There are certainly other packages that offer this type of functionality, and honestly, many are faster and have better accuracy, but they all require significantly more configuration and are often limited to a particular language. These may be worth setting up if you are in a specific in project or language often (see [alternatives](#alternatives)).
+I wanted "jump to definition" functionality to "just work" in emacs. I use IntelliJ for Java and this functionality is basically the only thing I miss when I switch back to emacs for work in other languages. There are certainly other packages that offer this type of functionality, but they all require significantly more configuration and are often limited to a particular language. An alternative may be worth setting up if you are in a specific in project or language often (see [alternatives](#alternatives)).
 
 ## Installing
 
-The recommended way to install Dumb Jump is via `package.el`. It's available on [MELPA](http://melpa.org/#/dumb-jump):
-
-    M-x package-install dumb-jump
+The recommended way to install Dumb Jump is via `package.el`. It's available on [MELPA](http://melpa.org/#/dumb-jump): <kbd>M-x</kbd> `package-install dumb-jump`
 
 ## Usage
 
@@ -52,7 +50,7 @@ Adding `(dumb-jump-mode)` to your `.emacs` will enable the keybindings for two i
 
 ##### Excluding project directories
 
-Dumb Jump will automatically look for a project root by ... If it's not finding one then either put a `.dumbjump` file in your project root and optionally add excluded directories to make it faster.
+Dumb Jump will automatically look for a project root. If it's not finding one then either put a `.dumbjump` file in your project root and optionally add excluded directories to make it faster.
 
 ##### Example `.dumbjump`
 
@@ -68,7 +66,7 @@ Dumb Jump will automatically look for a project root by ... If it's not finding 
 * `(setq dumb-jump-default-project "~/code")` to change default project if one is not found (defaults to `~`)
 * `(setq dumb-jump-quiet t)` if Dumb Jump is too chatty.
 *
-* To support more languages and/or definition types `add-to-list` on `dumb-jump-find-rules` (see source code).
+* To support more languages and/or definition types use `add-to-list` on `dumb-jump-find-rules` (see source code).
 
 ## Contributing
 
