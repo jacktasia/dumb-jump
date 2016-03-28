@@ -111,7 +111,7 @@
          (parsed (dumb-jump-parse-grep-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
     (should (= (plist-get test-result :diff) 2))
-    (should (= (plist-get test-result :diff) 2))
+    (should (string= (plist-get test-result :path) "dumb-jump.el"))
     (should (= (plist-get test-result ':line) 26))))
 
 (ert-deftest dumb-jump-ag-parse-test ()
@@ -119,7 +119,7 @@
          (parsed (dumb-jump-parse-ag-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
     (should (= (plist-get test-result :diff) 2))
-    (should (= (plist-get test-result :diff) 2))
+    (should (string= (plist-get test-result :path) "dumb-jump.el"))
     (should (= (plist-get test-result ':line) 26))))
 
 (ert-deftest dumb-jump-run-cmd-test ()
@@ -409,6 +409,14 @@
                                     (should (= (plist-get result :line) 62))))
           (let ((results '((:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
                            (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
+                (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
+
+(ert-deftest dumb-jump-message-handle-results-choices-test ()
+  (noflet ((dumb-jump-prompt-user-for-choice (proj results)
+                                    (should (string= proj "/code/redux"))))
+          (let ((results '((:path "src/file2.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
+                           (:path "src/file2.js" :line 63 :context "var isNow = true" :diff 7 :target "isNow")
+                           (:path "src/file2.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
                 (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
 
 
