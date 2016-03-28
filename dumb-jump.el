@@ -612,43 +612,38 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     (when (and parts line-num-raw)
       (if (= (length parts) 2)
           (list (f-join (nth 0 parts)) (nth 1 line-num-raw) (nth 1 parts))
-        ; this case is when they are searching a particular file...
+                                        ; this case is when they are searching a particular file...
         (list (f-join cur-file) (nth 1 line-num-raw) (nth 0 parts))))))
+
+(defun dumb-jump-parse-response-lines (parsed cur-file cur-line-num)
+  (let* ((records (-mapcat
+                   (lambda (x)
+                     (when x
+                       (let* ((line-num (string-to-number (nth 1 x)))
+                              (diff (- cur-line-num line-num)))
+                         (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 2 x) :diff ,diff)))))
+                   parsed))
+         (results (-non-nil records)))
+    (--filter
+     (not (and
+           (string= (plist-get it :path) cur-file)
+           (= (plist-get it :line) cur-line-num)))
+     results)))
 
 (defun dumb-jump-parse-grep-response (resp cur-file cur-line-num)
   "Takes a grep response RESP and parses into a list of plists"
   (let* ((resp-no-warnings (-filter (lambda (x)
                                       (and (not (s-starts-with? "grep:" x))
                                            (not (s-contains? "No such file or" x))))
-                                    (s-split "\n" resp)))
-         (parsed (butlast (--map (dumb-jump-parse-response-line it cur-file) resp-no-warnings)))
-         (results (-mapcat
-                  (lambda (x)
-                    (let* ((line-num (string-to-number (nth 1 x)))
-                           (diff (- cur-line-num line-num)))
-                      (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 2 x) :diff ,diff))))
-                  parsed)))
-    (-filter
-     (lambda (x) (not (and
-                       (string= (plist-get x :path) cur-file)
-                       (= (plist-get x :line) cur-line-num))))
-     results)))
+                                    (s-split "\n" (s-trim resp))))
+         (parsed (--map (dumb-jump-parse-response-line it cur-file) resp-no-warnings)))
+    (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
 
 (defun dumb-jump-parse-ag-response (resp cur-file cur-line-num)
   "Takes a ag response RESP and parses into a list of plists"
-  (let* ((resp-lines (s-split "\n" resp))
-         (parsed (butlast (--map (dumb-jump-parse-response-line it cur-file) resp-lines)))
-         (results (-mapcat
-                  (lambda (x)
-                    (let* ((line-num (string-to-number (nth 1 x)))
-                           (diff (- cur-line-num line-num)))
-                      (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 2 x) :diff ,diff))))
-                  parsed)))
-    (--filter
-     (not (and
-           (string= (plist-get it :path) cur-file)
-           (= (plist-get it :line) cur-line-num)))
-     results)))
+  (let* ((resp-lines (s-split "\n" (s-trim resp)))
+         (parsed (--map (dumb-jump-parse-response-line it cur-file) resp-lines)))
+    (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
 
 (defun dumb-jump-re-match (re s)
   "Does regular expression RE match string S. If RE is nil return nil"
