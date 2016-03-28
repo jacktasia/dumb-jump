@@ -111,6 +111,16 @@
          (parsed (dumb-jump-parse-grep-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
     (should (= (plist-get test-result :diff) 2))
+    (should (= (length parsed) 2))
+    (should (string= (plist-get test-result :path) "dumb-jump.el"))
+    (should (= (plist-get test-result ':line) 26))))
+
+(ert-deftest dumb-jump-grep-parse-no-filter-test ()
+  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n")
+         (parsed (dumb-jump-parse-grep-response resp "dumb-jump2.el" 28))
+         (test-result (nth 1 parsed)))
+    (should (= (plist-get test-result :diff) 2))
+    (should (= (length parsed) 2))
     (should (string= (plist-get test-result :path) "dumb-jump.el"))
     (should (= (plist-get test-result ':line) 26))))
 
@@ -119,6 +129,7 @@
          (parsed (dumb-jump-parse-ag-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
     (should (= (plist-get test-result :diff) 2))
+    (should (= (length parsed) 2))
     (should (string= (plist-get test-result :path) "dumb-jump.el"))
     (should (= (plist-get test-result ':line) 26))))
 
