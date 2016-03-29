@@ -3,11 +3,11 @@
 [![Join the chat at https://gitter.im/jacktasia/dumb-jump](https://badges.gitter.im/jacktasia/dumb-jump.svg)](https://gitter.im/jacktasia/dumb-jump?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/jacktasia/dumb-jump.svg)](https://travis-ci.org/jacktasia/dumb-jump) [![Coverage Status](https://coveralls.io/repos/jacktasia/dumb-jump/badge.svg?branch=master&service=github)](https://coveralls.io/github/jacktasia/dumb-jump?branch=master) [![MELPA](http://melpa.org/packages/dumb-jump-badge.svg)](http://melpa.org/#/dumb-jump) [![MELPA Stable](https://stable.melpa.org/packages/dumb-jump-badge.svg)](https://stable.melpa.org/#/dumb-jump)
 
 ## About
-**Dumb Jump** is an Emacs "jump to definition" package with support for multiple programming languages that favors "just working" over speed or accuracy. This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes.
+**Dumb Jump** is an Emacs "jump to definition" package with support for multiple programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes.
 
 
 #### How  it works
-Dumb Jump uses [ag](https://github.com/ggreer/the_silver_searcher) (and falls back to `grep`) to find potential definitions of a function or variable under point. It uses a set of regular expressions based on the file extension, or `major-mode`, of the current buffer. Currently the `ack` matches are run through a shared set of heuristic methods to find the best candidate to jump to. If it can't decide it will present the user with a list in a pop-menu.
+Dumb Jump uses [The Silver Searcher](https://github.com/ggreer/the_silver_searcher) `ag` (and falls back to `grep`) to find potential definitions of a function or variable under point. It uses a set of regular expressions based on the file extension, or `major-mode`, of the current buffer. Currently the `ack` matches are run through a shared set of heuristic methods to find the best candidate to jump to. If it can't decide it will present the user with a list in a pop-menu.
 
 #### Success Rate
 For the currently [supported languages](#supported-languages) it seems to do a good job of finding what you want. If you find a case where it does not work as expected do not hesitate to [open an issue](https://github.com/jacktasia/dumb-jump/issues). It can be slow if it needs to use `grep` and/or a project is large. Although it can be sped up by [installing `ag`](https://github.com/ggreer/the_silver_searcher#installing) and/or creating a `.dumbjump` file in your project's root directory with paths that should be excluded ([see configuration](#configuration)).
@@ -36,9 +36,15 @@ I wanted "jump to definition" functionality to "just work" in emacs. I use Intel
 
 The recommended way to install Dumb Jump is via `package.el`. It's available on [MELPA](http://melpa.org/#/dumb-jump): <kbd>M-x</kbd> `package-install dumb-jump`
 
+
+#### Installing `ag`
+
+Dumb Jump performs best with The Silver Searcher `ag` installed on your system. Please see their [install instructions](https://github.com/ggreer/the_silver_searcher#installing)
+
+
 ## Usage
 
-### Basic
+#### Basic
 
 Adding `(dumb-jump-mode)` to your `.emacs` will enable the keybindings for two interactive Dumb Jump functions:
 
