@@ -616,12 +616,11 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (list (f-join cur-file) (nth 1 line-num-raw) (nth 0 parts))))))
 
 (defun dumb-jump-parse-response-lines (parsed cur-file cur-line-num)
-  (let* ((records (-mapcat
-                   (lambda (x)
-                     (when x
-                       (let* ((line-num (string-to-number (nth 1 x)))
-                              (diff (- cur-line-num line-num)))
-                         (list `(:path ,(nth 0 x) :line ,line-num :context ,(nth 2 x) :diff ,diff)))))
+  "Turn PARSED response lines in a list of property lists"
+  (let* ((records (--mapcat (when it
+                             (let* ((line-num (string-to-number (nth 1 it)))
+                                    (diff (- cur-line-num line-num)))
+                               (list `(:path ,(nth 0 it) :line ,line-num :context ,(nth 2 it) :diff ,diff))))
                    parsed))
          (results (-non-nil records)))
     (--filter
@@ -632,10 +631,9 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-parse-grep-response (resp cur-file cur-line-num)
   "Takes a grep response RESP and parses into a list of plists"
-  (let* ((resp-no-warnings (-filter (lambda (x)
-                                      (and (not (s-starts-with? "grep:" x))
-                                           (not (s-contains? "No such file or" x))))
-                                    (s-split "\n" (s-trim resp))))
+  (let* ((resp-no-warnings (--filter (and (not (s-starts-with? "grep:" it))
+                                          (not (s-contains? "No such file or" it)))
+                                     (s-split "\n" (s-trim resp))))
          (parsed (--map (dumb-jump-parse-response-line it cur-file) resp-no-warnings)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
 
