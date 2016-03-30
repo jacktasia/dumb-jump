@@ -582,7 +582,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-current-file-results (path results)
   "Return the RESULTS that have the PATH"
-  (let ((matched (-filter (lambda (r) (string= path (plist-get r :path))) results)))
+  (let ((matched (--filter (string= path (plist-get it :path)) results)))
     matched))
 
 (defun dumb-jump-use-ag? ()
