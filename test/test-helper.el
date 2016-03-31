@@ -7,5 +7,9 @@
             (:report-file "/tmp/undercover-report.json"))
 (require 'dumb-jump)
 
+(require 'el-mock)
+(eval-when-compile
+  (require 'cl))
+
 (provide 'test-helper)
 ;;; test-helper.el ends here

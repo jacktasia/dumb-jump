@@ -3,6 +3,7 @@
 (require 's)
 (require 'dash)
 (require 'noflet)
+(require 'el-mock)
 (require 'popup)
 
 (setq test-data-dir (f-expand "./test/data"))
@@ -161,8 +162,7 @@
     (should (string= ".dumbjump" (dumb-jump-get-config found-project)))))
 
 (ert-deftest dumb-jump-find-proj-root-default-test ()
-  (noflet ((locate-dominating-file (a b)
-                                   nil))
+  (with-mock (mock (locate-dominating-file * *))
     (let ((found-project (dumb-jump-get-project-root ""))
           (expected (f-expand dumb-jump-default-project)))
       (should (string= found-project expected)))))
@@ -231,12 +231,10 @@
 
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-test ()
   (let* ((results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()") (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
-    (noflet ((dumb-jump-result-follow (r)
-                                      (should (string= (plist-get r :path) "/usr/blah/test2.txt"))
-                                      (should (= (plist-get r :line) 52)))
-             (popup-menu* (choices)
-                          "/test2.txt:52 var thing = function()"))
-    (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
+    (with-mock
+     (mock (popup-menu* *) => "/test2.txt:52 var thing = function()")
+     (mock (dumb-jump-result-follow '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
+     (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
 (ert-deftest dumb-jump-fetch-results-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
@@ -254,9 +252,9 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
-      (noflet ((dumb-jump-result-follow (result tooltip proj)
-                                        (should (string= (plist-get result :path) go-js-file))))
-        (dumb-jump-go)))))
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 3 9))
+        (should (string= go-js-file (dumb-jump-go)))))))
 
 (ert-deftest dumb-jump-quick-look-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
@@ -524,7 +522,7 @@
     (should (string= result "somefunc"))
     (should (string= result2 "myfunc"))))
 
-(ert-deftest dumb-jump-dumb-jump-result-follow-test ()
+(ert-deftest dumb-jump-result-follow-test ()
   (let ((func-was-called nil))
     (noflet ((dumb-jump-goto-file-line (thefile theline pos)
                                        (setq func-was-called t)

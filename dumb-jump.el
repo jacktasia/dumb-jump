@@ -563,7 +563,10 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                                   (s-replace proj "" (plist-get result :path))
                                   (plist-get result :line)
                                   (s-trim (plist-get result :context))))
-          (dumb-jump-goto-file-line thef line pos)))))
+          (dumb-jump-goto-file-line thef line pos)))
+    ; return the file for test
+    thef))
+
 
 (defun dumb-jump-goto-file-line (thefile theline pos)
   "Open THEFILE and go line THELINE"
