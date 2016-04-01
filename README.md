@@ -39,7 +39,7 @@ The recommended way to install Dumb Jump is via `package.el`. It's available on 
 
 #### Installing `ag`
 
-Dumb Jump performs best with The Silver Searcher `ag` installed on your system. Please see their [install instructions](https://github.com/ggreer/the_silver_searcher#installing)
+Dumb Jump performs best with The Silver Searcher `ag` installed on your system. Please see their [install instructions](https://github.com/ggreer/the_silver_searcher#installing).
 
 
 ## Usage
@@ -95,4 +95,4 @@ Here is a list of potential alternatives packages for emacs:
 * [elpy](https://github.com/jorgenschaefer/elpy) for Python
 * [robe](https://github.com/dgutov/robe) for Ruby
 
-Most of these were sourced from this [emacs StackExchange answer](http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project)
+Most of these were sourced from this [emacs StackExchange answer](http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project).
