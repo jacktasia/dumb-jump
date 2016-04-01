@@ -264,7 +264,7 @@
       (forward-char 13)
       (with-mock
        (mock (popup-tip "/src/js/fake.js:3 function doSomeStuff() {"))
-        (should (string= go-js-file (dumb-jump-quick-look)))))))
+       (should (string= go-js-file (dumb-jump-quick-look)))))))
 
 (ert-deftest dumb-jump-go-js2-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
