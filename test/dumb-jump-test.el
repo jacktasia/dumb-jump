@@ -262,11 +262,9 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
-      (noflet ((dumb-jump-result-follow (result tooltip proj)
-                                        (should tooltip)
-                                        (should (string= (plist-get result :path) go-js-file))))
-        (dumb-jump-quick-look)))))
-
+      (with-mock
+       (mock (popup-tip "/src/js/fake.js:3 function doSomeStuff() {"))
+        (should (string= go-js-file (dumb-jump-quick-look)))))))
 
 (ert-deftest dumb-jump-go-js2-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
