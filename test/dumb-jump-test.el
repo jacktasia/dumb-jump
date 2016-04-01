@@ -254,7 +254,7 @@
       (forward-char 13)
       (with-mock
        (mock (dumb-jump-goto-file-line * 3 9))
-        (should (string= go-js-file (dumb-jump-go)))))))
+       (should (string= go-js-file (dumb-jump-go)))))))
 
 (ert-deftest dumb-jump-quick-look-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
@@ -272,11 +272,9 @@
       (goto-char (point-min))
       (forward-line 11)
       (forward-char 76)
-      (noflet ((dumb-jump-goto-file-line (thef line pos)
-                                         (should (= pos 35))
-                                         (should (= line 7))
-                                         (should (string= thef js-file))))
-        (dumb-jump-go)))))
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 7 35))
+       (should (string= js-file (dumb-jump-go)))))))
 
 (ert-deftest dumb-jump-go-sig-def-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
