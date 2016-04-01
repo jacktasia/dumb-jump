@@ -41,12 +41,11 @@ The recommended way to install Dumb Jump is via `package.el`. It's available on 
 
 Dumb Jump performs best with The Silver Searcher `ag` installed on your system. Please see their [install instructions](https://github.com/ggreer/the_silver_searcher#installing).
 
-
 ## Usage
 
 #### Basic
 
-Adding `(dumb-jump-mode)` to your `.emacs` will enable the keybindings for two interactive Dumb Jump functions:
+Adding `(dumb-jump-mode)` to your `.emacs` will enable the key bindings for two interactive Dumb Jump functions:
 
 * `dumb-jump-go` <kbd>C-M g</kbd> core functionality. Attempts to jump to the definition for the thing under point
 * `dumb-jump-back` <kbd>C-M p</kbd> jumps back to where you were when you jumped. These are chained so if you go down a rabbit hole you can get back out or where you want to be.
