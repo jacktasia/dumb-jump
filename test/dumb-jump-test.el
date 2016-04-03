@@ -312,14 +312,9 @@
       (goto-char (point-min))
       (forward-line 13)
       (forward-char 33)
-      (noflet ((dumb-jump-handle-results (a b c d e f)
-                                         (should (= (length a) 3))
-                                         (funcall this-fn a b c d e f))
-               (dumb-jump-result-follow (result use-tooltip proj)
-                                        (should-not use-tooltip)
-                                        (should (string= (plist-get result :path) el-file))
-                                        (should (= (plist-get result :line) 11))))
-        (dumb-jump-go)))))
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 11 10))
+       (should (string= el-file (dumb-jump-go)))))))
 
 (ert-deftest dumb-jump-go-var-let-repeat-test ()
   (let ((el-file (f-join test-data-dir-elisp "fake2.el")))
