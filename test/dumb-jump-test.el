@@ -342,19 +342,19 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
-      (noflet ((dumb-jump-goto-file-point (path point)
-                                          (should (= point 14)))
-               (dumb-jump-message (input arg1 arg2)))
-        (dumb-jump-go)
-        (dumb-jump-back)))))
+      (with-mock
+       (mock (dumb-jump-goto-file-point * 14))
+       (mock (dumb-jump-message "Jumping back to%s line %s" " fake2.js" "1"))
+       (dumb-jump-go)
+       (dumb-jump-back)))))
 
 (ert-deftest dumb-jump-back-no-result-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
-      (noflet ((dumb-jump-message (input)
-                                   (should (string= input "Nowhere to jump back to."))))
-        (dumb-jump-back)))))
+      (with-mock
+       (mock (dumb-jump-message "Nowhere to jump back to."))
+       (dumb-jump-back)))))
 
 (ert-deftest dumb-jump-go-no-result-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
