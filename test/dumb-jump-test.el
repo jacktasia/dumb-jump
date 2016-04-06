@@ -360,19 +360,17 @@
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
-      (noflet ((dumb-jump-message (input arg1 arg2 arg3)
-               (should (string= input "'%s' %s %s declaration not found."))
-               (should (string= arg1 "console"))))
-        (dumb-jump-go)))))
+      (with-mock
+       (mock (dumb-jump-message "'%s' %s %s declaration not found." "console" * *))
+       (dumb-jump-go)))))
 
 (ert-deftest dumb-jump-go-no-rules-test ()
   (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt")))
     (with-current-buffer (find-file-noselect txt-file t)
       (goto-char (point-min))
-      (noflet ((dumb-jump-message (input arg1)
-               (should (string= input "Could not find rules for '%s'."))
-               (should (string= arg1 ".txt file"))))
-        (dumb-jump-go)))))
+      (with-mock
+       (mock (dumb-jump-message "Could not find rules for '%s'." ".txt file"))
+       (dumb-jump-go)))))
 
 (ert-deftest dumb-jump-go-too-long-test ()
   (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt"))
