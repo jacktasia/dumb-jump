@@ -379,12 +379,10 @@
       (goto-char (point-min))
       (noflet ((dumb-jump-fetch-results ()
                                         (sleep-for 0 300)
-                                        '())
-               (dumb-jump-message (input arg1 arg2 arg3)
-                        (should (= (string-to-number arg1) dumb-jump-max-find-time))
-                        (should (string= input "Took over %ss to find '%s'. Please install ag or add a .dumbjump file to '%s' with path exclusions"))))
-
-               (dumb-jump-go)))))
+                                        '()))
+               (with-mock
+                (mock (dumb-jump-message "Took over %ss to find '%s'. Please install ag or add a .dumbjump file to '%s' with path exclusions" * * *))
+                (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-message-handle-results-test ()
   (noflet ((dumb-jump-result-follow (result use-tooltip proj)
