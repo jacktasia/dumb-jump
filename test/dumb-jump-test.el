@@ -385,19 +385,19 @@
                 (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-message-handle-results-test ()
-  (noflet ((dumb-jump-result-follow (result use-tooltip proj)
-                                    (should (= (plist-get result :line) 62))))
-          (let ((results '((:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
-                           (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
-                (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
+  (let ((results '((:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
+                   (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
+    (with-mock
+     (mock (dumb-jump-goto-file-line "src/file.js" 62 4))
+     (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
 
 (ert-deftest dumb-jump-message-handle-results-choices-test ()
-  (noflet ((dumb-jump-prompt-user-for-choice (proj results)
-                                    (should (string= proj "/code/redux"))))
-          (let ((results '((:path "src/file2.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
-                           (:path "src/file2.js" :line 63 :context "var isNow = true" :diff 7 :target "isNow")
-                           (:path "src/file2.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
-                (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
+  (let ((results '((:path "src/file2.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
+                   (:path "src/file2.js" :line 63 :context "var isNow = true" :diff 7 :target "isNow")
+                   (:path "src/file2.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
+    (with-mock
+     (mock (dumb-jump-prompt-user-for-choice "/code/redux" *))
+     (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
 
 
 (ert-deftest dumb-jump-go-unsaved-test ()
