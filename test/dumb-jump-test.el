@@ -444,18 +444,16 @@
      (should (eq (plist-get results :issue) 'nogrep)))))
 
 (ert-deftest dumb-jump-message-result-follow-test ()
-  (noflet ((dumb-jump-goto-file-line (path line pos)
-                                     (should (string= path "src/file.js"))
-                                     (should (= line 62))
-                                     (should (= pos 4))))
-          (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
-            (dumb-jump-result-follow result))))
+  (with-mock
+   (mock (dumb-jump-goto-file-line "src/file.js" 62 4))
+   (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
+     (dumb-jump-result-follow result))))
 
 (ert-deftest dumb-jump-message-result-follow-tooltip-test ()
-  (noflet ((popup-tip (s)
-                      (should (string= s "/file.js:62 var isNow = true"))))
-          (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
-            (dumb-jump-result-follow result t "src"))))
+  (with-mock
+   (mock (popup-tip "/file.js:62 var isNow = true"))
+   (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
+     (dumb-jump-result-follow result t "src"))))
 
 (ert-deftest dumb-jump-populate-regexes-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") nil) '("testvar\\s*=\\s*")))
