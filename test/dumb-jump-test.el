@@ -426,23 +426,22 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 1)
-      (noflet ((dumb-jump-message (input)
-                                  (should (string= "No symbol under point." input))))
-        (dumb-jump-go)))))
+      (with-mock
+       (mock (dumb-jump-message "No symbol under point."))
+       (dumb-jump-go)))))
 
 (ert-deftest dumb-jump-message-get-results-unsaved-test ()
-  (noflet ((buffer-modified-p (b)
-                              t))
-          (let ((results (dumb-jump-get-results)))
-            (should (eq (plist-get results :issue) 'unsaved)))))
+  (with-mock
+   (mock (buffer-modified-p *) => t)
+   (let ((results (dumb-jump-get-results)))
+     (should (eq (plist-get results :issue) 'unsaved)))))
 
 (ert-deftest dumb-jump-message-get-results-nogrep-test ()
-  (noflet ((dumb-jump-ag-installed? ()
-                                    nil)
-           (dumb-jump-grep-installed? ()
-                                    nil))
-          (let ((results (dumb-jump-get-results)))
-            (should (eq (plist-get results :issue) 'nogrep)))))
+  (with-mock
+   (mock (dumb-jump-ag-installed?) => nil)
+   (mock (dumb-jump-grep-installed?) => nil)
+   (let ((results (dumb-jump-get-results)))
+     (should (eq (plist-get results :issue) 'nogrep)))))
 
 (ert-deftest dumb-jump-message-result-follow-test ()
   (noflet ((dumb-jump-goto-file-line (path line pos)
