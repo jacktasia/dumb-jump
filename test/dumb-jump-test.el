@@ -460,18 +460,14 @@
   (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") nil) '("\\$testvar\\s*=\\s*"))))
 
 (ert-deftest dumb-jump-message-prin1-test ()
-  (noflet ((message (input arg arg2)
-                    (should (string= input "%s %s"))
-                    (should (string= arg "(:path \"test\" :line 24)"))
-                    (should (string= arg2 "3"))))
-          (dumb-jump-message-prin1 "%s %s" '(:path "test" :line 24) 3)))
+  (with-mock
+   (mock (message "%s %s" "(:path \"test\" :line 24)" "3"))
+   (dumb-jump-message-prin1 "%s %s" '(:path "test" :line 24) 3)))
 
 (ert-deftest dumb-jump-message-test ()
-  (noflet ((message (input arg arg2)
-                    (should (string= input "%s %s"))
-                    (should (string= arg "two"))
-                    (should (string= arg2 "three"))))
-          (dumb-jump-message "%s %s" "two" "three")))
+  (with-mock
+   (mock (message "%s %s" "two" "three"))
+   (dumb-jump-message "%s %s" "two" "three")))
 
 (ert-deftest dumb-jump-concat-command-test ()
   (should (string= (dumb-jump-concat-command " test1 " "test2 " "   test3")
