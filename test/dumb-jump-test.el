@@ -484,14 +484,10 @@
     (should (string= result2 "myfunc"))))
 
 (ert-deftest dumb-jump-result-follow-test ()
-  (let ((func-was-called nil))
-    (noflet ((dumb-jump-goto-file-line (thefile theline pos)
-                                       (setq func-was-called t)
-                                       (should (= pos 1))))
-            ; this is to test the `target-boundary` failure and fallback to using s-index-of
-            (let* ((data '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))
-                   (results (dumb-jump-result-follow data nil "/usr/blah")))
-              (should func-was-called)))))
+  (let* ((data '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
+    (with-mock
+     (mock (dumb-jump-goto-file-line "/usr/blah/test2.txt" 52 1))
+     (dumb-jump-result-follow data nil "/usr/blah"))))
 
 (ert-deftest dumb-jump-find-start-pos-test ()
   (let ((cur-pos 9)
