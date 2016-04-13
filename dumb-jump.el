@@ -27,7 +27,7 @@
 ;;;###autoload
 (defvar dumb-jump-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-M-g") 'dumb-jump-go )
+    (define-key map (kbd "C-M-g") 'dumb-jump-go)
     (define-key map (kbd "C-M-p") 'dumb-jump-back)
     (define-key map (kbd "C-M-q") 'dumb-jump-quick-look)
     map))
@@ -672,7 +672,6 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                               usable-ctxs))
                      (length usable-ctxs))))
 
-    ;(dumb-jump-message-prin1 "pt-ctx: %s | usable-ctxs: %s" pt-ctx usable-ctxs)
     (when (and usable-ctxs use-ctx)
       (plist-get (car usable-ctxs) :type))))
 
