@@ -502,13 +502,9 @@
       (goto-char (point-min))
       (forward-line 23)
       (forward-char 3)
-      (noflet ((dumb-jump-handle-results (a b c d e)
-                                         (should (= (length a) 1))
-                                         (funcall this-fn a b c d e))
-               (dumb-jump-result-follow (result tooltip proj)
-                                        ;(should (string= (plist-get result :path) lib-file))
-                                        (should (= (plist-get result :line) 4))))
-        (dumb-jump-go)))))
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 4 7))
+        (should (string= (dumb-jump-go) lib-file))))))
 
 (ert-deftest dumb-jump-parse-response-line-test ()
   (let ((t1 (dumb-jump-parse-response-line "/opt/test/foo.js:44: var test = 12;" "/opt/test/blah.js"))
