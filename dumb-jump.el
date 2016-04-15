@@ -656,16 +656,14 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   "Detect the type of context by the language"
   (let* ((contexts (--filter (string= (plist-get it ':language) lang) dumb-jump-language-contexts))
          (usable-ctxs
-          (if (> (length contexts) 0)
-              (-filter (lambda (ctx)
-                         (and (or (null (plist-get ctx :left))
-                                  (dumb-jump-re-match (plist-get ctx :left)
-                                           (plist-get pt-ctx :left)))
-                              (or (null (plist-get ctx :right))
-                                  (dumb-jump-re-match (plist-get ctx :right)
-                                      (plist-get pt-ctx :right)))))
-                       contexts)
-            nil))
+          (when (> (length contexts) 0)
+              (--filter (and (or (null (plist-get it :left))
+                                 (dumb-jump-re-match (plist-get it :left)
+                                                     (plist-get pt-ctx :left)))
+                             (or (null (plist-get it :right))
+                                 (dumb-jump-re-match (plist-get it :right)
+                                                     (plist-get pt-ctx :right))))
+                        contexts)))
          (use-ctx (= (length (--filter
                               (string= (plist-get it ':type)
                                        (and usable-ctxs (plist-get (car usable-ctxs) :type)))
@@ -680,10 +678,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (let ((exts (dumb-jump-get-file-exts-by-language language)))
     (dumb-jump-arg-joiner
      "--include"
-     (-map
-      (lambda (ext)
-        (format "\\*.%s" ext))
-      exts))))
+     (--map (format "\\*.%s" it) exts))))
 
 (defun dumb-jump-arg-joiner (prefix values)
   "Helper to generate command arg with its PREFIX for each value in VALUES"
