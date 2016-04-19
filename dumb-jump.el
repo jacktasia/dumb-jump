@@ -290,8 +290,8 @@ Optionally pass t to see a list of all failed rules"
               (when (or
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
-                (add-to-list 'failures (format fail-tmpl (if run-not-tests "not" "") test resp cmd (plist-get rule :regex)))))
-                ))))
+                (add-to-list 'failures (format fail-tmpl (if run-not-tests "not" "")
+                                               test resp cmd (plist-get rule :regex)))))))))
     failures))
 
 (defun dumb-jump-test-ag-rules (&optional run-not-tests)
@@ -309,8 +309,7 @@ Optionally pass t to see a list of all failed rules"
               (when (or
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
-                (add-to-list 'failures (format fail-tmpl test resp cmd rule))))
-                ))))
+                (add-to-list 'failures (format fail-tmpl test resp cmd rule))))))))
     failures))
 
 (defun dumb-jump-message (str &rest args)
