@@ -259,6 +259,11 @@ immediately to the right of a symbol then it's probably a function call"
   "The default project to search within if a project root is not found"
   :group 'dumb-jump)
 
+(defcustom dumb-jump-after-jump-hook nil
+  "Hooks called after jumping."
+  :type 'hook
+  :group 'dumb-jump)
+
 (defun dumb-jump-message-prin1 (str &rest args)
   "Helper function when debugging applies prin1-to-string to all ARGS"
   (apply 'message str (-map 'prin1-to-string args)))
@@ -583,13 +588,17 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     (find-file thefile))
   (goto-char (point-min))
   (forward-line (1- theline))
-  (forward-char pos))
+  (forward-char pos)
+  (with-demoted-errors "Error running `dumb-jump-after-jump-hook': %S"
+    (run-hooks 'dumb-jump-after-jump-hook)))
 
 (defun dumb-jump-goto-file-point (thefile point)
   "Open THEFILE and goto  POINT"
   (unless (string= thefile (buffer-file-name))
     (find-file thefile))
-  (goto-char point))
+  (goto-char point)
+  (with-demoted-errors "Error running `dumb-jump-after-jump-hook': %S"
+    (run-hooks 'dumb-jump-after-jump-hook)))
 
 (defun dumb-jump-current-file-results (path results)
   "Return the RESULTS that have the PATH"
