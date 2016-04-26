@@ -276,6 +276,52 @@
        (mock (dumb-jump-goto-file-line * 7 35))
        (should (string= js-file (dumb-jump-go)))))))
 
+(ert-deftest dumb-jump-go-js-es6a-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 20)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 1 4))
+       (should (string= js-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-go-js-es6b-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 21)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 3 6))
+       (should (string= js-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-go-js-es6c-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 22)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 5 6))
+       (should (string= js-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-go-js-es6d-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 23)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 10 2))
+       (should (string= js-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-go-js-es6e-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 24)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 16 2))
+       (should (string= js-file (dumb-jump-go)))))))
+
+
 (ert-deftest dumb-jump-go-sig-def-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)

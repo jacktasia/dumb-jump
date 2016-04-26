@@ -184,6 +184,14 @@
            :regex "(service|factory)\\\((['\\\"])JJJ\\2" :tags ("angular")
            :tests ("module.factory(\\'test\\', [\\'$rootScope\\', function($rootScope) {"))
 
+    (:type "function" :language "javascript"
+           :regex "\\bJJJ\\s*[=:]\\s*\\\([^\\\)]*\\\)\\s+\\=>" :tags ("es6")
+           :tests ("const test = (foo) => " "test: (foo) => {" "  test: (foo) => {"))
+
+    (:type "function" :language "javascript"
+           :regex "\\bJJJ\\s*\\\([^\\\)]*\\\)\\s*{" :tags ("es6")
+           :tests ("test(foo) {" "test (foo){" "test(foo){"))
+
     ;; javascript
     (:type "variable" :language "javascript"
            :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if (test === 1234)"))
