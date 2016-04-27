@@ -23,3 +23,15 @@ funcName2();
 funcName3();
 funcName4();
 funcName5();
+
+
+class MyClass {
+
+    constructor(a, b) {
+        this.a = a;
+        this.b = b;
+    }
+}
+
+
+var b = new MyClass();

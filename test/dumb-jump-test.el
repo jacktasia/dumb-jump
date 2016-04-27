@@ -321,6 +321,16 @@
        (mock (dumb-jump-goto-file-line * 16 2))
        (should (string= js-file (dumb-jump-go)))))))
 
+(ert-deftest dumb-jump-go-js-es6-class-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 36)
+      (forward-char 12)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 28 6))
+       (should (string= js-file (dumb-jump-go)))))))
+
 
 (ert-deftest dumb-jump-go-sig-def-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))

@@ -192,6 +192,10 @@
            :regex "\\bJJJ\\s*\\\([^\\\)]*\\\)\\s*{" :tags ("es6")
            :tests ("test(foo) {" "test (foo){" "test(foo){"))
 
+    (:type "function" :language "javascript":tags ("es6")
+           :regex "class\\s*JJJ\\s*[\\\(\\\{]"
+           :tests ("class test(object) {" "class test{"))
+
     ;; javascript
     (:type "variable" :language "javascript"
            :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if (test === 1234)"))
