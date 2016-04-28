@@ -148,7 +148,7 @@
 
     ;; R
     (:type "variable" :language "r"
-           :regex "\\bJJJ\\s*=[^=]+?" :tests ("test = 1234") :not ("if (test == 1234)"))
+           :regex "\\bJJJ\\s*=[^=><]" :tests ("test = 1234") :not ("if (test == 1234)"))
 
     (:type "function" :language "r"
            :regex "\\bJJJ\\s*<-\\s*function"
