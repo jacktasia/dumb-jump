@@ -27,6 +27,7 @@ There is currently basic support for the following languages:
 * Ruby
 * Clojure
 * Faust
+* R
 
 If you have any issues with the existing languages, or you want support for another one, then please [open an issue](https://github.com/jacktasia/dumb-jump/issues). PRs are also welcome.
 
@@ -72,8 +73,8 @@ Dumb Jump will automatically look for a project root. If it's not finding one th
 
 * `(setq dumb-jump-default-project "~/code")` to change default project if one is not found (defaults to `~`)
 * `(setq dumb-jump-quiet t)` if Dumb Jump is too chatty.
-*
 * To support more languages and/or definition types use `add-to-list` on `dumb-jump-find-rules` (see source code).
+* `(add-hook 'dumb-jump-after-jump-hook 'some-function)` to execute code after you jump
 
 ## Contributing
 
