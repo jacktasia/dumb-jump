@@ -433,6 +433,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (cond
    ((and (string= lang "clojure") (s-contains? "/" look-for))
     (nth 1 (s-split "/" look-for)))
+   ((and (string= lang "ruby") (s-starts-with? ":" look-for))
+    (s-chop-prefix ":" look-for))
    (t
     look-for)))
 
