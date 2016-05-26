@@ -224,7 +224,34 @@
 
     (:type "function" :language "javascript"
            :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
-           :tests ("test = function()")))
+           :tests ("test = function()"))
+
+    ;; lua
+    (:type "variable" :language "lua"
+           :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test === 1234"))
+
+    (:type "variable" :language "lua"
+           :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*\\bJJJ\\b\\s*,?\\s*\\\)?"
+           :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah)" "function(blah, test)")
+           :not ("function (testLen)" "function (test1, blah)" "function somefunc(testFirst, blah)" "function(blah, testLast)"
+                 "function (Lentest)" "function (blahtest, blah)" "function somefunc(Firsttest, blah)" "function(blah, Lasttest)"))
+
+    (:type "function" :language "lua"
+           :regex "function\\s*JJJ\\s*\\\("
+           :tests ("function test()" "function test ()"))
+
+    (:type "function" :language "lua"
+           :regex "function\\s*.+[.:]JJJ\\s*\\\("
+           :tests ("function MyClass.test()" "function MyClass.test ()"
+                   "function MyClass:test()" "function MyClass:test ()"))
+
+    (:type "function" :language "lua"
+           :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
+           :tests ("test = function()"))
+
+    (:type "function" :language "lua"
+           :regex "\\b.+\\.JJJ\\s*=\\s*function\\s*\\\("
+           :tests ("MyClass.test = function()")))
 
   "List of regex patttern templates organized by language
 and type to use for generating the grep command"
@@ -245,7 +272,8 @@ and type to use for generating the grep command"
     (:language "r" :ext "R")
     (:language "r" :ext "r")
     (:language "python" :ext "py")
-    (:language "go" :ext "go"))
+    (:language "go" :ext "go")
+    (:language "lua" :ext "lua"))
   "Mapping of programming lanaguage(s) to file extensions"
   :group 'dumb-jump)
 
