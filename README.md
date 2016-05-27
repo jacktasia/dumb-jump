@@ -28,6 +28,7 @@ There is currently basic support for the following languages:
 * Clojure
 * Faust
 * R
+* Lua
 
 If you have any issues with the existing languages, or you want support for another one, then please [open an issue](https://github.com/jacktasia/dumb-jump/issues). PRs are also welcome.
 
