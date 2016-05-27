@@ -776,9 +776,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                       (if (s-ends-with? ".gz" cur-file)
                           " --search-zip"
                         "")
-                      (dumb-jump-arg-joiner
-                       "--"
-                       agtypes)))
+                      (s-join "" (--map (format " --%s" it) agtypes))))
          (exclude-args (dumb-jump-arg-joiner "--ignore-dir" (--map (s-replace proj "" it) exclude-paths)))
          (regex-args (format "\"%s\"" (s-join "|" filled-regexes))))
     (if (= (length regexes) 0)
