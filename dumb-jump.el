@@ -274,6 +274,8 @@ and type to use for generating the grep command"
   '((:language "elisp" :ext "el")
     (:language "elisp" :ext "el.gz")
     (:language "clojure" :ext "clj")
+    (:language "clojure" :ext "cljs")
+    (:language "clojure" :ext "cljc")
     (:language "faust" :ext "dsp")
     (:language "faust" :ext "lib")
     (:language "javascript" :ext "js")
