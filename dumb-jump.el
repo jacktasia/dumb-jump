@@ -6,6 +6,19 @@
 ;; Package-Requires: ((emacs "24.4") (f "0.17.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
+;; Dumb Jump is free software; you can redistribute it and/or modify it
+;; under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 3, or (at your option)
+;; any later version.
+;;
+;; Dumb Jump is distributed in the hope that it will be useful, but WITHOUT
+;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+;; License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with Dumb Jump.  If not, see http://www.gnu.org/licenses.
+
 ;;; Commentary:
 
 ;; Dumb Jump is an Emacs "jump to definition" package with support for multiple programming languages that favors
