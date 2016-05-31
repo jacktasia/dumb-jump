@@ -141,7 +141,7 @@
 
     ;; python
     (:type "variable" :language "python"
-           :regex "\\s*JJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test == 1234:"))
+           :regex "\\s*JJJ\\s*=[^=]+?" :tests ("test = 1234") :not ("if test == 1234:"))
 
     (:type "function" :language "python"
            :regex "def\\s*JJJ\\s*\\\("
@@ -153,7 +153,7 @@
 
     ;; ruby
     (:type "variable" :language "ruby"
-           :regex "\\s*JJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test == 1234"))
+           :regex "\\s*JJJ\\s*=[^=]+?" :tests ("test = 1234") :not ("if test == 1234"))
 
     (:type "function" :language "ruby"
            :regex "\\bdef\\s*JJJ\\s*\\\("
@@ -183,7 +183,7 @@
 
     ;; go
     (:type "variable" :language "go"
-           :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test == 1234 {"))
+           :regex "\\s*\\bJJJ\\s*=[^=]+?" :tests ("test = 1234") :not ("if test == 1234 {"))
 
     (:type "variable" :language "go"
            :regex "\\s*\\bJJJ\\s*:=\\s*" :tests ("test := 1234"))
@@ -213,13 +213,17 @@
            :regex "\\bJJJ\\s*\\\([^\\\)]*\\\)\\s*{" :tags ("es6")
            :tests ("test(foo) {" "test (foo){" "test(foo){"))
 
-    (:type "function" :language "javascript":tags ("es6")
+    (:type "function" :language "javascript" :tags ("es6")
            :regex "class\\s*JJJ\\s*[\\\(\\\{]"
            :tests ("class test(object) {" "class test{"))
 
+    (:type "function" :language "javascript" :tags ("es6")
+           :regex "class\\s*JJJ\\s+extends"
+           :tests ("class test extends Component{"))
+
     ;; javascript
     (:type "variable" :language "javascript"
-           :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if (test === 1234)"))
+           :regex "\\s*\\bJJJ\\s*=[^=]+?" :tests ("test = 1234" "const test = props =>") :not ("if (test === 1234)"))
 
     (:type "variable" :language "javascript"
            :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*\\bJJJ\\b\\s*,?\\s*\\\)?"
@@ -241,7 +245,7 @@
 
     ;; lua
     (:type "variable" :language "lua"
-           :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test === 1234"))
+           :regex "\\s*\\bJJJ\\s*=[^=]+?" :tests ("test = 1234") :not ("if test === 1234"))
 
     (:type "variable" :language "lua"
            :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*\\bJJJ\\b\\s*,?\\s*\\\)?"

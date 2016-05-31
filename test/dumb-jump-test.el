@@ -173,7 +173,6 @@
     (should (string= (buffer-file-name) js-file))
     (should (= (line-number-at-pos) 3))))
 
-
 (ert-deftest dumb-jump-goto-file-point-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
     (dumb-jump-goto-file-point js-file 10)
@@ -578,3 +577,56 @@
     (should (equal t4 '("c:\\Users\\test\\foo2.js" "2" "test = {a:1,b:1};")))
     ;; normal w/ extra :
     (should (equal t5 '("/opt/test/foo1.js" "41" " var test = {c:3, d: 4};")))))
+
+;; react tests
+
+(ert-deftest dumb-jump-react-test1 ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 8)
+      (forward-char 2)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 3 6))
+       (should (string= js-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-react-test2 ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 22)
+      (forward-char 2)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 13 6))
+       (should (string= js-file (dumb-jump-go)))))))
+
+
+(ert-deftest dumb-jump-react-test3 ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 27)
+      (forward-char 2)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 26 6))
+       (should (string= js-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-react-test4 ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 32)
+      (forward-char 7)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 31 6))
+       (should (string= js-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-react-test5 ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 39)
+      (forward-char 2)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 37 6))
+       (should (string= js-file (dumb-jump-go)))))))
