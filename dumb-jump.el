@@ -159,6 +159,32 @@
            :regex "\\bdef\\s*JJJ\\s*\\\("
            :tests ("def test(asdf)" "def test()"))
 
+    ;; scala
+    (:type "variable" :language "scala"
+           :regex "\\bval\\s*JJJ\\s*=[^=]+?$" :tests ("val test = 1234") :not ("case test => 1234"))
+
+    (:type "variable" :language "scala"
+           :regex "\\bvar\\s*JJJ\\s*=[^=]+?$" :tests ("var test = 1234") :not ("case test => 1234"))
+
+    (:type "variable" :language "scala"
+           :regex "\\btype\\s*JJJ\\s*=[^=]+?$" :tests ("type test = 1234") :not ("case test => 1234"))
+
+    (:type "function" :language "scala"
+           :regex "\\bdef\\s*JJJ\\s*\\\("
+           :tests ("def test(asdf)" "def test()"))
+
+    (:type "type" :language "scala"
+           :regex "class\\s*JJJ\\s*\\\(?"
+           :tests ("class test(object)"))
+
+    (:type "type" :language "scala"
+           :regex "trait\\s*JJJ\\s*\\\(?"
+           :tests ("trait test(object)"))
+
+    (:type "type" :language "scala"
+           :regex "object\\s*JJJ\\s*\\\(?"
+           :tests ("object test(object)"))
+
     ;; R
     (:type "variable" :language "r"
            :regex "\\bJJJ\\s*=[^=><]" :tests ("test = 1234") :not ("if (test == 1234)"))
@@ -288,6 +314,7 @@ and type to use for generating the grep command"
     (:language "php" :ext "php")
     (:language "php" :ext "inc")
     (:language "ruby" :ext "rb")
+    (:language "scala" :ext "scala")
     (:language "r" :ext "R")
     (:language "r" :ext "r")
     (:language "python" :ext "py")
