@@ -156,7 +156,7 @@
            :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234"))
 
     (:type "function" :language "ruby"
-           :regex "\\bdef\\s*JJJ\\s*\\\("
+           :regex "\\bdef\\s+JJJ\\s*\\\("
            :tests ("def test(asdf)" "def test()"))
 
     ;; scala
