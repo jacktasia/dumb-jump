@@ -134,10 +134,42 @@
            :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
     ;; clojure
-    (:type "function" :language "clojure" :regex "\\\(defn-?\\s+JJJ\\j"
+    (:type "variable" :language "clojure"
+           :regex "\\\(def\\s+JJJ\\j"
+           :tests ("(def test (foo)" "(def test-foo (bar)"))
+
+    (:type "function" :language "clojure"
            ;; \\j usage see `dumb-jump-ag-word-boundary`
-           :tests ("(defn test (blah)" "(defn test\n" "(defn- test (blah)" "(defn- test\n")
-           :not ("(defn test-asdf (blah)" "(defn test-blah\n" "(defn- test-asdf (blah)" "(defn- test-blah\n"))
+           :regex "\\\(defn-?\\s+JJJ\\j"
+           :tests ("(defn test [foo]" "(defn- test [foo]" "(defn test-foo [bar]" "(defn- test-foo [bar]"))
+
+    (:type "function" :language "clojure"
+           :regex "\\\(defmacro\\s+JJJ\\j"
+           :tests ("(defmacro test [foo]" "(defmacro test-foo [bar]"))
+
+    (:type "type" :language "clojure"
+           :regex "\\\(deftype\\s+JJJ\\j"
+           :tests ("(deftype Test [foo]" "(deftype Test-foo [bar]"))
+
+    (:type "type" :language "clojure"
+           :regex "\\\(defmulti\\s+JJJ\\j"
+           :tests ("(defmulti test fn" "(defmulti test-foo fn"))
+
+    (:type "type" :language "clojure"
+           :regex "\\\(defmethod\\s+JJJ\\j"
+           :tests ("(defmethod test Type" "(defmethod test-foo Type"))
+
+    (:type "type" :language "clojure"
+           :regex "\\\(definterface\\s+JJJ\\j"
+           :tests ("(definterface Itest (foo)" "(definterface Itest-foo (bar)"))
+
+    (:type "type" :language "clojure"
+           :regex "\\\(defprotocol\\s+JJJ\\j"
+           :tests ("(defprotocol Test (foo)" "(defprotocol Test-foo (bar)"))
+
+    (:type "type" :language "clojure"
+           :regex "\\\(defrecord\\s+JJJ\\j"
+           :tests ("(defrecord Test [foo]" "(defrecord Test-foo [bar]"))
 
     ;; python
     (:type "variable" :language "python"
