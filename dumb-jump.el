@@ -161,13 +161,13 @@
 
     ;; scala
     (:type "variable" :language "scala"
-           :regex "\\bval\\s*JJJ\\s*=[^=]+?$" :tests ("val test = 1234") :not ("case test => 1234"))
+           :regex "\\bval\\s*JJJ\\s*=[^=\\n]+" :tests ("val test = 1234") :not ("case test => 1234"))
 
     (:type "variable" :language "scala"
-           :regex "\\bvar\\s*JJJ\\s*=[^=]+?$" :tests ("var test = 1234") :not ("case test => 1234"))
+           :regex "\\bvar\\s*JJJ\\s*=[^=\\n]+" :tests ("var test = 1234") :not ("case test => 1234"))
 
     (:type "variable" :language "scala"
-           :regex "\\btype\\s*JJJ\\s*=[^=]+?$" :tests ("type test = 1234") :not ("case test => 1234"))
+           :regex "\\btype\\s*JJJ\\s*=[^=\\n]+" :tests ("type test = 1234") :not ("case test => 1234"))
 
     (:type "function" :language "scala"
            :regex "\\bdef\\s*JJJ\\s*\\\("
