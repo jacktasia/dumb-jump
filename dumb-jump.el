@@ -810,7 +810,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-get-ag-type-by-language (language)
   "Returns list of ag type argument for a LANGUAGE"
   (-distinct (--map (plist-get it :agtype)
-                    (--filter (string= (plist-get it :agtype) language)
+                    (--filter (string= (plist-get it :language) language)
                               dumb-jump-language-file-exts))))
 
 (defun dumb-jump-get-rules-by-language (language)
