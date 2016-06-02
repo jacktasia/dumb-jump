@@ -6,6 +6,19 @@
 ;; Package-Requires: ((emacs "24.4") (f "0.17.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
+;; Dumb Jump is free software; you can redistribute it and/or modify it
+;; under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 3, or (at your option)
+;; any later version.
+;;
+;; Dumb Jump is distributed in the hope that it will be useful, but WITHOUT
+;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+;; License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with Dumb Jump.  If not, see http://www.gnu.org/licenses.
+
 ;;; Commentary:
 
 ;; Dumb Jump is an Emacs "jump to definition" package with support for multiple programming languages that favors
@@ -128,7 +141,7 @@
 
     ;; python
     (:type "variable" :language "python"
-           :regex "\\s*JJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test == 1234:"))
+           :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234:"))
 
     (:type "function" :language "python"
            :regex "def\\s*JJJ\\s*\\\("
@@ -140,11 +153,37 @@
 
     ;; ruby
     (:type "variable" :language "ruby"
-           :regex "\\s*JJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test == 1234"))
+           :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234"))
 
     (:type "function" :language "ruby"
            :regex "\\bdef\\s*JJJ\\s*\\\("
            :tests ("def test(asdf)" "def test()"))
+
+    ;; scala
+    (:type "variable" :language "scala"
+           :regex "\\bval\\s*JJJ\\s*=[^=\\n]+" :tests ("val test = 1234") :not ("case test => 1234"))
+
+    (:type "variable" :language "scala"
+           :regex "\\bvar\\s*JJJ\\s*=[^=\\n]+" :tests ("var test = 1234") :not ("case test => 1234"))
+
+    (:type "variable" :language "scala"
+           :regex "\\btype\\s*JJJ\\s*=[^=\\n]+" :tests ("type test = 1234") :not ("case test => 1234"))
+
+    (:type "function" :language "scala"
+           :regex "\\bdef\\s*JJJ\\s*\\\("
+           :tests ("def test(asdf)" "def test()"))
+
+    (:type "type" :language "scala"
+           :regex "class\\s*JJJ\\s*\\\(?"
+           :tests ("class test(object)"))
+
+    (:type "type" :language "scala"
+           :regex "trait\\s*JJJ\\s*\\\(?"
+           :tests ("trait test(object)"))
+
+    (:type "type" :language "scala"
+           :regex "object\\s*JJJ\\s*\\\(?"
+           :tests ("object test(object)"))
 
     ;; R
     (:type "variable" :language "r"
@@ -170,7 +209,7 @@
 
     ;; go
     (:type "variable" :language "go"
-           :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test == 1234 {"))
+           :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234 {"))
 
     (:type "variable" :language "go"
            :regex "\\s*\\bJJJ\\s*:=\\s*" :tests ("test := 1234"))
@@ -200,13 +239,17 @@
            :regex "\\bJJJ\\s*\\\([^\\\)]*\\\)\\s*{" :tags ("es6")
            :tests ("test(foo) {" "test (foo){" "test(foo){"))
 
-    (:type "function" :language "javascript":tags ("es6")
+    (:type "function" :language "javascript" :tags ("es6")
            :regex "class\\s*JJJ\\s*[\\\(\\\{]"
            :tests ("class test(object) {" "class test{"))
 
+    (:type "function" :language "javascript" :tags ("es6")
+           :regex "class\\s*JJJ\\s+extends"
+           :tests ("class test extends Component{"))
+
     ;; javascript
     (:type "variable" :language "javascript"
-           :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if (test === 1234)"))
+           :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234" "const test = props =>") :not ("if (test === 1234)"))
 
     (:type "variable" :language "javascript"
            :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*\\bJJJ\\b\\s*,?\\s*\\\)?"
@@ -228,7 +271,7 @@
 
     ;; lua
     (:type "variable" :language "lua"
-           :regex "\\s*\\bJJJ\\s*=[^=]+?$" :tests ("test = 1234") :not ("if test === 1234"))
+           :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test === 1234"))
 
     (:type "variable" :language "lua"
            :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*\\bJJJ\\b\\s*,?\\s*\\\)?"
@@ -261,6 +304,8 @@ and type to use for generating the grep command"
   '((:language "elisp" :ext "el" :agtype "elisp")
     (:language "elisp" :ext "el.gz" :agtype "elisp")
     (:language "clojure" :ext "clj" :agtype "clojure")
+    (:language "clojure" :ext "cljs" :agtype "clojure")
+    (:language "clojure" :ext "cljc" :agtype "clojure")
     (:language "faust" :ext "dsp" :agtype nil)
     (:language "faust" :ext "lib" :agtype nil)
     (:language "javascript" :ext "js" :agtype "js")
@@ -269,6 +314,7 @@ and type to use for generating the grep command"
     (:language "php" :ext "php" :agtype "php")
     (:language "php" :ext "inc" :agtype "php")
     (:language "ruby" :ext "rb" :agtype "ruby")
+    (:language "scala" :ext "scala" :agtype "scala")
     (:language "r" :ext "R" :agtype "r")
     (:language "r" :ext "r" :agtype "r")
     (:language "python" :ext "py" :agtype "python")

@@ -25,6 +25,7 @@ There is currently basic support for the following languages:
 * Go
 * PHP
 * Ruby
+* Scala
 * Clojure
 * Faust
 * R
