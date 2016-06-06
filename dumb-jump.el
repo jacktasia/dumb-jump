@@ -153,11 +153,21 @@
 
     ;; ruby
     (:type "variable" :language "ruby"
-           :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234"))
+           :regex "\\s*JJJ\\s*=[^=\\n]+"
+           :tests ("test = 1234")
+           :not ("if test == 1234"))
 
     (:type "function" :language "ruby"
-           :regex "\\bdef\\s+JJJ\\s*\\\("
-           :tests ("def test(asdf)" "def test()"))
+           :regex "\\bdef\\s+JJJ\\b"
+           :tests ("def test(foo)" "def test()" "def test foo" "def test" "def test; end"))
+
+    (:type "type" :language "ruby"
+           :regex "\\bclass\\s+(?:\\w*::)*JJJ\\b"
+           :tests ("class Test" "class Foo::Test"))
+
+    (:type "type" :language "ruby"
+           :regex "\\bmodule\\s+(?:\\w*::)*JJJ\\b"
+           :tests ("module Test" "module Foo::Test"))
 
     (:type "type" :language "ruby"
            :regex "\\bclass\\s+(?:\\w*::)*JJJ\\s*"
