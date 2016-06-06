@@ -376,6 +376,10 @@ immediately to the right of a symbol then it's probably a function call"
           (setq cur-pos (1- cur-pos)))))
     (1+ cur-pos)))
 
+(defun dumb-jump-shell-escape (str)
+  "Escape STR for inclusion in a POSIX single-quote string."
+  (replace-regexp-in-string "'" "'\\\\''" str))
+
 (defun dumb-jump-test-rules (&optional run-not-tests)
   "Test all the rules and return count of those that fail
 Optionally pass t to see a list of all failed rules"
@@ -385,7 +389,7 @@ Optionally pass t to see a list of all failed rules"
       (lambda (rule)
         (-each (plist-get rule (if run-not-tests :not :tests))
           (lambda (test)
-            (let* ((cmd (concat " echo '" test "' | grep -En -e '"
+            (let* ((cmd (concat " echo '" (dumb-jump-shell-escape test) "' | grep -En -e '"
                                 (dumb-jump-populate-regex (plist-get rule :regex) "test" nil) "'"))
                    (resp (shell-command-to-string cmd)))
               (when (or
@@ -404,7 +408,7 @@ Optionally pass t to see a list of all failed rules"
       (lambda (rule)
         (-each (plist-get rule (if run-not-tests :not :tests))
           (lambda (test)
-            (let* ((cmd (concat " echo '" test "' | ag --nocolor --nogroup \""
+            (let* ((cmd (concat " echo '" (dumb-jump-shell-escape test) "' | ag --nocolor --nogroup \""
                                 (dumb-jump-populate-regex (plist-get rule :regex) "test" t) "\""))
                    (resp (shell-command-to-string cmd)))
               (when (or
