@@ -228,8 +228,8 @@
 
     ;; javascript extended
     (:type "function" :language "javascript"
-           :regex "(service|factory)\\\((['\\\"])JJJ\\2" :tags ("angular")
-           :tests ("module.factory(\\'test\\', [\\'$rootScope\\', function($rootScope) {"))
+           :regex "(service|factory)\\\((['\\''\\\"])JJJ\\2" :tags ("angular")
+           :tests ("module.factory('test', [\"$rootScope\", function($rootScope) {"))
 
     (:type "function" :language "javascript"
            :regex "\\bJJJ\\s*[=:]\\s*\\\([^\\\)]*\\\)\\s+\\=>" :tags ("es6")
