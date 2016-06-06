@@ -169,14 +169,6 @@
            :regex "\\bmodule\\s+(?:\\w*::)*JJJ\\b"
            :tests ("module Test" "module Foo::Test"))
 
-    (:type "type" :language "ruby"
-           :regex "\\bclass\\s+(?:\\w*::)*JJJ\\s*"
-           :tests ("class Test" "class Foo::Test"))
-
-    (:type "type" :language "ruby"
-           :regex "\\bmodule\\s+(?:\\w*::)*JJJ\\s*"
-           :tests ("module Test" "module Foo::Test"))
-
     ;; scala
     (:type "variable" :language "scala"
            :regex "\\bval\\s*JJJ\\s*=[^=\\n]+" :tests ("val test = 1234") :not ("case test => 1234"))
