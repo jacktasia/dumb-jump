@@ -813,7 +813,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (--map (dumb-jump-populate-regex it look-for use-ag) regexes))
 
 (defun dumb-jump-generate-ag-command (look-for cur-file proj regexes lang exclude-paths)
-  "Generate the grep response based on the needle LOOK-FOR in the directory PROJ"
+  "Generate the ag response based on the needle LOOK-FOR in the directory PROJ"
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes t))
          ;; TODO: --search-zip always? in case the include is the in gz area like emacs lisp code.
          (cmd (concat dumb-jump-ag-cmd " --nocolor --nogroup" (if (s-ends-with? ".gz" cur-file)
