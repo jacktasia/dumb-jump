@@ -129,7 +129,7 @@
 
     ;; variable in method signature
     (:type "variable" :language "elisp"
-           :regex "\\(defun\\s*.+\\\(?\\s*JJJ\\j\\s*\\\)?"
+           :regex "\\\(defun\\s*.+\\\(?\\s*JJJ\\j\\s*\\\)?"
            :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)")
            :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
