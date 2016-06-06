@@ -135,41 +135,40 @@
 
     ;; clojure
     (:type "variable" :language "clojure"
-           :regex "\\\(def\\s+JJJ\\j"
-           :tests ("(def test (foo)" "(def test-foo (bar)"))
+           :regex "\\\(def\\s+JJJ\\b"
+           :tests ("(def test (foo)"))
 
     (:type "function" :language "clojure"
-           ;; \\j usage see `dumb-jump-ag-word-boundary`
-           :regex "\\\(defn-?\\s+JJJ\\j"
-           :tests ("(defn test [foo]" "(defn- test [foo]" "(defn test-foo [bar]" "(defn- test-foo [bar]"))
+           :regex "\\\(defn-?\\s+JJJ\\b"
+           :tests ("(defn test [foo]" "(defn- test [foo]"))
 
     (:type "function" :language "clojure"
-           :regex "\\\(defmacro\\s+JJJ\\j"
-           :tests ("(defmacro test [foo]" "(defmacro test-foo [bar]"))
+           :regex "\\\(defmacro\\s+JJJ\\b"
+           :tests ("(defmacro test [foo]"))
 
     (:type "type" :language "clojure"
-           :regex "\\\(deftype\\s+JJJ\\j"
-           :tests ("(deftype Test [foo]" "(deftype Test-foo [bar]"))
+           :regex "\\\(deftype\\s+JJJ\\b"
+           :tests ("(deftype Test [foo]"))
 
     (:type "type" :language "clojure"
-           :regex "\\\(defmulti\\s+JJJ\\j"
-           :tests ("(defmulti test fn" "(defmulti test-foo fn"))
+           :regex "\\\(defmulti\\s+JJJ\\b"
+           :tests ("(defmulti test fn"))
 
     (:type "type" :language "clojure"
-           :regex "\\\(defmethod\\s+JJJ\\j"
-           :tests ("(defmethod test Type" "(defmethod test-foo Type"))
+           :regex "\\\(defmethod\\s+JJJ\\b"
+           :tests ("(defmethod test Type"))
 
     (:type "type" :language "clojure"
-           :regex "\\\(definterface\\s+JJJ\\j"
-           :tests ("(definterface Itest (foo)" "(definterface Itest-foo (bar)"))
+           :regex "\\\(definterface\\s+JJJ\\b"
+           :tests ("(definterface Test (foo)"))
 
     (:type "type" :language "clojure"
-           :regex "\\\(defprotocol\\s+JJJ\\j"
-           :tests ("(defprotocol Test (foo)" "(defprotocol Test-foo (bar)"))
+           :regex "\\\(defprotocol\\s+JJJ\\b"
+           :tests ("(defprotocol Test (foo)"))
 
     (:type "type" :language "clojure"
-           :regex "\\\(defrecord\\s+JJJ\\j"
-           :tests ("(defrecord Test [foo]" "(defrecord Test-foo [bar]"))
+           :regex "\\\(defrecord\\s+JJJ\\b"
+           :tests ("(defrecord Test [foo]"))
 
     ;; python
     (:type "variable" :language "python"
