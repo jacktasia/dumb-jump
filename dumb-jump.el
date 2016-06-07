@@ -135,39 +135,39 @@
 
     ;; clojure
     (:type "variable" :supports ("ag" "grep") :language "clojure"
-           :regex "\\\(def\\s+JJJ\\j"
+           :regex "\\(def\\s+JJJ\\j"
            :tests ("(def test (foo)"))
 
     (:type "function" :supports ("ag" "grep") :language "clojure"
-           :regex "\\\(defn-?\\s+JJJ\\j"
+           :regex "\\(defn-?\\s+JJJ\\j"
            :tests ("(defn test [foo]" "(defn- test [foo]"))
 
     (:type "function" :supports ("ag" "grep") :language "clojure"
-           :regex "\\\(defmacro\\s+JJJ\\j"
+           :regex "\\(defmacro\\s+JJJ\\j"
            :tests ("(defmacro test [foo]"))
 
     (:type "type" :supports ("ag" "grep") :language "clojure"
-           :regex "\\\(deftype\\s+JJJ\\j"
+           :regex "\\(deftype\\s+JJJ\\j"
            :tests ("(deftype test [foo]"))
 
     (:type "type" :supports ("ag" "grep") :language "clojure"
-           :regex "\\\(defmulti\\s+JJJ\\j"
+           :regex "\\(defmulti\\s+JJJ\\j"
            :tests ("(defmulti test fn"))
 
     (:type "type" :supports ("ag" "grep") :language "clojure"
-           :regex "\\\(defmethod\\s+JJJ\\j"
+           :regex "\\(defmethod\\s+JJJ\\j"
            :tests ("(defmethod test type"))
 
     (:type "type" :supports ("ag" "grep") :language "clojure"
-           :regex "\\\(definterface\\s+JJJ\\j"
+           :regex "\\(definterface\\s+JJJ\\j"
            :tests ("(definterface test (foo)"))
 
     (:type "type" :supports ("ag" "grep") :language "clojure"
-           :regex "\\\(defprotocol\\s+JJJ\\j"
+           :regex "\\(defprotocol\\s+JJJ\\j"
            :tests ("(defprotocol test (foo)"))
 
     (:type "type" :supports ("ag" "grep") :language "clojure"
-           :regex "\\\(defrecord\\s+JJJ\\j"
+           :regex "\\(defrecord\\s+JJJ\\j"
            :tests ("(defrecord test [foo]"))
 
     ;; python
