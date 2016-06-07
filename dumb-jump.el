@@ -184,11 +184,21 @@
 
     ;; ruby
     (:type "variable" :supports ("ag" "grep") :language "ruby"
-           :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234"))
+           :regex "\\s*JJJ\\s*=[^=\\n]+"
+           :tests ("test = 1234")
+           :not ("if test == 1234"))
 
     (:type "function" :supports ("ag" "grep") :language "ruby"
-           :regex "\\bdef\\s*JJJ\\s*\\\("
-           :tests ("def test(asdf)" "def test()"))
+           :regex "\\bdef\\s+JJJ\\j"
+           :tests ("def test(foo)" "def test()" "def test foo" "def test; end"))
+
+    (:type "type" :supports ("ag") :language "ruby"
+           :regex "\\bclass\\s+(?:\\w*::)*JJJ\\j"
+           :tests ("class Test" "class Foo::Test"))
+
+    (:type "type" :supports ("ag") :language "ruby"
+           :regex "\\bmodule\\s+(?:\\w*::)*JJJ\\j"
+           :tests ("module Test" "module Foo::Test"))
 
     ;; scala
     (:type "variable" :supports ("ag" "grep") :language "scala"
