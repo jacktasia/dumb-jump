@@ -412,11 +412,11 @@ immediately to the right of a symbol then it's probably a function call"
   (replace-regexp-in-string "'" "'\\\\''" str))
 
 (defun dumb-jump-test-rules (&optional run-not-tests)
-  "Test all the rules and return count of those that fail
+  "Test all the grep rules and return count of those that fail.
 Optionally pass t to see a list of all failed rules"
   (let ((failures '())
         (fail-tmpl "grep %s FAILURE '%s' not in response '%s' | CMD: '%s' | regex: '%s'"))
-    (-each dumb-jump-find-rules
+    (-each (--filter (member "grep" (plist-get it :supports)) dumb-jump-find-rules)
       (lambda (rule)
         (-each (plist-get rule (if run-not-tests :not :tests))
           (lambda (test)
@@ -432,11 +432,11 @@ Optionally pass t to see a list of all failed rules"
     failures))
 
 (defun dumb-jump-test-ag-rules (&optional run-not-tests)
-  "Test all the rules and return count of those that fail
+  "Test all the ag rules and return count of those that fail
 Optionally pass t to see a list of all failed rules"
   (let ((failures '())
         (fail-tmpl "ag FAILURE '%s' not in response '%s' | CMD: '%s' | rule: '%s'"))
-    (-each dumb-jump-find-rules
+    (-each (--filter (member "ag" (plist-get it :supports)) dumb-jump-find-rules)
       (lambda (rule)
         (-each (plist-get rule (if run-not-tests :not :tests))
           (lambda (test)
