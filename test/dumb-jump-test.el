@@ -534,9 +534,11 @@
 
 (ert-deftest dumb-jump-process-symbol-by-lang-test ()
   (let ((result (dumb-jump-process-symbol-by-lang "elisp" "somefunc"))
-        (result2 (dumb-jump-process-symbol-by-lang "clojure" "myns/myfunc")))
+        (result2 (dumb-jump-process-symbol-by-lang "clojure" "myns/myfunc"))
+        (result3 (dumb-jump-process-symbol-by-lang "ruby" ":myrubyfunc")))
     (should (string= result "somefunc"))
-    (should (string= result2 "myfunc"))))
+    (should (string= result2 "myfunc"))
+    (should (string= result3 "myrubyfunc"))))
 
 (ert-deftest dumb-jump-result-follow-test ()
   (let* ((data '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
