@@ -111,188 +111,188 @@
   :group 'dumb-jump)
 
 (defcustom dumb-jump-find-rules
-  '((:type "function" :language "elisp" :regex "\\\(defun\\s+JJJ\\j"
+  '((:type "function" :supports ("ag" "grep") :language "elisp" :regex "\\\(defun\\s+JJJ\\j"
            ;; \\j usage see `dumb-jump-ag-word-boundary`
            :tests ("(defun test (blah)" "(defun test\n") :not ("(defun test-asdf (blah)" "(defun test-blah\n"))
 
-    (:type "variable" :language "elisp"
+    (:type "variable" :supports ("ag" "grep") :language "elisp"
            :regex "\\\(defvar\\b\\s*JJJ\\j" :tests ("(defvar test " "(defvar test\n"))
 
-    (:type "variable" :language "elisp"
+    (:type "variable" :supports ("ag" "grep") :language "elisp"
            :regex "\\\(defcustom\\b\\s*JJJ\\j" :tests ("(defcustom test " "(defcustom test\n"))
 
-    (:type "variable" :language "elisp"
+    (:type "variable" :supports ("ag" "grep") :language "elisp"
            :regex "\\\(setq\\b\\s*JJJ\\j" :tests ("(setq test 123)") :not ("setq test-blah 123)"))
 
-    (:type "variable" :language "elisp"
+    (:type "variable" :supports ("ag" "grep") :language "elisp"
            :regex "\\\(JJJ\\s+" :tests ("(let ((test 123)))") :not ("(let ((test-2 123)))"))
 
     ;; variable in method signature
-    (:type "variable" :language "elisp"
+    (:type "variable" :supports ("ag" "grep") :language "elisp"
            :regex "\\(defun\\s*.+\\\(?\\s*JJJ\\j\\s*\\\)?"
            :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)")
            :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
     ;; clojure
-    (:type "function" :language "clojure" :regex "\\\(defn-?\\s+JJJ\\j"
+    (:type "function" :supports ("ag" "grep") :language "clojure" :regex "\\\(defn-?\\s+JJJ\\j"
            ;; \\j usage see `dumb-jump-ag-word-boundary`
            :tests ("(defn test (blah)" "(defn test\n" "(defn- test (blah)" "(defn- test\n")
            :not ("(defn test-asdf (blah)" "(defn test-blah\n" "(defn- test-asdf (blah)" "(defn- test-blah\n"))
 
     ;; python
-    (:type "variable" :language "python"
+    (:type "variable" :supports ("ag" "grep") :language "python"
            :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234:"))
 
-    (:type "function" :language "python"
+    (:type "function" :supports ("ag" "grep") :language "python"
            :regex "def\\s*JJJ\\s*\\\("
            :tests ("\tdef test(asdf)" "def test()"))
 
-    (:type "type" :language "python"
+    (:type "type" :supports ("ag" "grep") :language "python"
            :regex "class\\s*JJJ\\s*\\\(?"
            :tests ("class test(object):"))
 
     ;; ruby
-    (:type "variable" :language "ruby"
+    (:type "variable" :supports ("ag" "grep") :language "ruby"
            :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234"))
 
-    (:type "function" :language "ruby"
+    (:type "function" :supports ("ag" "grep") :language "ruby"
            :regex "\\bdef\\s*JJJ\\s*\\\("
            :tests ("def test(asdf)" "def test()"))
 
     ;; scala
-    (:type "variable" :language "scala"
+    (:type "variable" :supports ("ag" "grep") :language "scala"
            :regex "\\bval\\s*JJJ\\s*=[^=\\n]+" :tests ("val test = 1234") :not ("case test => 1234"))
 
-    (:type "variable" :language "scala"
+    (:type "variable" :supports ("ag" "grep") :language "scala"
            :regex "\\bvar\\s*JJJ\\s*=[^=\\n]+" :tests ("var test = 1234") :not ("case test => 1234"))
 
-    (:type "variable" :language "scala"
+    (:type "variable" :supports ("ag" "grep") :language "scala"
            :regex "\\btype\\s*JJJ\\s*=[^=\\n]+" :tests ("type test = 1234") :not ("case test => 1234"))
 
-    (:type "function" :language "scala"
+    (:type "function" :supports ("ag" "grep") :language "scala"
            :regex "\\bdef\\s*JJJ\\s*\\\("
            :tests ("def test(asdf)" "def test()"))
 
-    (:type "type" :language "scala"
+    (:type "type" :supports ("ag" "grep") :language "scala"
            :regex "class\\s*JJJ\\s*\\\(?"
            :tests ("class test(object)"))
 
-    (:type "type" :language "scala"
+    (:type "type" :supports ("ag" "grep") :language "scala"
            :regex "trait\\s*JJJ\\s*\\\(?"
            :tests ("trait test(object)"))
 
-    (:type "type" :language "scala"
+    (:type "type" :supports ("ag" "grep") :language "scala"
            :regex "object\\s*JJJ\\s*\\\(?"
            :tests ("object test(object)"))
 
     ;; R
-    (:type "variable" :language "r"
+    (:type "variable" :supports ("ag" "grep") :language "r"
            :regex "\\bJJJ\\s*=[^=><]" :tests ("test = 1234") :not ("if (test == 1234)"))
 
-    (:type "function" :language "r"
+    (:type "function" :supports ("ag" "grep") :language "r"
            :regex "\\bJJJ\\s*<-\\s*function"
            :tests ("test <- function"))
 
     ;; php
-    (:type "function" :language "php"
+    (:type "function" :supports ("ag" "grep") :language "php"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
 
-    (:type "variable" :language "php"
+    (:type "variable" :supports ("ag" "grep") :language "php"
            :regex "JJJ\\s*=\\s*"
            :tests ("$test = 1234"))
 
     ;; faust
-    (:type "function" :language "faust"
+    (:type "function" :supports ("ag" "grep") :language "faust"
            :regex "^\s*JJJ(\(.+\))*\s*="
            :tests ("test = osc + 0.5;" "test(freq) = osc(freq) + 0.5;"))
 
     ;; go
-    (:type "variable" :language "go"
+    (:type "variable" :supports ("ag" "grep") :language "go"
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234 {"))
 
-    (:type "variable" :language "go"
+    (:type "variable" :supports ("ag" "grep") :language "go"
            :regex "\\s*\\bJJJ\\s*:=\\s*" :tests ("test := 1234"))
 
-    (:type "function" :language "go"
+    (:type "function" :supports ("ag" "grep") :language "go"
            :regex "func\\s+\\\([^\\\)]*\\\)\\s+JJJ\\s*\\\("
            :tests ("func (s *blah) test(filename string) string {"))
 
-    (:type "function" :language "go"
+    (:type "function" :supports ("ag" "grep") :language "go"
            :regex "func\\s+JJJ\\s*\\\("
            :tests ("func test(url string) (string, error)"))
 
-    (:type "type" :language "go"
+    (:type "type" :supports ("ag" "grep") :language "go"
            :regex "type\\s+JJJ\\s+struct\\s+\\\{"
            :tests ("type test struct {"))
 
     ;; javascript extended
-    (:type "function" :language "javascript"
+    (:type "function" :supports ("ag" "grep") :language "javascript"
            :regex "(service|factory)\\\((['\\''\\\"])JJJ\\2" :tags ("angular")
            :tests ("module.factory('test', [\"$rootScope\", function($rootScope) {"))
 
-    (:type "function" :language "javascript"
+    (:type "function" :supports ("ag" "grep") :language "javascript"
            :regex "\\bJJJ\\s*[=:]\\s*\\\([^\\\)]*\\\)\\s+\\=>" :tags ("es6")
            :tests ("const test = (foo) => " "test: (foo) => {" "  test: (foo) => {"))
 
-    (:type "function" :language "javascript"
+    (:type "function" :supports ("ag" "grep") :language "javascript"
            :regex "\\bJJJ\\s*\\\([^\\\)]*\\\)\\s*{" :tags ("es6")
            :tests ("test(foo) {" "test (foo){" "test(foo){"))
 
-    (:type "function" :language "javascript" :tags ("es6")
+    (:type "function" :supports ("ag" "grep") :language "javascript" :tags ("es6")
            :regex "class\\s*JJJ\\s*[\\\(\\\{]"
            :tests ("class test(object) {" "class test{"))
 
-    (:type "function" :language "javascript" :tags ("es6")
+    (:type "function" :supports ("ag" "grep") :language "javascript" :tags ("es6")
            :regex "class\\s*JJJ\\s+extends"
            :tests ("class test extends Component{"))
 
     ;; javascript
-    (:type "variable" :language "javascript"
+    (:type "variable" :supports ("ag" "grep") :language "javascript"
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234" "const test = props =>") :not ("if (test === 1234)"))
 
-    (:type "variable" :language "javascript"
+    (:type "variable" :supports ("ag" "grep") :language "javascript"
            :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*\\bJJJ\\b\\s*,?\\s*\\\)?"
            :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah) {" "function(blah, test)")
            :not ("function (testLen)" "function (test1, blah)" "function somefunc(testFirst, blah) {" "function(blah, testLast)"
                  "function (Lentest)" "function (blahtest, blah)" "function somefunc(Firsttest, blah) {" "function(blah, Lasttest)"))
 
-    (:type "function" :language "javascript"
+    (:type "function" :supports ("ag" "grep") :language "javascript"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
 
-    (:type "function" :language "javascript"
+    (:type "function" :supports ("ag" "grep") :language "javascript"
            :regex "\\bJJJ\\s*:\\s*function\\s*\\\("
            :tests ("test: function()"))
 
-    (:type "function" :language "javascript"
+    (:type "function" :supports ("ag" "grep") :language "javascript"
            :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
            :tests ("test = function()"))
 
     ;; lua
-    (:type "variable" :language "lua"
+    (:type "variable" :supports ("ag" "grep") :language "lua"
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test === 1234"))
 
-    (:type "variable" :language "lua"
+    (:type "variable" :supports ("ag" "grep") :language "lua"
            :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*\\bJJJ\\b\\s*,?\\s*\\\)?"
            :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah)" "function(blah, test)")
            :not ("function (testLen)" "function (test1, blah)" "function somefunc(testFirst, blah)" "function(blah, testLast)"
                  "function (Lentest)" "function (blahtest, blah)" "function somefunc(Firsttest, blah)" "function(blah, Lasttest)"))
 
-    (:type "function" :language "lua"
+    (:type "function" :supports ("ag" "grep") :language "lua"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
 
-    (:type "function" :language "lua"
+    (:type "function" :supports ("ag" "grep") :language "lua"
            :regex "function\\s*.+[.:]JJJ\\s*\\\("
            :tests ("function MyClass.test()" "function MyClass.test ()"
                    "function MyClass:test()" "function MyClass:test ()"))
 
-    (:type "function" :language "lua"
+    (:type "function" :supports ("ag" "grep") :language "lua"
            :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
            :tests ("test = function()"))
 
-    (:type "function" :language "lua"
+    (:type "function" :supports ("ag" "grep") :language "lua"
            :regex "\\b.+\\.JJJ\\s*=\\s*function\\s*\\\("
            :tests ("MyClass.test = function()")))
 
@@ -397,6 +397,7 @@ Optionally pass t to see a list of all failed rules"
                      (and run-not-tests (> (length resp) 0)))
                 (add-to-list 'failures (format fail-tmpl (if run-not-tests "not" "")
                                                test resp cmd (plist-get rule :regex)))))))))
+    ; (prin1 failures)
     failures))
 
 (defun dumb-jump-test-ag-rules (&optional run-not-tests)
@@ -415,6 +416,7 @@ Optionally pass t to see a list of all failed rules"
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
                 (add-to-list 'failures (format fail-tmpl test resp cmd rule))))))))
+    ; (prin1 failures)
     failures))
 
 (defun dumb-jump-message (str &rest args)
@@ -865,7 +867,10 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-get-rules-by-language (language)
   "Returns a list of rules for the LANGUAGE"
-  (let ((results (--filter (string= (plist-get it ':language) language)
+  (let* ((searcher (if (dumb-jump-use-ag?) "ag" "grep"))
+         (results (--filter (and
+                             (string= (plist-get it ':language) language)
+                             (member searcher (plist-get it ':supports)))
                            dumb-jump-find-rules)))
     (if dumb-jump-functions-only
         (--filter (string= (plist-get it ':type) "function") results)
