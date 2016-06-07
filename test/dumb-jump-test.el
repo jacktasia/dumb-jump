@@ -145,7 +145,7 @@
   (let* ((dumb-jump-force-grep t)
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
          (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""  "blah.el" 3))
-         (first-result (car results)))
+        (first-result (car results)))
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (= (plist-get first-result :line) 6))))
 
