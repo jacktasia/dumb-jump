@@ -159,7 +159,7 @@
 
     (:type "function" :supports ("ag" "grep") :language "ruby"
            :regex "\\bdef\\s+JJJ\\j"
-           :tests ("def test(foo)" "def test()" "def test foo" "def test-foo" "def test; end"))
+           :tests ("def test(foo)" "def test()" "def test foo" "def test; end"))
 
     (:type "type" :supports ("ag") :language "ruby"
            :regex "\\bclass\\s+(?:\\w*::)*JJJ\\j"
