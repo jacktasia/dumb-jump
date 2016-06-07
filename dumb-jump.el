@@ -134,10 +134,41 @@
            :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
     ;; clojure
-    (:type "function" :supports ("ag" "grep") :language "clojure" :regex "\\\(defn-?\\s+JJJ\\j"
-           ;; \\j usage see `dumb-jump-ag-word-boundary`
-           :tests ("(defn test (blah)" "(defn test\n" "(defn- test (blah)" "(defn- test\n")
-           :not ("(defn test-asdf (blah)" "(defn test-blah\n" "(defn- test-asdf (blah)" "(defn- test-blah\n"))
+    (:type "variable" :supports ("ag" "grep") :language "clojure"
+           :regex "\\(def\\s+JJJ\\j"
+           :tests ("(def test (foo)"))
+
+    (:type "function" :supports ("ag" "grep") :language "clojure"
+           :regex "\\(defn-?\\s+JJJ\\j"
+           :tests ("(defn test [foo]" "(defn- test [foo]"))
+
+    (:type "function" :supports ("ag" "grep") :language "clojure"
+           :regex "\\(defmacro\\s+JJJ\\j"
+           :tests ("(defmacro test [foo]"))
+
+    (:type "type" :supports ("ag" "grep") :language "clojure"
+           :regex "\\(deftype\\s+JJJ\\j"
+           :tests ("(deftype test [foo]"))
+
+    (:type "type" :supports ("ag" "grep") :language "clojure"
+           :regex "\\(defmulti\\s+JJJ\\j"
+           :tests ("(defmulti test fn"))
+
+    (:type "type" :supports ("ag" "grep") :language "clojure"
+           :regex "\\(defmethod\\s+JJJ\\j"
+           :tests ("(defmethod test type"))
+
+    (:type "type" :supports ("ag" "grep") :language "clojure"
+           :regex "\\(definterface\\s+JJJ\\j"
+           :tests ("(definterface test (foo)"))
+
+    (:type "type" :supports ("ag" "grep") :language "clojure"
+           :regex "\\(defprotocol\\s+JJJ\\j"
+           :tests ("(defprotocol test (foo)"))
+
+    (:type "type" :supports ("ag" "grep") :language "clojure"
+           :regex "\\(defrecord\\s+JJJ\\j"
+           :tests ("(defrecord test [foo]"))
 
     ;; python
     (:type "variable" :supports ("ag" "grep") :language "python"
