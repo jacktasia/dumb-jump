@@ -301,25 +301,25 @@ and type to use for generating the grep command"
   :group 'dumb-jump)
 
 (defcustom dumb-jump-language-file-exts
-  '((:language "elisp" :ext "el")
-    (:language "elisp" :ext "el.gz")
-    (:language "clojure" :ext "clj")
-    (:language "clojure" :ext "cljs")
-    (:language "clojure" :ext "cljc")
-    (:language "faust" :ext "dsp")
-    (:language "faust" :ext "lib")
-    (:language "javascript" :ext "js")
-    (:language "javascript" :ext "jsx")
-    (:language "javascript" :ext "html")
-    (:language "php" :ext "php")
-    (:language "php" :ext "inc")
-    (:language "ruby" :ext "rb")
-    (:language "scala" :ext "scala")
-    (:language "r" :ext "R")
-    (:language "r" :ext "r")
-    (:language "python" :ext "py")
-    (:language "go" :ext "go")
-    (:language "lua" :ext "lua"))
+  '((:language "elisp" :ext "el" :agtype "elisp")
+    (:language "elisp" :ext "el.gz" :agtype "elisp")
+    (:language "clojure" :ext "clj" :agtype "clojure")
+    (:language "clojure" :ext "cljs" :agtype "clojure")
+    (:language "clojure" :ext "cljc" :agtype "clojure")
+    (:language "faust" :ext "dsp" :agtype nil)
+    (:language "faust" :ext "lib" :agtype nil)
+    (:language "javascript" :ext "js" :agtype "js")
+    (:language "javascript" :ext "jsx" :agtype "js")
+    (:language "javascript" :ext "html" :agtype "html")
+    (:language "php" :ext "php" :agtype "php")
+    (:language "php" :ext "inc" :agtype "php")
+    (:language "ruby" :ext "rb" :agtype "ruby")
+    (:language "scala" :ext "scala" :agtype "scala")
+    (:language "r" :ext "R" :agtype "r")
+    (:language "r" :ext "r" :agtype "r")
+    (:language "python" :ext "py" :agtype "python")
+    (:language "go" :ext "go" :agtype "go")
+    (:language "lua" :ext "lua" :agtype "lua"))
   "Mapping of programming lanaguage(s) to file extensions"
   :group 'dumb-jump)
 
@@ -819,10 +819,14 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-generate-ag-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the ag response based on the needle LOOK-FOR in the directory PROJ"
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes t))
+         (agtypes (dumb-jump-get-ag-type-by-language lang))
          ;; TODO: --search-zip always? in case the include is the in gz area like emacs lisp code.
-         (cmd (concat dumb-jump-ag-cmd " --nocolor --nogroup" (if (s-ends-with? ".gz" cur-file)
-                                                            " --search-zip"
-                                                          "")))
+         (cmd (concat dumb-jump-ag-cmd
+                      " --nocolor --nogroup"
+                      (if (s-ends-with? ".gz" cur-file)
+                          " --search-zip"
+                        "")
+                      (s-join "" (--map (format " --%s" it) agtypes))))
          (exclude-args (dumb-jump-arg-joiner "--ignore-dir" (--map (s-replace proj "" it) exclude-paths)))
          (regex-args (format "\"%s\"" (s-join "|" filled-regexes))))
     (if (= (length regexes) 0)
@@ -852,6 +856,12 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (--map (plist-get it :ext)
          (--filter (string= (plist-get it :language) language)
                   dumb-jump-language-file-exts)))
+
+(defun dumb-jump-get-ag-type-by-language (language)
+  "Returns list of ag type argument for a LANGUAGE"
+  (-distinct (--map (plist-get it :agtype)
+                    (--filter (string= (plist-get it :language) language)
+                              dumb-jump-language-file-exts))))
 
 (defun dumb-jump-get-rules-by-language (language)
   "Returns a list of rules for the LANGUAGE"
