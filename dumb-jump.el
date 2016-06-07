@@ -116,20 +116,20 @@
            :tests ("(defun test (blah)" "(defun test\n") :not ("(defun test-asdf (blah)" "(defun test-blah\n"))
 
     (:type "variable" :supports ("ag" "grep") :language "elisp"
-           :regex "\\\(defvar\\b\\s+JJJ\\j" :tests ("(defvar test " "(defvar test\n"))
+           :regex "\\\(defvar\\b\\s*JJJ\\j" :tests ("(defvar test " "(defvar test\n"))
 
     (:type "variable" :supports ("ag" "grep") :language "elisp"
-           :regex "\\\(defcustom\\b\\s+JJJ\\j" :tests ("(defcustom test " "(defcustom test\n"))
+           :regex "\\\(defcustom\\b\\s*JJJ\\j" :tests ("(defcustom test " "(defcustom test\n"))
 
     (:type "variable" :supports ("ag" "grep") :language "elisp"
-           :regex "\\\(setq\\b\\s+JJJ\\j" :tests ("(setq test 123)") :not ("setq test-blah 123)"))
+           :regex "\\\(setq\\b\\s*JJJ\\j" :tests ("(setq test 123)") :not ("setq test-blah 123)"))
 
     (:type "variable" :supports ("ag" "grep") :language "elisp"
            :regex "\\\(JJJ\\s+" :tests ("(let ((test 123)))") :not ("(let ((test-2 123)))"))
 
     ;; variable in method signature
     (:type "variable" :supports ("ag" "grep") :language "elisp"
-           :regex "\\\(defun\\s+.+\\\(?\\s*JJJ\\j\\s*\\\)?"
+           :regex "\\(defun\\s*.+\\\(?\\s*JJJ\\j\\s*\\\)?"
            :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)")
            :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
