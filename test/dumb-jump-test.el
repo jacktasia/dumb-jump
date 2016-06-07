@@ -391,16 +391,16 @@
        (mock (dumb-jump-goto-file-line * 3 27))
        (should (string= el-file (dumb-jump-go)))))))
 
-(ert-deftest dumb-jump-back-test ()
+(ert-deftest dumb-jump-a-back-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
         (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
       (with-mock
+       (dumb-jump-go)
        (mock (dumb-jump-goto-file-point * 14))
        (mock (dumb-jump-message "Jumping back to%s line %s" " fake2.js" "1"))
-       (dumb-jump-go)
        (dumb-jump-back)))))
 
 (ert-deftest dumb-jump-back-no-result-test ()
