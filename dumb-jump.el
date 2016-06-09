@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2016 jack angers
 ;; Author: jack angers
 ;; Version: 0.3.8
-;; Package-Requires: ((emacs "24.4") (f "0.17.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
+;; Package-Requires: ((emacs "24.3") (f "0.17.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
 ;; Dumb Jump is free software; you can redistribute it and/or modify it
@@ -562,14 +562,18 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-fetch-results ()
   "Build up a list of results by examining the current context and calling grep or ag"
   (let* ((cur-file (or (buffer-file-name) ""))
-         (cur-line (thing-at-point 'line t))
+         (cur-line (if (version< emacs-version "24.4")
+                       (thing-at-point 'line)
+                     (thing-at-point 'line t)))
          (look-for-start (- (car (bounds-of-thing-at-point 'symbol))
                             (point-at-bol)))
          (cur-line-num (line-number-at-pos))
          (proj-root (dumb-jump-get-project-root cur-file))
          (proj-config (dumb-jump-get-config proj-root))
          (lang (dumb-jump-get-language cur-file))
-         (found-symbol (thing-at-point 'symbol t))
+         (found-symbol (if (version< emacs-version "24.4")
+                           (thing-at-point 'symbol)
+                         (thing-at-point 'symbol t)))
          (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
          (pt-ctx (if (not (string= cur-line look-for))
                      (dumb-jump-get-point-context cur-line look-for look-for-start)
