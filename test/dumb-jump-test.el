@@ -58,6 +58,10 @@
     (should (null (plist-get config :exclude)))
     (should (null (plist-get config :include)))))
 
+(ert-deftest dumb-jump-config-lang-test ()
+  (let* ((config (dumb-jump-read-config test-data-dir-proj1 ".dumbjump-lang")))
+    (should (string= "python" (plist-get config :language)))))
+
 (ert-deftest dumb-jump-language-to-ext-test ()
   (should (-contains? (dumb-jump-get-file-exts-by-language "elisp") "el")))
 
@@ -242,6 +246,16 @@
       (forward-line 2)
       (forward-char 10)
       (let ((results (dumb-jump-fetch-results)))
+        (should (string= "doSomeStuff" (plist-get results :symbol)))
+        (should (string= "javascript" (plist-get results :lang)))))))
+
+(ert-deftest dumb-aa-jump-go-shell-test ()
+  (let ((go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (get-buffer-create "*shell*")
+      (insert ".js doSomeStuff()")
+      (goto-char (point-min))
+      (forward-char 6)
+      (let ((results (dumb-jump-fetch-shell-results)))
         (should (string= "doSomeStuff" (plist-get results :symbol)))
         (should (string= "javascript" (plist-get results :lang)))))))
 
