@@ -245,7 +245,7 @@
       (goto-char (point-min))
       (forward-line 2)
       (forward-char 10)
-      (let ((results (dumb-jump-fetch-results)))
+      (let ((results (dumb-jump-fetch-file-results)))
         (should (string= "doSomeStuff" (plist-get results :symbol)))
         (should (string= "javascript" (plist-get results :lang)))))))
 
@@ -446,7 +446,7 @@
         (dumb-jump-max-find-time 0.2))
     (with-current-buffer (find-file-noselect txt-file t)
       (goto-char (point-min))
-      (noflet ((dumb-jump-fetch-results ()
+      (noflet ((dumb-jump-fetch-file-results ()
                                         (sleep-for 0 300)
                                         '()))
                (with-mock

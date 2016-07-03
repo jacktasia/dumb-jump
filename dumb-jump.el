@@ -550,7 +550,28 @@ denoter file/dir is found or uses dumb-jump-default-profile"
    ((not (thing-at-point 'symbol))
     (dumb-jump-issue-result "nosymbol"))
    (t
-    (dumb-jump-fetch-results))))
+    (dumb-jump-fetch-file-results))))
+;    (dumb-jump-fetch-results))))
+
+(defun dumb-jump-fetch-shell-results ()
+  (let* ((cur-file (buffer-name))
+         (proj-root (dumb-jump-get-project-root default-directory))
+         (proj-config (dumb-jump-get-config proj-root))
+         (config (when (s-ends-with? ".dumbjump" proj-config)
+                   (dumb-jump-read-config proj-root proj-config)))
+         (lang (or (plist-get config :language)
+                   (car (dumb-jump-get-lang-by-shell-contents (buffer-name))))))
+    (dumb-jump-fetch-results cur-file proj-root lang config)))
+
+(defun dumb-jump-fetch-file-results ()
+  (let* ((cur-file (or (buffer-file-name) ""))
+         (proj-root (dumb-jump-get-project-root cur-file))
+         (proj-config (dumb-jump-get-config proj-root))
+         (config (when (s-ends-with? ".dumbjump" proj-config)
+                   (dumb-jump-read-config proj-root proj-config)))
+         (lang (or (plist-get config :language)
+                   (dumb-jump-get-language cur-file))))
+    (dumb-jump-fetch-results cur-file proj-root lang config)))
 
 (defun dumb-jump-process-symbol-by-lang (lang look-for)
   "Process LOOK-FOR by the LANG.  For instance, clojure needs namespace part removed."
@@ -583,59 +604,15 @@ denoter file/dir is found or uses dumb-jump-default-profile"
               dumb-jump-language-file-exts)))
     (--map (plist-get it :language) found)))
 
-;; TODO: DRY dumb-jump-fetch-shell-results vs dumb-jump-fetch-results (rename to -file-results)
-
-(defun dumb-jump-fetch-shell-results ()
-  "Build up a list of results by examining the current shell context and calling grep or ag."
-  (let* ((proj-root (dumb-jump-get-project-root default-directory))
+(defun dumb-jump-fetch-results (cur-file proj-root lang config)
+  "Build up a list of results by examining the current file context and calling grep or ag."
+  (let* ((cur-line (dumb-jump-get-point-line))
+         (look-for-start (- (car (bounds-of-thing-at-point 'symbol))
+                            (point-at-bol)))
+         (cur-line-num (line-number-at-pos))
          (proj-config (dumb-jump-get-config proj-root))
          (config (when (s-ends-with? ".dumbjump" proj-config)
                    (dumb-jump-read-config proj-root proj-config)))
-         (cur-file (buffer-name))
-         (cur-line (dumb-jump-get-point-line))
-
-         (look-for-start (- (car (bounds-of-thing-at-point 'symbol))
-                            (point-at-bol)))
-         (cur-line-num (line-number-at-pos))
-         (found-symbol (dumb-jump-get-point-symbol))
-         (lang (or (plist-get config :language)
-                   (car (dumb-jump-get-lang-by-shell-contents (buffer-name)))))
-         (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
-         (pt-ctx (if (not (string= cur-line look-for))
-                     (dumb-jump-get-point-context cur-line look-for look-for-start)
-                   nil))
-         (ctx-type
-          (dumb-jump-get-ctx-type-by-language lang pt-ctx))
-         (regexes (dumb-jump-get-contextual-regexes lang ctx-type))
-
-         (exclude-paths (when config (plist-get config :exclude)))
-         (include-paths (when config (plist-get config :include)))
-         ; we will search proj root and all include paths
-         (search-paths (-distinct (-concat (list proj-root) include-paths)))
-         ; run command for all
-         (raw-results (--mapcat
-                       ;; TODO: should only pass exclude paths to actual project root
-                       (dumb-jump-run-command look-for it regexes lang exclude-paths cur-file cur-line-num)
-                       search-paths))
-
-         (results (--map (plist-put it :target look-for) raw-results)))
-
-    `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
-
-
-(defun dumb-jump-fetch-results ()
-  "Build up a list of results by examining the current file context and calling grep or ag."
-  (let* ((cur-file (or (buffer-file-name) ""))
-         (cur-line (dumb-jump-get-point-line))
-         (look-for-start (- (car (bounds-of-thing-at-point 'symbol))
-                            (point-at-bol)))
-         (cur-line-num (line-number-at-pos))
-         (proj-root (dumb-jump-get-project-root cur-file))
-         (proj-config (dumb-jump-get-config proj-root))
-         (config (when (s-ends-with? ".dumbjump" proj-config)
-                           (dumb-jump-read-config proj-root proj-config)))
-         (lang (or (plist-get config :language)
-                   (dumb-jump-get-language cur-file)))
          (found-symbol (dumb-jump-get-point-symbol))
          (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
          (pt-ctx (if (not (string= cur-line look-for))
