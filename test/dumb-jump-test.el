@@ -255,7 +255,7 @@
       (insert ".js doSomeStuff()")
       (goto-char (point-min))
       (forward-char 6)
-      (let ((results (dumb-jump-fetch-shell-results)))
+      (let ((results (dumb-jump-get-results)))
         (should (string= "doSomeStuff" (plist-get results :symbol)))
         (should (string= "javascript" (plist-get results :lang)))))))
 
