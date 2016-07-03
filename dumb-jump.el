@@ -551,7 +551,6 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     (dumb-jump-issue-result "nosymbol"))
    (t
     (dumb-jump-fetch-file-results))))
-;    (dumb-jump-fetch-results))))
 
 (defun dumb-jump-fetch-shell-results ()
   (let* ((cur-file (buffer-name))
