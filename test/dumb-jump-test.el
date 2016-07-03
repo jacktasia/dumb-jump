@@ -249,8 +249,9 @@
         (should (string= "doSomeStuff" (plist-get results :symbol)))
         (should (string= "javascript" (plist-get results :lang)))))))
 
-(ert-deftest dumb-aa-jump-go-shell-test ()
-  (let ((go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+(ert-deftest dumb-jump-go-shell-test ()
+  (let* ((go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js"))
+         (default-directory test-data-dir-proj1))
     (with-current-buffer (get-buffer-create "*shell*")
       (insert ".js doSomeStuff()")
       (goto-char (point-min))
