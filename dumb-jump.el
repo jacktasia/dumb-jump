@@ -335,7 +335,70 @@
 
     (:type "function" :supports ("ag" "grep") :language "lua"
            :regex "\\b.+\\.JJJ\\s*=\\s*function\\s*\\\("
-           :tests ("MyClass.test = function()")))
+           :tests ("MyClass.test = function()"))
+
+    ;; rust
+    (:type "variable" :supports ("ag" "grep") :language "rust"
+           :regex "\\blet\\s+(mut\\s+)?JJJ(:\\s*[^=\\n]+)?\\s*=\\s*[^=\\n]+"
+           :tests ("let test = 1234;"
+                   "let test: u32 = 1234;"
+                   "let test: Vec<u32> = Vec::new();"
+                   "let mut test = 1234;"
+                   "let mut test: Vec<u32> = Vec::new();"))
+
+    (:type "variable" :supports ("ag" "grep") :language "rust"
+           :regex "\\bconst\\s+JJJ:\\s*[^=\\n]+\\s*=[^=\\n]+"
+           :tests ("const test: u32 = 1234;"))
+
+    (:type "variable" :supports ("ag" "grep") :language "rust"
+           :regex "\\bstatic\\s+(mut\\s+)?JJJ:\\s*[^=\\n]+\\s*=[^=\\n]+"
+           :tests ("static test: u32 = 1234;"
+                   "static mut test: u32 = 1234;"))
+
+    ;; variable in method signature
+    (:type "variable" :supports ("ag" "grep") :language "rust"
+           :regex "\\bfn\\s+.+\\s*\\\((.+,\\s+)?JJJ:\\s*[^=\\n]+\\s*(,\\s*.+)*\\\)"
+           :tests ("fn abc(test: u32) -> u32 {"
+                   "fn abc(x: u32, y: u32, test: Vec<u32>, z: Vec<Foo>)"))
+
+    ;; "if let" and "while let" desugaring
+    (:type "variable" :supports ("ag" "grep") :language "rust"
+           :regex "(if|while)\\s+let\\s+\\w+\\\((mut\\s+)?JJJ\\\)\\s*=\\s*[^=\\n]+\\s*{"
+           :tests ("if let Some(test) = abc() {"
+                   "if let Some(mut test) = abc() {"
+                   "if let Ok(test) = abc() {"
+                   "if let Ok(mut test) = abc() {"
+                   "while let Some(test) = abc() {"
+                   "while let Some(mut test) = abc() {"
+                   "while let Ok(test) = abc() {"
+                   "while let Ok(mut test) = abc() {"
+                   "while let Foo(mut test) = foo {"))
+
+    (:type "function" :supports ("ag" "grep") :language "rust"
+           :regex "\\bfn\\s+JJJ\\s*\\\("
+           :tests ("fn test(asdf: u32)" "fn test()" "pub fn test()"))
+
+    (:type "type" :supports ("ag" "grep") :language "rust"
+           :regex "struct\\s+JJJ\\s*[{\\\(]?"
+           :tests ("struct test(u32, u32)"
+                   "struct test;"
+                   "struct test { abc: u32, def: Vec<String> }"))
+
+    (:type "type" :supports ("ag" "grep") :language "rust"
+           :regex "trait\\s+JJJ\\s*{?"
+           :tests ("trait test;" "trait test { fn abc() -> u32; }"))
+
+    (:type "type" :supports ("ag" "grep") :language "rust"
+           :regex "\\btype\\s+JJJ([^=\\n]+)?\\s*=[^=\\n]+;"
+           :tests ("type test<T> = Rc<RefCell<T>>;"
+                   "type test = Arc<RwLock<Vec<u32>>>;"))
+
+    (:type "type" :supports ("ag" "grep") :language "rust"
+           :regex "impl\\s+((\\w+::)*\\w+\\s+for\\s+)?(\\w+::)*JJJ\\s+{?"
+           :tests ("impl test {"
+                   "impl abc::test {"
+                   "impl std::io::Read for test {"
+                   "impl std::io::Read for abc::test {")))
 
   "List of regex patttern templates organized by language
 and type to use for generating the grep command"
@@ -358,6 +421,7 @@ and type to use for generating the grep command"
     (:language "scala" :ext "scala" :agtype "scala")
     (:language "r" :ext "R" :agtype "r")
     (:language "r" :ext "r" :agtype "r")
+    (:language "rust" :ext "rs" :agtype "rs")
     (:language "python" :ext "py" :agtype "python")
     (:language "go" :ext "go" :agtype "go")
     (:language "lua" :ext "lua" :agtype "lua"))
