@@ -58,6 +58,10 @@
     (should (null (plist-get config :exclude)))
     (should (null (plist-get config :include)))))
 
+(ert-deftest dumb-jump-config-lang-test ()
+  (let* ((config (dumb-jump-read-config test-data-dir-proj1 ".dumbjump-lang")))
+    (should (string= "python" (plist-get config :language)))))
+
 (ert-deftest dumb-jump-language-to-ext-test ()
   (should (-contains? (dumb-jump-get-file-exts-by-language "elisp") "el")))
 
@@ -241,7 +245,18 @@
       (goto-char (point-min))
       (forward-line 2)
       (forward-char 10)
-      (let ((results (dumb-jump-fetch-results)))
+      (let ((results (dumb-jump-fetch-file-results)))
+        (should (string= "doSomeStuff" (plist-get results :symbol)))
+        (should (string= "javascript" (plist-get results :lang)))))))
+
+(ert-deftest dumb-jump-go-shell-test ()
+  (let* ((go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js"))
+         (default-directory test-data-dir-proj1))
+    (with-current-buffer (get-buffer-create "*shell*")
+      (insert ".js doSomeStuff()")
+      (goto-char (point-min))
+      (forward-char 6)
+      (let ((results (dumb-jump-get-results)))
         (should (string= "doSomeStuff" (plist-get results :symbol)))
         (should (string= "javascript" (plist-get results :lang)))))))
 
@@ -432,7 +447,7 @@
         (dumb-jump-max-find-time 0.2))
     (with-current-buffer (find-file-noselect txt-file t)
       (goto-char (point-min))
-      (noflet ((dumb-jump-fetch-results ()
+      (noflet ((dumb-jump-fetch-file-results ()
                                         (sleep-for 0 300)
                                         '()))
                (with-mock

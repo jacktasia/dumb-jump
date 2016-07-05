@@ -602,19 +602,42 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil :issue ,(intern issue)))
 
 (defun dumb-jump-get-results ()
-  "Runs dumb-jump-fetch-results if searcher installed, buffer is saved, and there's a symbol under point"
+  "Run dumb-jump-fetch-results if searcher installed, buffer is saved, and there's a symbol under point."
   (cond
    ((not (or (dumb-jump-grep-installed?) (dumb-jump-ag-installed?)))
     (dumb-jump-issue-result "nogrep"))
+   ((or (string= (buffer-name) "*shell*")
+        (string= (buffer-name) "*eshell*"))
+    (dumb-jump-fetch-shell-results))
    ((buffer-modified-p (current-buffer))
     (dumb-jump-issue-result "unsaved"))
    ((not (thing-at-point 'symbol))
     (dumb-jump-issue-result "nosymbol"))
    (t
-    (dumb-jump-fetch-results))))
+    (dumb-jump-fetch-file-results))))
+
+(defun dumb-jump-fetch-shell-results ()
+  (let* ((cur-file (buffer-name))
+         (proj-root (dumb-jump-get-project-root default-directory))
+         (proj-config (dumb-jump-get-config proj-root))
+         (config (when (s-ends-with? ".dumbjump" proj-config)
+                   (dumb-jump-read-config proj-root proj-config)))
+         (lang (or (plist-get config :language)
+                   (car (dumb-jump-get-lang-by-shell-contents (buffer-name))))))
+    (dumb-jump-fetch-results cur-file proj-root lang config)))
+
+(defun dumb-jump-fetch-file-results ()
+  (let* ((cur-file (or (buffer-file-name) ""))
+         (proj-root (dumb-jump-get-project-root cur-file))
+         (proj-config (dumb-jump-get-config proj-root))
+         (config (when (s-ends-with? ".dumbjump" proj-config)
+                   (dumb-jump-read-config proj-root proj-config)))
+         (lang (or (plist-get config :language)
+                   (dumb-jump-get-language cur-file))))
+    (dumb-jump-fetch-results cur-file proj-root lang config)))
 
 (defun dumb-jump-process-symbol-by-lang (lang look-for)
-  "Process LOOK-FOR by the LANG. For instance, clojure needs namespace part removed"
+  "Process LOOK-FOR by the LANG.  For instance, clojure needs namespace part removed."
   (cond
    ((and (string= lang "clojure") (s-contains? "/" look-for))
     (nth 1 (s-split "/" look-for)))
@@ -623,21 +646,37 @@ denoter file/dir is found or uses dumb-jump-default-profile"
    (t
     look-for)))
 
-(defun dumb-jump-fetch-results ()
-  "Build up a list of results by examining the current context and calling grep or ag"
-  (let* ((cur-file (or (buffer-file-name) ""))
-         (cur-line (if (version< emacs-version "24.4")
-                       (thing-at-point 'line)
-                     (thing-at-point 'line t)))
+(defun dumb-jump-get-point-line ()
+  "Get line at point."
+  (if (version< emacs-version "24.4")
+      (thing-at-point 'line)
+    (thing-at-point 'line t)))
+
+(defun dumb-jump-get-point-symbol ()
+  "Get symbol at point."
+  (if (version< emacs-version "24.4")
+      (thing-at-point 'symbol)
+    (thing-at-point 'symbol t)))
+
+(defun dumb-jump-get-lang-by-shell-contents (buffer)
+  "Return languages in BUFFER by checking if file extension is mentioned."
+  (let* ((buffer-contents (with-current-buffer buffer
+                           (buffer-string)))
+
+        (found (--filter (s-match (concat "\\." (plist-get it :ext) "\\b") buffer-contents)
+              dumb-jump-language-file-exts)))
+    (--map (plist-get it :language) found)))
+
+(defun dumb-jump-fetch-results (cur-file proj-root lang config)
+  "Build up a list of results by examining the current file context and calling grep or ag."
+  (let* ((cur-line (dumb-jump-get-point-line))
          (look-for-start (- (car (bounds-of-thing-at-point 'symbol))
                             (point-at-bol)))
          (cur-line-num (line-number-at-pos))
-         (proj-root (dumb-jump-get-project-root cur-file))
          (proj-config (dumb-jump-get-config proj-root))
-         (lang (dumb-jump-get-language cur-file))
-         (found-symbol (if (version< emacs-version "24.4")
-                           (thing-at-point 'symbol)
-                         (thing-at-point 'symbol t)))
+         (config (when (s-ends-with? ".dumbjump" proj-config)
+                   (dumb-jump-read-config proj-root proj-config)))
+         (found-symbol (dumb-jump-get-point-symbol))
          (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
          (pt-ctx (if (not (string= cur-line look-for))
                      (dumb-jump-get-point-context cur-line look-for look-for-start)
@@ -645,12 +684,9 @@ denoter file/dir is found or uses dumb-jump-default-profile"
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
          (regexes (dumb-jump-get-contextual-regexes lang ctx-type))
-         (config (when (s-ends-with? ".dumbjump" proj-config)
-                           (dumb-jump-read-config proj-root proj-config)))
-         (exclude-paths (when config
-                           (plist-get config :exclude)))
-         (include-paths (when config
-                           (plist-get config :include)))
+
+         (exclude-paths (when config (plist-get config :exclude)))
+         (include-paths (when config (plist-get config :include)))
          ; we will search proj root and all include paths
          (search-paths (-distinct (-concat (list proj-root) include-paths)))
          ; run command for all
@@ -660,6 +696,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                        search-paths))
 
          (results (--map (plist-put it :target look-for) raw-results)))
+
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
 (defun dumb-jump-back ()
@@ -715,7 +752,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       ;; unless the match is in the current file
       (dumb-jump-handle-results results (plist-get info :file) proj-root (plist-get info :ctx-type) look-for use-tooltip))
      ((= result-count 0)
-      (dumb-jump-message "'%s' %s %s declaration not found." look-for lang (plist-get info :ctx-type))))))
+      (dumb-jump-message "'%s' %s %s declaration not found." look-for (if (s-blank? lang) "with unknown language so" lang) (plist-get info :ctx-type))))))
 
 (defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for use-tooltip)
   "Figure which of the RESULTS to jump to. Favoring the CUR-FILE"
@@ -743,6 +780,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   "Get options (exclusions, inclusions) from config file .dumbjump CONFIG-FILE in the project ROOT"
   (let* ((contents (f-read-text (f-join root config-file)))
          (lines (s-split "\n" contents))
+         (lang-match (s-match "^language \\\(.+\\\)$" contents))
+         (lang (when (= (length lang-match) 2) (nth 1 lang-match)))
          (exclude-lines (-filter (lambda (f) (s-starts-with? "-" f)) lines))
          (include-lines (-filter (lambda (f) (s-starts-with? "+" f)) lines))
          (exclude-paths (-map (lambda (f)
@@ -759,7 +798,8 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                                     ;; TODO: warn if an include path is already a child of proj-root
                                     (f-join root dir))))
                               include-lines)))
-    `(:exclude ,exclude-paths :include ,include-paths)))
+
+    `(:exclude ,exclude-paths :include ,include-paths :language ,lang)))
 
 (defun dumb-jump-result-follow (result &optional use-tooltip proj)
   "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump."
