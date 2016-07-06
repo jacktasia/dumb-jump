@@ -339,12 +339,15 @@
 
     ;; rust
     (:type "variable" :supports ("ag" "grep") :language "rust"
-           :regex "\\blet\\s+(mut\\s+)?JJJ(:\\s*[^=\\n]+)?\\s*=\\s*[^=\\n]+"
+           :regex "\\blet\\s+(\\\([^=\\n]*)?(mut\s+)?JJJ([^=\\n]*\\\))?(:\\s*[^=\\n]+)?\\s*=\\s*[^=\\n]+"
            :tests ("let test = 1234;"
                    "let test: u32 = 1234;"
                    "let test: Vec<u32> = Vec::new();"
                    "let mut test = 1234;"
-                   "let mut test: Vec<u32> = Vec::new();"))
+                   "let mut test: Vec<u32> = Vec::new();"
+                   "let (a, test, b) = (1, 2, 3);"
+                   "let (a, mut test, mut b) = (1, 2, 3);"
+                   "let (mut a, mut test): (u32, usize) = (1, 2);"))
 
     (:type "variable" :supports ("ag" "grep") :language "rust"
            :regex "\\bconst\\s+JJJ:\\s*[^=\\n]+\\s*=[^=\\n]+"
@@ -359,20 +362,25 @@
     (:type "variable" :supports ("ag" "grep") :language "rust"
            :regex "\\bfn\\s+.+\\s*\\\((.+,\\s+)?JJJ:\\s*[^=\\n]+\\s*(,\\s*.+)*\\\)"
            :tests ("fn abc(test: u32) -> u32 {"
-                   "fn abc(x: u32, y: u32, test: Vec<u32>, z: Vec<Foo>)"))
+                   "fn abc(x: u32, y: u32, test: Vec<u32>, z: Vec<Foo>)"
+                   "fn abc(x: u32, y: u32, test: &mut Vec<u32>, z: Vec<Foo>)"))
 
     ;; "if let" and "while let" desugaring
     (:type "variable" :supports ("ag" "grep") :language "rust"
-           :regex "(if|while)\\s+let\\s+\\w+\\\((mut\\s+)?JJJ\\\)\\s*=\\s*[^=\\n]+\\s*{"
+           :regex "(if|while)\\s+let\\s+([^=\\n]+)?(mut\\s+)?JJJ([^=\\n\\\(]+)?\\s*=\\s*[^=\\n]+"
            :tests ("if let Some(test) = abc() {"
                    "if let Some(mut test) = abc() {"
                    "if let Ok(test) = abc() {"
                    "if let Ok(mut test) = abc() {"
+                   "if let Foo(mut test) = foo {"
+                   "if let test = abc() {"
+                   "if let Some(test) = abc()"
+                   "if let Some((a, test, b)) = abc()"
                    "while let Some(test) = abc() {"
                    "while let Some(mut test) = abc() {"
                    "while let Ok(test) = abc() {"
-                   "while let Ok(mut test) = abc() {"
-                   "while let Foo(mut test) = foo {"))
+                   "while let Ok(mut test) = abc() {")
+           :not ("while let test(foo) = abc() {"))
 
     (:type "function" :supports ("ag" "grep") :language "rust"
            :regex "\\bfn\\s+JJJ\\s*\\\("
