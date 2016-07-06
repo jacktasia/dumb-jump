@@ -378,6 +378,10 @@
            :regex "\\bfn\\s+JJJ\\s*\\\("
            :tests ("fn test(asdf: u32)" "fn test()" "pub fn test()"))
 
+    (:type "function" :supports ("ag" "grep") :language "rust"
+           :regex "\\bmacro_rules!\\s+JJJ"
+           :tests ("macro_rules! test"))
+
     (:type "type" :supports ("ag" "grep") :language "rust"
            :regex "struct\\s+JJJ\\s*[{\\\(]?"
            :tests ("struct test(u32, u32)"
@@ -398,7 +402,11 @@
            :tests ("impl test {"
                    "impl abc::test {"
                    "impl std::io::Read for test {"
-                   "impl std::io::Read for abc::test {")))
+                   "impl std::io::Read for abc::test {"))
+
+    (:type "type" :supports ("ag" "grep") :language "rust"
+           :regex "mod\\s+JJJ\\s*{?"
+           :tests ("mod test;" "pub mod test {")))
 
   "List of regex patttern templates organized by language
 and type to use for generating the grep command"
