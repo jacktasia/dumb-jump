@@ -715,6 +715,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
+;;;###autoload
 (defun dumb-jump-back ()
   "Jump back to where the last jump was done"
   (interactive)
@@ -731,11 +732,13 @@ denoter file/dir is found or uses dumb-jump-default-profile"
       (dumb-jump-goto-file-point path point))
     (dumb-jump-message "Nowhere to jump back to.")))
 
+;;;###autoload
 (defun dumb-jump-quick-look ()
   "Run dump-jump-go in quick look mode. That is, show a tooltip of where it would jump instead"
   (interactive)
   (dumb-jump-go t))
 
+;;;###autoload
 (defun dumb-jump-go (&optional use-tooltip)
   "Go to the function/variable declaration for thing at point"
   (interactive "P")
