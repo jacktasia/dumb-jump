@@ -245,7 +245,7 @@
 
     ;; faust
     (:type "function" :supports ("ag" "grep") :language "faust"
-           :regex "^\s*JJJ(\(.+\))*\s*="
+           :regex "\\bJJJ\(\\\(.+\\\)\)*\\s*="
            :tests ("test = osc + 0.5;" "test(freq) = osc(freq) + 0.5;"))
 
     ;; go
