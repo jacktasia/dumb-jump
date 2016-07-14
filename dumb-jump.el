@@ -170,6 +170,23 @@
            :regex "\\(defrecord\\s+JJJ\\j"
            :tests ("(defrecord test [foo]"))
 
+    ;; coffeescript
+    (:type "function" :supports ("ag") :language "coffeescript"
+           :regex "^(?!#)\\s*JJJ\\s*[=:].*[-=]>"
+           :tests ("test = ()  =>" "test= =>" "test = ->" "test=()->"
+                   "test : ()  =>" "test: =>" "test : ->" "test:()->")
+           :not ("# test = =>" "test = 1"))
+
+    (:type "variable" :supports ("ag") :language "coffeescript"
+           :regex "^(?!#)\\s*JJJ\\s*[:=][^:=-](?!.*>)"
+           :tests ("test = $" "test : [" "test = {" "test = a")
+           :not ("test::a" "test: =>" "test == 1" "# test = 1"))
+
+    (:type "class" :supports ("ag") :language "coffeescript"
+           :regex "^(?!#)\\s*\\bclass\\s+JJJ"
+           :tests ("class test" "class test extends")
+           :not ("# class"))
+
     ;; python
     (:type "variable" :supports ("ag" "grep") :language "python"
            :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234:"))
@@ -426,6 +443,7 @@ and type to use for generating the grep command"
     (:language "clojure" :ext "clj" :agtype "clojure")
     (:language "clojure" :ext "cljs" :agtype "clojure")
     (:language "clojure" :ext "cljc" :agtype "clojure")
+    (:language "coffeescript" :ext "coffee" :agtype "coffee")
     (:language "faust" :ext "dsp" :agtype nil)
     (:language "faust" :ext "lib" :agtype nil)
     (:language "javascript" :ext "js" :agtype "js")
