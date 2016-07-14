@@ -382,6 +382,24 @@
                    "while let Ok(mut test) = abc() {")
            :not ("while let test(foo) = abc() {"))
 
+    ;; structure fields
+    (:type "variable" :supports ("ag" "grep") :language "rust"
+           :regex "struct\\s+[^\\n{]+{[^}]*(\\s*JJJ\\s*:\\s*[^\\n},]+)[^}]*}"
+           :tests ("struct Foo { abc: u32, test: Vec<String>, b: PathBuf }"
+                   "struct Foo<T>{test:Vec<T>}"
+                   "struct FooBar<'a> { test: Vec<String> }")
+           :not ("struct Foo { abc: u32, b: Vec<String> }"
+                 "/// ... construct the equivalent ...\nfn abc() {\n"))
+
+    ;; enum variants
+    (:type "variable" :supports ("ag" "grep") :language "rust"
+           :regex "enum\\s+[^\\n{]+\\s*{[^}]*\\bJJJ\\b[^}]*}"
+           :tests ("enum Foo { VariantA, test, VariantB(u32) }"
+                   "enum Foo<T> { test(T) }"
+                   "enum BadStyle{test}"
+                   "enum Foo32 { Bar, testing, test(u8) }")
+           :not ("enum Foo { testing }"))
+
     (:type "function" :supports ("ag" "grep") :language "rust"
            :regex "\\bfn\\s+JJJ\\s*\\\("
            :tests ("fn test(asdf: u32)" "fn test()" "pub fn test()"))
