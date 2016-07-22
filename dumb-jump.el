@@ -210,6 +210,11 @@
            :tests ("def test(foo)" "def test()" "def test foo" "def test; end"
                    "def self.test()" "def MODULE::test()"))
 
+    (:type "function" :supports ("ag") :language "ruby"
+           :regex "\\bdefine(?:_singleton)?_method\\s*(?:\\(\\s*)?:JJJ\\j"
+           :tests ("define_method(:test, &body)"
+                   "mod.define_instance_method(:test) { body }"))
+
     (:type "type" :supports ("ag") :language "ruby"
            :regex "\\bclass\\s+(?:\\w*::)*JJJ\\j"
            :tests ("class Test" "class Foo::Test"))
