@@ -6,6 +6,11 @@
 (require 'el-mock)
 (require 'popup)
 
+;;; Code:
+
+(defun dumb-jump-output-rule-test-failures (failures)
+  (--each failures (princ (format "\t%s\n" it))))
+
 (setq test-data-dir (f-expand "./test/data"))
 (setq test-data-dir-elisp (f-join test-data-dir "proj2-elisp"))
 (setq test-data-dir-proj1 (f-join test-data-dir "proj1"))
@@ -185,18 +190,22 @@
 
 (ert-deftest dumb-jump-test-rules-test ()
   (let ((rule-failures (dumb-jump-test-rules)))
+    (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
 (ert-deftest dumb-jump-test-ag-rules-test ()
   (let ((rule-failures (dumb-jump-test-ag-rules)))
+    (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
 (ert-deftest dumb-jump-test-rules-not-test () ;; :not tests
   (let ((rule-failures (dumb-jump-test-rules t)))
+    (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
 (ert-deftest dumb-jump-test-ag-rules-not-test () ;; :not tests
   (let ((rule-failures (dumb-jump-test-ag-rules t)))
+    (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
 (ert-deftest dumb-jump-test-rules-fail-test ()
