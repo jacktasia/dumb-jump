@@ -27,6 +27,7 @@
 ;; `ag` installed.  Dumb Jump requires at least GNU Emacs 24.4.
 
 ;;; Code:
+(require 'etags)
 (require 'f)
 (require 's)
 (require 'dash)
@@ -554,7 +555,7 @@ Optionally pass t to see a list of all failed rules"
                      (and run-not-tests (> (length resp) 0)))
                 (add-to-list 'failures (format fail-tmpl (if run-not-tests "not" "")
                                                test resp cmd (plist-get rule :regex)))))))))
-    ; (prin1 failures)
+   ; (prin1 failures)
     failures))
 
 (defun dumb-jump-test-ag-rules (&optional run-not-tests)
@@ -884,6 +885,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-goto-file-line (thefile theline pos)
   "Open THEFILE and go line THELINE"
   ;(dumb-jump-message "Jumping to file '%s' line %s" thefile theline)
+  (ring-insert find-tag-marker-ring (point-marker))
   (unless (string= thefile (buffer-file-name))
     (find-file thefile))
   (goto-char (point-min))
@@ -894,6 +896,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-goto-file-point (thefile point)
   "Open THEFILE and goto  POINT"
+  (ring-insert find-tag-marker-ring (point-marker))
   (unless (string= thefile (buffer-file-name))
     (find-file thefile))
   (goto-char point)
