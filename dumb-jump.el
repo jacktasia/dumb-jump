@@ -82,7 +82,7 @@
   :group 'dumb-jump)
 
 (defcustom dumb-jump-force-grep
-  t
+  nil
   "When t will use grep even if ag is available"
   :group 'dumb-jump)
 
