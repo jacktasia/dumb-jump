@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2015-2016 jack angers
 ;; Author: jack angers
-;; Version: 0.4.1
+;; Version: 0.4.2
 ;; Package-Requires: ((emacs "24.3") (f "0.17.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
