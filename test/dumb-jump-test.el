@@ -443,8 +443,21 @@
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
+      (forward-line 1)
+      (forward-char 4)
       (with-mock
-       (mock (dumb-jump-message "'%s' %s %s declaration not found." "console" * *))
+       (mock (dumb-jump-message "'%s' %s %s declaration not found." "nothing" * *))
+       (dumb-jump-go)))))
+
+(ert-deftest dumb-jump-go-no-result-force-grep-test ()
+  (let ((dumb-jump-force-grep t)
+        (js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 1)
+      (forward-char 4)
+      (with-mock
+       (mock (dumb-jump-message "'%s' %s %s declaration not found." "nothing" * *))
        (dumb-jump-go)))))
 
 (ert-deftest dumb-jump-go-no-rules-test ()
