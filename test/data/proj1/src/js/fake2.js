@@ -1,5 +1,5 @@
 console.log(doSomeStuff());
-
+// nothing
 var someVar = 13,
     someVar2 = 14;
 

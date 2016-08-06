@@ -71,8 +71,18 @@
   "`\\b` thinks `-` is a word boundary. When this matters use `\\j` instead and grep will use this value."
   :group 'dumb-jump)
 
+(defcustom dumb-jump-fallback-regex
+  "\\bJJJ\\j"
+  "When dumb-jump-fallback-search is t use this regex. Defaults to boundary search of symbol under point."
+  :group 'dumb-jump)
+
+(defcustom dumb-jump-fallback-search
+  t
+  "If nothing is found with normal search fallback to searching the fallback regex"
+  :group 'dumb-jump)
+
 (defcustom dumb-jump-force-grep
-  nil
+  t
   "When t will use grep even if ag is available"
   :group 'dumb-jump)
 
@@ -910,6 +920,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   "Return t if we should use ag. That is, ag is installed AND grep is not forced"
   (and (dumb-jump-ag-installed?) (not dumb-jump-force-grep)))
 
+;; TODO: rename dumb-jump-run-definition-command
 (defun dumb-jump-run-command (look-for proj regexes lang exclude-args cur-file line-num)
   "Run the grep command based on the needle LOOKFOR in the directory TOSEARCH"
   (let* ((use-grep (not (dumb-jump-use-ag?)))
@@ -917,13 +928,23 @@ denoter file/dir is found or uses dumb-jump-default-profile"
                   (dumb-jump-generate-grep-command look-for cur-file proj regexes lang exclude-args)
                   (dumb-jump-generate-ag-command look-for cur-file proj regexes lang exclude-args)))
          (rawresults (shell-command-to-string cmd)))
-    ;(dumb-jump-message-prin1 "RUNNING CMD '%s' RESULTS: %s" cmd rawresults)
+
+;    (dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
+    (when (and (s-blank? rawresults) dumb-jump-fallback-search)
+      (setq regexes (list dumb-jump-fallback-regex))
+      (setq cmd
+            (if use-grep
+                (dumb-jump-generate-grep-command look-for cur-file proj regexes lang exclude-args)
+              (dumb-jump-generate-ag-command look-for cur-file proj regexes lang exclude-args)))
+      (setq rawresults (shell-command-to-string cmd)))
+     ;(dumb-jump-message-prin1 "FALLBACK RUN CMD '%s' RESULTS: %s" cmd rawresults))
     (unless (s-blank? cmd)
       (let ((results
              (if use-grep
                  (dumb-jump-parse-grep-response rawresults cur-file line-num)
                (dumb-jump-parse-ag-response rawresults cur-file line-num))))
         (--filter (s-contains? look-for (plist-get it :context)) results)))))
+
 
 (defun dumb-jump-parse-response-line (resp-line cur-file)
   "Parse a search program's single RESP-LINE for CUR-FILE into a list of (path line context)"
