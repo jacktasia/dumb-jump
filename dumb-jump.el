@@ -672,7 +672,7 @@ denoter file/dir is found or uses dumb-jump-default-profile"
     (dumb-jump-fetch-shell-results))
    ((buffer-modified-p (current-buffer))
     (dumb-jump-issue-result "unsaved"))
-   ((not (thing-at-point 'symbol))
+   ((and (not (region-active-p)) (not (thing-at-point 'symbol)))
     (dumb-jump-issue-result "nosymbol"))
    (t
     (dumb-jump-fetch-file-results))))
@@ -715,9 +715,11 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-get-point-symbol ()
   "Get symbol at point."
-  (if (version< emacs-version "24.4")
-      (thing-at-point 'symbol)
-    (thing-at-point 'symbol t)))
+  (if (region-active-p)
+      (buffer-substring-no-properties (region-beginning) (region-end))
+    (if (version< emacs-version "24.4")
+        (thing-at-point 'symbol)
+      (thing-at-point 'symbol t))))
 
 (defun dumb-jump-get-lang-by-shell-contents (buffer)
   "Return languages in BUFFER by checking if file extension is mentioned."
