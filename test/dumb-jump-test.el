@@ -176,6 +176,14 @@
           (expected (f-expand dumb-jump-default-project)))
       (should (string= found-project expected)))))
 
+(ert-deftest dumb-jump-get-point-symbol-region-active-test ()
+  (with-mock
+   (mock (region-active-p) => t)
+   (mock (region-beginning) => 0)
+   (mock (region-end) => 1)
+   (mock (buffer-substring-no-properties * *) => "blah")
+   (dumb-jump-get-point-symbol)))
+
 (ert-deftest dumb-jump-goto-file-line-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
     (with-mock
