@@ -262,6 +262,16 @@
            :regex "\\bJJJ\\s*<-\\s*function"
            :tests ("test <- function"))
 
+
+    ;; perl
+    (:type "function" :supports ("ag" "grep") :language "perl"
+           :regex "sub\\s*JJJ\\s*\\\{"
+           :tests ("sub test{" "sub test {"))
+
+    (:type "variable" :supports ("ag" "grep") :language "perl"
+           :regex "JJJ\\s*=\\s*"
+           :tests ("$test = 1234"))
+
     ;; php
     (:type "function" :supports ("ag" "grep") :language "php"
            :regex "function\\s*JJJ\\s*\\\("
@@ -478,6 +488,11 @@ and type to use for generating the grep command"
     (:language "javascript" :ext "js" :agtype "js")
     (:language "javascript" :ext "jsx" :agtype "js")
     (:language "javascript" :ext "html" :agtype "html")
+    (:language "perl" :ext "pl" :agtype "perl")
+    (:language "perl" :ext "pm" :agtype "perl")
+    (:language "perl" :ext "pm6" :agtype "perl")
+    (:language "perl" :ext "pod" :agtype "perl")
+    (:language "perl" :ext "t" :agtype "perl")
     (:language "php" :ext "php" :agtype "php")
     (:language "php" :ext "inc" :agtype "php")
     (:language "ruby" :ext "rb" :agtype "ruby")
@@ -498,6 +513,7 @@ and type to use for generating the grep command"
     (:language "javascript" :type "variable" :right "^\\." :left nil)
     (:language "javascript" :type "variable" :right "^;" :left nil)
     (:language "php" :type "function" :right "^(" :left nil)
+    (:language "perl" :type "function" :right "^(" :left nil)
     (:language "elisp" :type "function" :right nil :left "($")
     (:language "elisp" :type "variable" :right "^)" :left nil))
 
