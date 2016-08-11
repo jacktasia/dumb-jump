@@ -144,6 +144,26 @@
            :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)")
            :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
+    ;; c++
+    (:type "function" :supports ("ag" "grep") :language "c++"
+	   :regex "\\bJJJ(\\s|\\))*\\((\\w|[,&*.]|\\s|)*(\\))\\s*(const|->|\\{|$)|typedef\\s+(\\w|[(*]|\\s)+JJJ(\\)|\\s)*\\("
+	   :tests ("int test(){" "my_struct (*test)(int a, int b){" "auto MyClass::test ( Builder& reference, ) -> decltype( builder.func() ) {" "int test( int *random_argument) const {" "test::test() {" "typedef int (*test)(int);")
+	   :not ("return test();)" "int test(a, b);" "if( test() ) {" "else test();"))
+
+    (:type "variable" :supports ("grep") :language "c++"
+	   :regex "(\\b\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[([0-9]|\\s)*\\])*\\s*([=,){;]|:\\s*[0-9])|#define\\s+JJJ\\b"
+	   :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "unsigned int test:2;"))
+
+    (:type "variable" :supports ("ag") :language "c++"
+	   :regex "\\b(?!(class\\b|struct\\b|return\\b|else\\b|delete\\b))(\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[(\\d|\\s)*\\])*\\s*([=,(){;]|:\\s*\\d)|#define\\s+JJJ\\b"
+	   :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "typedef int test;" "unsigned int test:2")
+	   :not ("return test;" "#define NOT test" "else test=2;"))
+    
+    (:type "type" :supports ("ag" "grep") :language "c++"
+	   :regex "\\b(class|struct|enum|union)\\b\\s*JJJ\\b\\s*(final\\s*)?(:((\\s*\\w+\\s*::)*\\s*\\w*\\s*<?(\\s*\\w+\\s*::)*\\w+>?\\s*,*)+)?((\\{|$))|}\\s*JJJ\\b\\s*;"
+	   :tests ("typedef struct test {" "enum test {" "} test;" "union test {" "class test final: public Parent1, private Parent2{" "class test : public std::vector<int> {")
+	   :not("union test var;" "struct test function() {"))
+
     ;; clojure
     (:type "variable" :supports ("ag" "grep") :language "clojure"
            :regex "\\(def\\s+JJJ\\j"
@@ -479,6 +499,19 @@ and type to use for generating the grep command"
 (defcustom dumb-jump-language-file-exts
   '((:language "elisp" :ext "el" :agtype "elisp")
     (:language "elisp" :ext "el.gz" :agtype "elisp")
+    (:language "c++" :ext "c" :agtype "cc")
+    (:language "c++" :ext "h" :agtype "cc")
+    (:language "c++" :ext "C" :agtype "cpp")
+    (:language "c++" :ext "H" :agtype "cpp")
+    (:language "c++" :ext "tpp" :agtype "cpp")
+    (:language "c++" :ext "cpp" :agtype "cpp")
+    (:language "c++" :ext "hpp" :agtype "cpp")
+    (:language "c++" :ext "cxx" :agtype "cpp")
+    (:language "c++" :ext "hxx" :agtype "cpp")
+    (:language "c++" :ext "cc" :agtype "cpp")
+    (:language "c++" :ext "hh" :agtype "cpp")
+    (:language "c++" :ext "c++" :agtype nil)
+    (:language "c++" :ext "h++" :agtype nil)
     (:language "clojure" :ext "clj" :agtype "clojure")
     (:language "clojure" :ext "cljs" :agtype "clojure")
     (:language "clojure" :ext "cljc" :agtype "clojure")
