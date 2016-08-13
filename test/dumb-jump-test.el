@@ -150,13 +150,13 @@
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (= (plist-get first-result :line) 6))))
 
-(ert-deftest dumb-jump-run-grep-cmd-test ()
-  (let* ((dumb-jump-force-grep t)
-         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""  "blah.el" 3))
-        (first-result (car results)))
-    (should (s-contains? "/fake.el" (plist-get first-result :path)))
-    (should (= (plist-get first-result :line) 6))))
+;; (ert-deftest dumb-jump-run-grep-cmd-test ()
+;;   (let* ((dumb-jump-force-grep t)
+;;          (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+;;          (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""  "blah.el" 3))
+;;         (first-result (car results)))
+;;     (should (s-contains? "/fake.el" (plist-get first-result :path)))
+;;     (should (= (plist-get first-result :line) 6))))
 
 (ert-deftest dumb-jump-run-cmd-fail-test ()
   (let* ((results (dumb-jump-run-command "hidden-function" test-data-dir-elisp nil "" "" "blah.el" 3))
@@ -191,14 +191,6 @@
      (dumb-jump-goto-file-line js-file 3 0)
      (should (string= (buffer-file-name) js-file))
      (should (= (line-number-at-pos) 3)))))
-
-(ert-deftest dumb-jump-goto-file-point-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
-    (with-mock
-     (mock (ring-insert * *))
-     (dumb-jump-goto-file-point js-file 10)
-     (should (string= (buffer-file-name) js-file))
-     (should (= (point) 10)))))
 
 (ert-deftest dumb-jump-test-rules-test ()
   (let ((rule-failures (dumb-jump-test-rules)))
@@ -426,26 +418,6 @@
       (with-mock
        (mock (dumb-jump-goto-file-line * 3 27))
        (should (string= el-file (dumb-jump-go)))))))
-
-(ert-deftest dumb-jump-a-back-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
-        (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
-    (with-current-buffer (find-file-noselect js-file t)
-      (goto-char (point-min))
-      (forward-char 13)
-      (with-mock
-       (dumb-jump-go)
-       (mock (dumb-jump-goto-file-point * 14))
-       (mock (dumb-jump-message "Jumping back to%s line %s" " fake2.js" "1"))
-       (dumb-jump-back)))))
-
-(ert-deftest dumb-jump-back-no-result-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
-    (with-current-buffer (find-file-noselect js-file t)
-      (goto-char (point-min))
-      (with-mock
-       (mock (dumb-jump-message "Nowhere to jump back to."))
-       (dumb-jump-back)))))
 
 (ert-deftest dumb-jump-go-no-result-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
