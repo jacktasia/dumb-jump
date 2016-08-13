@@ -578,7 +578,7 @@ immediately to the right of a symbol then it's probably a function call"
   (s-contains? "ag version" (shell-command-to-string (concat dumb-jump-ag-cmd " --version"))))
 
 (defun dumb-jump-grep-installed? ()
-  "Return t if ag is installed"
+  "Return t if grep is installed"
   (s-match "[0-9]+\\.[0-9]+" (shell-command-to-string (concat dumb-jump-grep-cmd " --version"))))
 
 (defun dumb-jump-find-start-pos (line-in look-for cur-pos)
