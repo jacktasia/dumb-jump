@@ -116,11 +116,6 @@
   "If non-nil Dumb Jump will ignore the context of point when jumping"
   :group 'dumb-jump)
 
-(defcustom dumb-jump-last-location
-  '()
-  "History of last locations when jumping"
-  :group 'dumb-jump)
-
 (defcustom dumb-jump-find-rules
   '((:type "function" :supports ("ag" "grep") :language "elisp" :regex "\\\(defun\\s+JJJ\\j"
            ;; \\j usage see `dumb-jump-ag-word-boundary`
@@ -815,18 +810,9 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 (defun dumb-jump-back ()
   "Jump back to where the last jump was done"
   (interactive)
-  (if dumb-jump-last-location
-    (let* ((last-loc (car dumb-jump-last-location))
-           (path (plist-get last-loc :path))
-           (point (plist-get last-loc :point)))
-      (dumb-jump-message "Jumping back to%s line %s"
-               (if (not (string= path (buffer-file-name)))
-                   (concat " " (f-filename path))
-                 "")
-               (number-to-string (plist-get last-loc :line)))
-      (setq dumb-jump-last-location (cdr dumb-jump-last-location))
-      (dumb-jump-goto-file-point path point))
-    (dumb-jump-message "Nowhere to jump back to.")))
+  (pop-tag-mark)
+  (with-demoted-errors "Error running `dumb-jump-after-jump-hook': %S"
+    (run-hooks 'dumb-jump-after-jump-hook)))
 
 ;;;###autoload
 (defun dumb-jump-quick-look ()
@@ -929,8 +915,6 @@ denoter file/dir is found or uses dumb-jump-default-profile"
         (thef (plist-get result :path))
         (line (plist-get result :line)))
     (when thef
-      (add-to-list 'dumb-jump-last-location
-                   `(:line ,(line-number-at-pos) :path ,(buffer-file-name) :pos ,pos :point ,(point)))
       (if use-tooltip
           (popup-tip (format "%s:%s %s"
                                   (s-replace proj "" (plist-get result :path))
@@ -943,22 +927,14 @@ denoter file/dir is found or uses dumb-jump-default-profile"
 
 (defun dumb-jump-goto-file-line (thefile theline pos)
   "Open THEFILE and go line THELINE"
-  ;(dumb-jump-message "Jumping to file '%s' line %s" thefile theline)
-  (ring-insert find-tag-marker-ring (point-marker))
+  (if (fboundp 'xref-push-marker-stack)
+      (xref-push-marker-stack)
+   (ring-insert find-tag-marker-ring (point-marker)))
   (unless (string= thefile (buffer-file-name))
     (find-file thefile))
   (goto-char (point-min))
   (forward-line (1- theline))
   (forward-char pos)
-  (with-demoted-errors "Error running `dumb-jump-after-jump-hook': %S"
-    (run-hooks 'dumb-jump-after-jump-hook)))
-
-(defun dumb-jump-goto-file-point (thefile point)
-  "Open THEFILE and goto  POINT"
-  (ring-insert find-tag-marker-ring (point-marker))
-  (unless (string= thefile (buffer-file-name))
-    (find-file thefile))
-  (goto-char point)
   (with-demoted-errors "Error running `dumb-jump-after-jump-hook': %S"
     (run-hooks 'dumb-jump-after-jump-hook)))
 
