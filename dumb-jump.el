@@ -296,6 +296,18 @@
            :regex "JJJ\\s*=\\s*"
            :tests ("$test = 1234"))
 
+    (:type "trait" :supports ("ag" "grep") :language "php"
+           :regex "trait\\s*JJJ\\s*\\\{"
+           :tests ("trait test{" "trait test {"))
+
+    (:type "interface" :supports ("ag" "grep") :language "php"
+           :regex "interface\\s*JJJ\\s*\\\{"
+           :tests ("interface test{" "interface test {"))
+
+    (:type "class" :supports ("ag" "grep") :language "php"
+           :regex "class\\s*JJJ\\s*\\\{"
+           :tests ("class test{" "class test {"))
+
     ;; faust
     (:type "function" :supports ("ag" "grep") :language "faust"
            :regex "\\bJJJ\(\\\(.+\\\)\)*\\s*="
