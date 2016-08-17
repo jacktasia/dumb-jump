@@ -231,9 +231,15 @@
            :tests ("test = 1234")
            :not ("if test == 1234"))
 
-    (:type "function" :supports ("ag" "grep") :language "ruby"
-           :regex "\\bdef\\s+JJJ\\j"
-           :tests ("def test(foo)" "def test()" "def test foo" "def test; end"))
+    (:type "function" :supports ("ag") :language "ruby"
+           :regex "\\bdef\\s+(?:\\w+(::|\\.))*JJJ\\j"
+           :tests ("def test(foo)" "def test()" "def test foo" "def test; end"
+                   "def self.test()" "def MODULE::test()"))
+
+    (:type "function" :supports ("ag") :language "ruby"
+           :regex "\\bdefine(?:_singleton)?_method\\s*(?:\\(\\s*)?:JJJ\\j"
+           :tests ("define_method(:test, &body)"
+                   "mod.define_instance_method(:test) { body }"))
 
     (:type "type" :supports ("ag") :language "ruby"
            :regex "\\bclass\\s+(?:\\w*::)*JJJ\\j"
