@@ -237,7 +237,7 @@
                    "def self.test()" "def MODULE::test()"))
 
     (:type "function" :supports ("ag") :language "ruby"
-           :regex "\\bdefine(?:_singleton)?_method\\s*(?:\\(\\s*)?:JJJ\\j"
+           :regex "\\bdefine(?:_singleton|_instance)?_method\\s*(?:\\(\\s*)?:JJJ\\j"
            :tests ("define_method(:test, &body)"
                    "mod.define_instance_method(:test) { body }"))
 
