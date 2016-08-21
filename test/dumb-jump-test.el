@@ -246,11 +246,32 @@
     (should (string= ctx-type "function"))))
 
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-test ()
-  (let* ((results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()") (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
+  (let* ((results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
+                    (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
     (with-mock
      (mock (popup-menu* *) => "/test2.txt:52 var thing = function()")
      (mock (dumb-jump-result-follow '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
+
+(ert-deftest dumb-jump-prompt-user-for-choice-correct-ivy-test ()
+  (let* ((dumb-jump-selector 'ivy)
+         (results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
+                    (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
+    (with-mock
+     (mock (ivy-read * *)  => "/test2.txt:52 var thing = function()")
+     (mock (dumb-jump-result-follow '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
+     (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
+
+(ert-deftest dumb-jump-a-back-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
+        (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-char 13)
+      (with-mock
+       (mock (pop-tag-mark))
+       (dumb-jump-go)
+       (dumb-jump-back)))))
 
 (ert-deftest dumb-jump-fetch-results-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
