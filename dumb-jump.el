@@ -671,7 +671,7 @@ Optionally pass t to see a list of all failed rules"
     `(:left ,left :right ,right)))
 
 (defun dumb-jump-to-selected (results choices selected)
-  "Goto."
+  "Go to the selected choice from multiple options."
   (let* ((result-index (--find-index (string= selected it) choices))
          (result (when result-index
                    (nth result-index results))))
@@ -689,17 +689,6 @@ Optionally pass t to see a list of all failed rules"
     (if (and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
         (ivy-read "Jump to: " choices :action (lambda (x) (dumb-jump-to-selected results choices x)))
       (dumb-jump-to-selected results choices (popup-menu* choices)))))
-
-
-;                       (nth 1 x) (nth 2 x)))))
- ;; (ivy-read "test: "
- ;;            '(("abc (1.txt)" "~/1.txt" 123)
- ;;              ("def (2.txt)" "~/2.txt" 1124))
- ;;            :action (lambda (x)
- ;;                      (message
- ;;                       "open file %s and goto-char %d"
- ;;                       (nth 1 x) (nth 2 x)))))
-                       
 
 (defun dumb-jump-get-project-root (filepath)
   "Keep looking at the parent dir of FILEPATH until a
