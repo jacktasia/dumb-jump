@@ -37,10 +37,6 @@ There is currently basic support for the following languages:
 
 If you have any issues with the existing languages, or you want support for another one, then please [open an issue](https://github.com/jacktasia/dumb-jump/issues). PRs are also welcome. If you'd like to add a language these PRs for [lua](https://github.com/jacktasia/dumb-jump/pull/33) and [rust](https://github.com/jacktasia/dumb-jump/pull/57) are good examples.
 
-## Why?
-
-I wanted "jump to definition" functionality to "just work" in emacs. I use IntelliJ for Java and this functionality is basically the only thing I miss when I switch back to emacs for work in other languages. There are certainly other packages that offer this type of functionality, but they all require significantly more configuration and are often limited to a particular language. An alternative may be worth setting up if you are in a specific project or language often (see [alternatives](#alternatives)).
-
 ## Installing
 
 The recommended way to install Dumb Jump is via `package.el`. It's available on [MELPA](http://melpa.org/#/dumb-jump): <kbd>M-x</kbd> `package-install dumb-jump`
@@ -81,6 +77,11 @@ Dumb Jump will automatically look for a project root. If it's not finding one th
 * `(setq dumb-jump-quiet t)` if Dumb Jump is too chatty.
 * To support more languages and/or definition types use `add-to-list` on `dumb-jump-find-rules` (see source code).
 * `(add-hook 'dumb-jump-after-jump-hook 'some-function)` to execute code after you jump
+* `(setq dumb-jump-selector 'ivy) to use [ivy](https://github.com/abo-abo/swiper#ivy) instead of the default popup for multiple options.
+
+## Why?
+
+I wanted "jump to definition" functionality to "just work" in emacs. I use IntelliJ for Java and this functionality is basically the only thing I miss when I switch back to emacs for work in other languages. There are certainly other packages that offer this type of functionality, but they all require significantly more configuration and are often limited to a particular language. An alternative may be worth setting up if you are in a specific project or language often (see [alternatives](#alternatives)).
 
 ## Contributing
 
