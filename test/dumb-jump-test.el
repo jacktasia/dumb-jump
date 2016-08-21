@@ -261,6 +261,17 @@
      (mock (ivy-read "Jump to: " * :action *))
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
+(ert-deftest dumb-jump-a-back-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
+        (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-char 13)
+      (with-mock
+       (mock (pop-tag-mark))
+       (dumb-jump-go)
+       (dumb-jump-back)))))
+
 (ert-deftest dumb-jump-fetch-results-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
     (with-current-buffer (find-file-noselect js-file t)
