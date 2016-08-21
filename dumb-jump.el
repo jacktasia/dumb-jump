@@ -46,6 +46,11 @@
     (define-key map (kbd "C-M-q") 'dumb-jump-quick-look)
     map))
 
+(defcustom dumb-jump-selector
+  'popup
+  "Which selector to use when there is multiple choices. `ivy` also supported"
+  :group 'dumb-jump)
+
 (defcustom dumb-jump-grep-prefix
   "LANG=C"
   "Prefix to grep command. Seemingly makes it faster for pure text."
@@ -665,6 +670,14 @@ Optionally pass t to see a list of all failed rules"
                   (substring line right-loc-start right-loc-end))))
     `(:left ,left :right ,right)))
 
+(defun dumb-jump-to-selected (results choices selected)
+  "Goto."
+  (let* ((result-index (--find-index (string= selected it) choices))
+         (result (when result-index
+                   (nth result-index results))))
+        (when result
+          (dumb-jump-result-follow result))))
+
 (defun dumb-jump-prompt-user-for-choice (proj results)
   "Puts list of RESULTS in a popup-menu for user to select. Filters PROJ path from files for display"
   (let* ((choices (-map (lambda (result)
@@ -672,13 +685,21 @@ Optionally pass t to see a list of all failed rules"
                                   (s-replace proj "" (plist-get result :path))
                                   (plist-get result :line)
                                   (s-trim (plist-get result :context))))
-                        results))
-         (input (popup-menu* choices))
-         (result-index (--find-index (string= input it) choices))
-         (result (when result-index
-                   (nth result-index results))))
-    (when result
-      (dumb-jump-result-follow result))))
+                        results)))
+    (if (and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
+        (ivy-read "Jump to: " choices :action (lambda (x) (dumb-jump-to-selected results choices x)))
+      (dumb-jump-to-selected results choices (popup-menu* choices)))))
+
+
+;                       (nth 1 x) (nth 2 x)))))
+ ;; (ivy-read "test: "
+ ;;            '(("abc (1.txt)" "~/1.txt" 123)
+ ;;              ("def (2.txt)" "~/2.txt" 1124))
+ ;;            :action (lambda (x)
+ ;;                      (message
+ ;;                       "open file %s and goto-char %d"
+ ;;                       (nth 1 x) (nth 2 x)))))
+                       
 
 (defun dumb-jump-get-project-root (filepath)
   "Keep looking at the parent dir of FILEPATH until a
