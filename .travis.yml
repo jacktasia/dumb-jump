@@ -1,12 +1,9 @@
 language: generic
 before_install:
   - sudo add-apt-repository ppa:gekkio/ag -y
-  - sudo add-apt-repository -y ppa:ubuntu-elisp/ppa
   - sudo apt-get -qq update
   - sudo apt-get install -y silversearcher-ag
   - curl -fsSkL https://gist.github.com/rejeep/ebcd57c3af83b049833b/raw > x.sh && source ./x.sh
-  - sudo apt-get install -qq $EMACS_VERSION
-  - sudo apt-get install -qq emacs-snapshot-el emacs-snapshot-nox;
   - evm install $EVM_EMACS --use --skip
   - cask
 env:
