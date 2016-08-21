@@ -687,7 +687,7 @@ Optionally pass t to see a list of all failed rules"
                                   (s-trim (plist-get result :context))))
                         results)))
     (if (and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
-        (ivy-read "Jump to: " choices :action (lambda (x) (dumb-jump-to-selected results choices x)))
+      (dumb-jump-to-selected results choices (ivy-read "Jump to: " choices))
       (dumb-jump-to-selected results choices (popup-menu* choices)))))
 
 (defun dumb-jump-get-project-root (filepath)
