@@ -304,6 +304,26 @@
        (mock (dumb-jump-goto-file-line * 3 9))
        (should (string= go-js-file (dumb-jump-go)))))))
 
+(ert-deftest dumb-jump-go-other-window-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
+        (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-char 13)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 3 9))
+       (should (string= go-js-file (dumb-jump-go-other-window)))))))
+
+(ert-deftest dumb-jump-go-current-window-test ()
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
+        (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-char 13)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 3 9))
+       (should (string= go-js-file (dumb-jump-go-current-window)))))))
+
 (ert-deftest dumb-jump-quick-look-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
         (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))

@@ -46,6 +46,11 @@
     (define-key map (kbd "C-M-q") 'dumb-jump-quick-look)
     map))
 
+(defcustom dumb-jump-window
+  'current
+  "Which window to use when jumping valid options are 'current (default) or 'other."
+  :group 'dumb-jump)
+
 (defcustom dumb-jump-selector
   'popup
   "Which selector to use when there is multiple choices. `ivy` also supported"
@@ -849,6 +854,20 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (dumb-jump-go t))
 
 ;;;###autoload
+(defun dumb-jump-go-other-window ()
+  "Like 'dumb-jump-go' but use 'find-file-other-window' instead of 'find-file'."
+  (interactive)
+  (let ((dumb-jump-window 'other))
+        (dumb-jump-go)))
+
+;;;###autoload
+(defun dumb-jump-go-current-window ()
+  "Like dumb-jump-go but always use 'find-file'."
+  (interactive)
+  (let ((dumb-jump-window 'current))
+        (dumb-jump-go)))
+
+;;;###autoload
 (defun dumb-jump-go (&optional use-tooltip)
   "Go to the function/variable declaration for thing at point"
   (interactive "P")
@@ -958,8 +977,11 @@ denoter file/dir is found or uses dumb-jump-default-profile"
   (if (fboundp 'xref-push-marker-stack)
       (xref-push-marker-stack)
    (ring-insert find-tag-marker-ring (point-marker)))
-  (unless (string= thefile (buffer-file-name))
-    (find-file thefile))
+
+  (if (eq dumb-jump-window 'other)
+      (find-file-other-window thefile)
+    (unless (string= thefile (buffer-file-name))
+      (find-file thefile)))
   (goto-char (point-min))
   (forward-line (1- theline))
   (forward-char pos)
