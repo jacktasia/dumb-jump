@@ -223,6 +223,21 @@
            :tests ("class test" "class test extends")
            :not ("# class"))
 
+    ;; swift
+    (:type "variable" :supports ("ag" "grep") :language "swift"
+           :regex "(let|var)\\s*JJJ\\s*(=|:)[^=:\\n]+"
+           :tests ("let test = 1234" "var test = 1234" "private lazy var test: UITapGestureRecognizer") :not ("if test == 1234:"))
+
+    (:type "function" :supports ("ag" "grep") :language "swift"
+           :regex "func\\s*JJJ\\b\\s*\\\("
+           :tests ("func test(asdf)" "func test()")
+           :not ("func testnot(asdf)" "func testnot()"))
+
+    (:type "type" :supports ("ag" "grep") :language "swift"
+           :regex "(class|struct)\\s*JJJ\\b\\s*?"
+           :tests ("class test:" "class test: UIWindow")
+           :not ("class testnot:" "class testnot(object):"))
+
     ;; python
     (:type "variable" :supports ("ag" "grep") :language "python"
            :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234:"))
@@ -554,6 +569,7 @@
     (:language "php" :ext "inc" :agtype "php")
     (:language "ruby" :ext "rb" :agtype "ruby")
     (:language "scala" :ext "scala" :agtype "scala")
+    (:language "swift" :ext "swift" :agtype nil)
     (:language "r" :ext "R" :agtype "r")
     (:language "r" :ext "r" :agtype "r")
     (:language "rust" :ext "rs" :agtype "rs")

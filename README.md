@@ -28,6 +28,7 @@ There is currently basic support for the following languages:
 * CoffeeScript
 * Perl
 * Go
+* Swift
 * Scala
 * Clojure
 * Lua
