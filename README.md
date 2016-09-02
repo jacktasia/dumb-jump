@@ -90,7 +90,7 @@ I wanted "jump to definition" functionality to "just work" in emacs. I use Intel
 
 ## Contributing
 
-Feedback is very welcome via GitHub issues. I will positively consider supporting other languages either via issue request or PR. If submitting a PR then please add tests as well.
+Feedback is very welcome via GitHub issues. I will consider supporting other languages either via issue request or PR. If submitting a PR then please add tests as well.
 
 ## Running Tests
 Requires [Cask](https://github.com/cask/cask).
@@ -101,7 +101,7 @@ Requires [Cask](https://github.com/cask/cask).
 
 ## Alternatives
 
-Here is a list of potential alternatives packages for emacs:
+Here is a list of potential alternative packages for emacs:
 
 * [Tags](http://www.gnu.org/software/emacs/manual/html_node/emacs/Tags.html) supports multiple languages
 * [GNU Global](http://www.gnu.org/software/global/) supports multiple languages
