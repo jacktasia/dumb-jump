@@ -223,6 +223,17 @@
            :tests ("class test" "class test extends")
            :not ("# class"))
 
+    ;; obj-c
+    (:type "function" :supports ("ag" "grep") :language "objc"
+           :regex "\\\)\\s*JJJ(:|\\b|\\s)"
+           :tests ("- (void)test" "- (void)test:(UIAlertView *)alertView")
+           :not ("- (void)testnot" "- (void)testnot:(UIAlertView *)alertView"))
+
+    (:type "variable" :supports ("ag" "grep") :language "objc"
+           :regex "\\b\\*?JJJ\\s*=[^=\\n]+"
+           :tests ("NSString *test = @\"asdf\"")
+           :tests ("NSString *testnot = @\"asdf\"" "NSString *nottest = @\"asdf\""))
+
     ;; swift
     (:type "variable" :supports ("ag" "grep") :language "swift"
            :regex "(let|var)\\s*JJJ\\s*(=|:)[^=:\\n]+"
@@ -565,6 +576,7 @@
   "List of regex patttern templates organized by language and type to use for generating the grep command."
   :group 'dumb-jump)
 
+; https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t
 (defcustom dumb-jump-language-file-exts
   '((:language "elisp" :ext "el" :agtype "elisp")
     (:language "elisp" :ext "el.gz" :agtype "elisp")
@@ -581,6 +593,7 @@
     (:language "c++" :ext "hh" :agtype "cpp")
     (:language "c++" :ext "c++" :agtype nil)
     (:language "c++" :ext "h++" :agtype nil)
+    (:language "objc" :ext "m" :agtype "objc")
     (:language "csharp" :ext "cs" :agtype "csharp")
     (:language "java" :ext "java" :agtype "java")
     (:language "clojure" :ext "clj" :agtype "clojure")

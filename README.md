@@ -31,6 +31,7 @@ There is currently basic support for the following languages:
 * Perl
 * Go
 * Swift
+* Objective-C
 * Scala
 * Clojure
 * Lua
