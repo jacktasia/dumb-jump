@@ -238,6 +238,36 @@
            :tests ("class test:" "class test: UIWindow")
            :not ("class testnot:" "class testnot(object):"))
 
+    ;; c#
+    (:type "function" :supports ("ag") :language "csharp"
+           :regex "^\\s*(?!=)(?:\\w+\\s+){1,3}JJJ\\s*\\\("
+           :tests ("int test()" "int test(param)" "static int test()" "static int test(param)"
+                   "public static MyType test()" "private virtual SomeType test(param)" "static int test()")
+           :not ("test()" "testnot()" "blah = new test()"))
+
+    (:type "variable" :supports ("ag" "grep") :language "csharp"
+           :regex "\\s*\\bJJJ\\s*=[^=\\n)]+" :tests ("int test = 1234") :not ("if test == 1234:" "int nottest = 44"))
+
+    (:type "type" :supports ("ag" "grep") :language "csharp"
+           :regex "(class|interface)\\s*JJJ\\b"
+           :tests ("class test:" "public class test : IReadableChannel, I")
+           :not ("class testnot:" "public class testnot : IReadableChannel, I"))
+
+    ;; java (literally the same regexes as c#, but differents tests)
+    (:type "function" :supports ("ag") :language "java"
+           :regex "^\\s*(?!=)(?:\\w+\\s+){1,3}JJJ\\s*\\\("
+           :tests ("int test()" "int test(param)" "static int test()" "static int test(param)"
+                   "public static MyType test()" "private virtual SomeType test(param)" "static int test()")
+           :not ("test()" "testnot()" "blah = new test()"))
+
+    (:type "variable" :supports ("ag" "grep") :language "java"
+           :regex "\\s*\\bJJJ\\s*=[^=\\n)]+" :tests ("int test = 1234") :not ("if test == 1234:" "int nottest = 44"))
+
+    (:type "type" :supports ("ag" "grep") :language "java"
+           :regex "(class|interface)\\s*JJJ\\b"
+           :tests ("class test:" "public class test implements Something")
+           :not ("class testnot:" "public class testnot implements Something"))
+
     ;; python
     (:type "variable" :supports ("ag" "grep") :language "python"
            :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234:"))
@@ -551,6 +581,8 @@
     (:language "c++" :ext "hh" :agtype "cpp")
     (:language "c++" :ext "c++" :agtype nil)
     (:language "c++" :ext "h++" :agtype nil)
+    (:language "csharp" :ext "cs" :agtype "csharp")
+    (:language "java" :ext "java" :agtype "java")
     (:language "clojure" :ext "clj" :agtype "clojure")
     (:language "clojure" :ext "cljs" :agtype "clojure")
     (:language "clojure" :ext "cljc" :agtype "clojure")
@@ -1057,11 +1089,17 @@ Ffrom the ROOT project CONFIG-FILE."
   (let* ((parts (--remove (string= it "")
                           (s-split ":?[0-9]+:" resp-line)))
          (line-num-raw (s-match ":?\\([0-9]+\\):" resp-line)))
-    (when (and parts line-num-raw)
+
+    (cond
+     ;; fixes rare bug where context is blank  but file is defined "/somepath/file.txt:14:"
+     ;; OR: (and (= (length parts) 1) (f-exists? (f-join (nth 0 parts))))
+     ((s-match ":[0-9]+:$" resp-line)
+      nil)
+     ((and parts line-num-raw)
       (if (= (length parts) 2)
           (list (f-join (nth 0 parts)) (nth 1 line-num-raw) (nth 1 parts))
                                         ; this case is when they are searching a particular file...
-        (list (f-join cur-file) (nth 1 line-num-raw) (nth 0 parts))))))
+        (list (f-join cur-file) (nth 1 line-num-raw) (nth 0 parts)))))))
 
 (defun dumb-jump-parse-response-lines (parsed cur-file cur-line-num)
   "Turn PARSED response lines in a list of property lists"

@@ -24,6 +24,8 @@ There is currently basic support for the following languages:
 * JavaScript
 * PHP
 * Ruby
+* Java
+* C#
 * C/C++
 * CoffeeScript
 * Perl
