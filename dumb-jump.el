@@ -449,6 +449,18 @@
            :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
            :tests ("test = function()"))
 
+    ;; haskell
+    (:type "function" :supports ("ag") :language "haskell"
+           :regex "^\\s*(let)?\\s*JJJ\\b\\s*(.+)?(?<==)"
+           :tests ("test n = n * 2" "let test x y = x * y")
+           :not ("nottest n = n * 2" "let testnot x y = x * y" "test $ y z"))
+
+    (:type "function" :supports ("ag" "grep") :language "haskell"
+           :regex "^\\s*(let)?\\s*JJJ\\b\\s*::"
+           :tests ("test :: FilePath -> HttpSession [PkgIndexIndex]"
+                   "test :: PackageId -> Tar.Entry -> PkgIndexInfo")
+           :not ("nottest :: FilePath -> HttpSession [PkgIndexIndex]"
+                 "testnot :: PackageId -> Tar.Entry -> PkgIndexInfo"))
     ;; lua
     (:type "variable" :supports ("ag" "grep") :language "lua"
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test === 1234"))
@@ -593,6 +605,8 @@
     (:language "c++" :ext "hh" :agtype "cpp")
     (:language "c++" :ext "c++" :agtype nil)
     (:language "c++" :ext "h++" :agtype nil)
+    (:language "haskell" :ext "hs" :agtype "haskell")
+    (:language "haskell" :ext "lhs" :agtype "haskell")
     (:language "objc" :ext "m" :agtype "objc")
     (:language "csharp" :ext "cs" :agtype "csharp")
     (:language "java" :ext "java" :agtype "java")
