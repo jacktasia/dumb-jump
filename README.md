@@ -34,6 +34,7 @@ There is currently basic support for the following languages:
 * Objective-C
 * Scala
 * Clojure
+* Haskell
 * Lua
 * Rust
 * Faust
