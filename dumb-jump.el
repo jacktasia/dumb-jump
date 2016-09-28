@@ -100,7 +100,7 @@
   t
   "If nothing is found with normal search fallback to searching the fallback regex."
   :group 'dumb-jump
-  :type 'string)
+  :type 'boolean)
 
 (defcustom dumb-jump-force-grep
   nil
