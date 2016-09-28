@@ -49,82 +49,100 @@
 (defcustom dumb-jump-window
   'current
   "Which window to use when jumping valid options are 'current (default) or 'other."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type '(choice (const :tag "Current window" current)
+                 (const :tag "Other window" other)))
 
 (defcustom dumb-jump-selector
   'popup
   "Which selector to use when there is multiple choices.  `ivy` also supported."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type '(choice (const :tag "Popup" popup)
+                 (const :tag "Ivy" other)))
 
 (defcustom dumb-jump-grep-prefix
   "LANG=C"
   "Prefix to grep command.  Seemingly makes it faster for pure text."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'string)
 
 (defcustom dumb-jump-grep-cmd
   "grep"
   "The path to grep.  By default assumes it is in path."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'string)
 
 (defcustom dumb-jump-ag-cmd
   "ag"
   "The the path to the silver searcher.  By default assumes it is in path.  If not found fallbacks to grep."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'string)
 
 (defcustom dumb-jump-ag-word-boundary
   "(?![\\w-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and ag will use this value."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'string)
 
 (defcustom dumb-jump-grep-word-boundary
   "($|[^\\w-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and grep will use this value."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'string)
 
 (defcustom dumb-jump-fallback-regex
   "\\bJJJ\\j"
   "When dumb-jump-fallback-search is t use this regex.  Defaults to boundary search of symbol under point."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'string)
 
 (defcustom dumb-jump-fallback-search
   t
   "If nothing is found with normal search fallback to searching the fallback regex."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'boolean)
 
 (defcustom dumb-jump-force-grep
   nil
   "When t will use grep even if ag is available."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'boolean)
 
 (defcustom dumb-jump-zgrep-cmd
   "zgrep"
   "The path to grep to use for gzipped files.  By default assumes it is in path."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'string)
 
 (defcustom dumb-jump-grep-args
   "-REn"
   "Grep command args Recursive, [e]xtended regexes, and show line numbers."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'string)
 
 (defcustom dumb-jump-max-find-time
   2
   "Number of seconds a grep/find command can take before being warned to use ag and config."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'integer)
 
 (defcustom dumb-jump-functions-only
   nil
   "Should we only jump to functions?"
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'boolean)
 
 (defcustom dumb-jump-quiet
   nil
   "If non-nil Dumb Jump will not log anything to *Messages*."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'boolean)
 
 (defcustom dumb-jump-ignore-context
   nil
   "If non-nil Dumb Jump will ignore the context of point when jumping."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'boolean)
 
 (defcustom dumb-jump-find-rules
   '((:type "function" :supports ("ag" "grep") :language "elisp" :regex "\\\((defun|cl-defun)\\s+JJJ\\j"
@@ -153,23 +171,23 @@
 
     ;; c++
     (:type "function" :supports ("ag") :language "c++"
-	   :regex "\\bJJJ(\\s|\\))*\\((\\w|[,&*.]|\\s|)*(\\))\\s*(const|->|\\{|$)|typedef\\s+(\\w|[(*]|\\s)+JJJ(\\)|\\s)*\\("
-	   :tests ("int test(){" "my_struct (*test)(int a, int b){" "auto MyClass::test ( Builder& reference, ) -> decltype( builder.func() ) {" "int test( int *random_argument) const {" "test::test() {" "typedef int (*test)(int);")
-	   :not ("return test();)" "int test(a, b);" "if( test() ) {" "else test();"))
+           :regex "\\bJJJ(\\s|\\))*\\((\\w|[,&*.]|\\s|)*(\\))\\s*(const|->|\\{|$)|typedef\\s+(\\w|[(*]|\\s)+JJJ(\\)|\\s)*\\("
+           :tests ("int test(){" "my_struct (*test)(int a, int b){" "auto MyClass::test ( Builder& reference, ) -> decltype( builder.func() ) {" "int test( int *random_argument) const {" "test::test() {" "typedef int (*test)(int);")
+           :not ("return test();)" "int test(a, b);" "if( test() ) {" "else test();"))
 
     ;; (:type "variable" :supports ("grep") :language "c++"
-    ;;  :regex "(\\b\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[([0-9]|\\s)*\\])*\\s*([=,){;]|:\\s*[0-9])|#define\\s+JJJ\\b"
-    ;;  :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "unsigned int test:2;"))
+    ;;        :regex "(\\b\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[([0-9]|\\s)*\\])*\\s*([=,){;]|:\\s*[0-9])|#define\\s+JJJ\\b"
+    ;;        :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "unsigned int test:2;"))
 
     (:type "variable" :supports ("ag") :language "c++"
-	   :regex "\\b(?!(class\\b|struct\\b|return\\b|else\\b|delete\\b))(\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[(\\d|\\s)*\\])*\\s*([=,(){;]|:\\s*\\d)|#define\\s+JJJ\\b"
-	   :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "typedef int test;" "unsigned int test:2")
-	   :not ("return test;" "#define NOT test" "else test=2;"))
-    
+           :regex "\\b(?!(class\\b|struct\\b|return\\b|else\\b|delete\\b))(\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[(\\d|\\s)*\\])*\\s*([=,(){;]|:\\s*\\d)|#define\\s+JJJ\\b"
+           :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "typedef int test;" "unsigned int test:2")
+           :not ("return test;" "#define NOT test" "else test=2;"))
+
     (:type "type" :supports ("ag") :language "c++"
-	   :regex "\\b(class|struct|enum|union)\\b\\s*JJJ\\b\\s*(final\\s*)?(:((\\s*\\w+\\s*::)*\\s*\\w*\\s*<?(\\s*\\w+\\s*::)*\\w+>?\\s*,*)+)?((\\{|$))|}\\s*JJJ\\b\\s*;"
-	   :tests ("typedef struct test {" "enum test {" "} test;" "union test {" "class test final: public Parent1, private Parent2{" "class test : public std::vector<int> {")
-	   :not("union test var;" "struct test function() {"))
+           :regex "\\b(class|struct|enum|union)\\b\\s*JJJ\\b\\s*(final\\s*)?(:((\\s*\\w+\\s*::)*\\s*\\w*\\s*<?(\\s*\\w+\\s*::)*\\w+>?\\s*,*)+)?((\\{|$))|}\\s*JJJ\\b\\s*;"
+           :tests ("typedef struct test {" "enum test {" "} test;" "union test {" "class test final: public Parent1, private Parent2{" "class test : public std::vector<int> {")
+           :not("union test var;" "struct test function() {"))
 
     ;; clojure
     (:type "variable" :supports ("ag" "grep") :language "clojure"
@@ -588,7 +606,16 @@
            :tests ("mod test;" "pub mod test {")))
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type
+  '(repeat
+    (plist
+     :options ((:type string)
+               (:supports string)
+               (:language string)
+               (:regex string)
+               (:tests (repeat string))
+               (:not (repeat string))))))
 
 ; https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t
 (defcustom dumb-jump-language-file-exts
@@ -638,7 +665,13 @@
     (:language "go" :ext "go" :agtype "go")
     (:language "lua" :ext "lua" :agtype "lua"))
   "Mapping of programming lanaguage(s) to file extensions."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type
+  '(repeat
+    (plist
+     :options ((:language (string :tag "Language"))
+               (:ext (string :tag "Extension"))
+               (:agtype (string :tag "Ag type"))))))
 
 (defcustom dumb-jump-language-contexts
   '((:language "javascript" :type "function" :right "^(" :left nil)
@@ -655,21 +688,34 @@
 This helps limit the number of regular expressions we use
 if we know that if there's a '(' immediately to the right of
 a symbol then it's probably a function call"
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type
+  '(repeat
+    (plist
+     :options ((:language (string :tag "Language"))
+               (:type (choice (const "function")
+                              (const "variable")))
+               (:left (choice (const :tag "Anything" nil)
+                              (string :tag "Regular expression")))
+               (:right (choice (const :tag "Anything" nil)
+                               (string :tag "Regular expression")))))))
 
 (defcustom dumb-jump-project-denoters
   '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile" "PkgInfo" "-pkg.el")
   "Files and directories that signify a directory is a project root."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type '(repeat (string  :tag "Name")))
 
 (defcustom dumb-jump-default-project "~"
   "The default project to search within if a project root is not found."
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'string)
 
 (defcustom dumb-jump-after-jump-hook nil
   "Hooks called after jumping."
   :type 'hook
-  :group 'dumb-jump)
+  :group 'dumb-jump
+  :type 'hook)
 
 (defun dumb-jump-message-prin1 (str &rest args)
   "Helper function when debugging apply STR 'prin1-to-string' to all ARGS."
