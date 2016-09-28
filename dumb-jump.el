@@ -127,9 +127,11 @@
   :group 'dumb-jump)
 
 (defcustom dumb-jump-find-rules
-  '((:type "function" :supports ("ag" "grep") :language "elisp" :regex "\\\(defun\\s+JJJ\\j"
+  '((:type "function" :supports ("ag" "grep") :language "elisp" :regex "\\\((defun|cl-defun)\\s+JJJ\\j"
            ;; \\j usage see `dumb-jump-ag-word-boundary`
-           :tests ("(defun test (blah)" "(defun test\n") :not ("(defun test-asdf (blah)" "(defun test-blah\n"))
+           :tests ("(defun test (blah)" "(defun test\n" "(cl-defun test (blah)" "(cl-defun test\n")
+           :not ("(defun test-asdf (blah)" "(defun test-blah\n" "(cl-defun test-asdf (blah)" "(cl-defun test-blah\n"))
+
 
     (:type "variable" :supports ("ag" "grep") :language "elisp"
            :regex "\\\(defvar\\b\\s*JJJ\\j" :tests ("(defvar test " "(defvar test\n"))
@@ -145,7 +147,7 @@
 
     ;; variable in method signature
     (:type "variable" :supports ("ag") :language "elisp"
-           :regex "\\(defun\\s*.+\\\(?\\s*JJJ\\j\\s*\\\)?"
+           :regex "\\((defun|cl-defun)\\s*.+\\\(?\\s*JJJ\\j\\s*\\\)?"
            :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)")
            :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
