@@ -86,6 +86,16 @@ Dumb Jump will automatically look for a project root. If it's not finding one th
 * `(add-hook 'dumb-jump-after-jump-hook 'some-function)` to execute code after you jump
 * `(setq dumb-jump-selector 'ivy)` to use [ivy](https://github.com/abo-abo/swiper#ivy) instead of the default popup for multiple options.
 
+##### `use-package` example configuration.
+
+I personally no longer use the `dumb-jump-mode` keybindings that were inspired by IntelliJ's emacs bindings. I use `use-package` like so:
+
+    (use-package dumb-jump
+      :bind (("M-g o" . dumb-jump-go-other-window)
+             ("M-g j" . dumb-jump-go))
+      :config (setq dumb-jump-selector 'ivy)
+      :ensure)
+
 ## Why?
 
 I wanted "jump to definition" functionality to "just work" in emacs. I use IntelliJ for Java and this functionality is basically the only thing I miss when I switch back to emacs for work in other languages. There are certainly other packages that offer this type of functionality, but they all require significantly more configuration and are often limited to a particular language. An alternative may be worth setting up if you are in a specific project or language often (see [alternatives](#alternatives)).
