@@ -666,6 +666,8 @@
     (:language "php" :ext "php" :agtype "php")
     (:language "php" :ext "inc" :agtype "php")
     (:language "ruby" :ext "rb" :agtype "ruby")
+    (:language "ruby" :ext "haml" :agtype "ruby")
+    (:language "ruby" :ext "slim" :agtype "ruby")
     (:language "scala" :ext "scala" :agtype "scala")
     (:language "shell" :ext "sh" :agtype "shell")
     (:language "shell" :ext "bash" :agtype "shell")
