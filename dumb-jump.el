@@ -676,7 +676,7 @@
     (:language "python" :ext "py" :agtype "python")
     (:language "go" :ext "go" :agtype "go")
     (:language "lua" :ext "lua" :agtype "lua"))
-  "Mapping of programming lanaguage(s) to file extensions."
+  "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
   :type
   '(repeat
