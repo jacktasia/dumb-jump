@@ -417,6 +417,22 @@
            :regex "\\bJJJ\(\\\(.+\\\)\)*\\s*="
            :tests ("test = osc + 0.5;" "test(freq) = osc(freq) + 0.5;"))
 
+    ;; fortran
+    (:type "variable" :supports ("ag" "grep") :language "fortran"
+           :regex "\\s*\\bJJJ\\s*=[^=\\n]+"
+           :tests ("test = 1234")
+           :not ("if (test == 1234)"))
+
+    (:type "function" :supports ("ag" "grep") :language "fortran"
+           :regex "\\b(function|subroutine)\\s+JJJ\\b\\s*\\\("
+           :tests ("function test (foo)" "integer function test(foo)" "subroutine test (foo, bar)")
+           :not ("end function test" "end subroutine test"))
+
+    (:type "type" :supports ("ag" "grep") :language "fortran"
+           :regex "^\\s*module\\s+JJJ\\s*"
+           :tests ("module test")
+           :not ("end module test"))
+
     ;; go
     (:type "variable" :supports ("ag" "grep") :language "go"
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234 {"))
@@ -655,6 +671,14 @@
     (:language "coffeescript" :ext "coffee" :agtype "coffee")
     (:language "faust" :ext "dsp" :agtype nil)
     (:language "faust" :ext "lib" :agtype nil)
+    (:language "fortran" :ext "f" :agtype "fortran")
+    (:language "fortran" :ext "f77" :agtype "fortran")
+    (:language "fortran" :ext "f90" :agtype "fortran")
+    (:language "fortran" :ext "f95" :agtype "fortran")
+    (:language "fortran" :ext "f03" :agtype "fortran")
+    (:language "fortran" :ext "for" :agtype "fortran")
+    (:language "fortran" :ext "ftn" :agtype "fortran")
+    (:language "fortran" :ext "fpp" :agtype "fortran")
     (:language "javascript" :ext "js" :agtype "js")
     (:language "javascript" :ext "jsx" :agtype "js")
     (:language "javascript" :ext "html" :agtype "html")
