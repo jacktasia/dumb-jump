@@ -1176,8 +1176,8 @@ Ffrom the ROOT project CONFIG-FILE."
 (defun dumb-jump-parse-response-line (resp-line cur-file)
   "Parse a search program's single RESP-LINE for CUR-FILE into a list of (path line context)."
   (let* ((parts (--remove (string= it "")
-                          (s-split ":?[0-9]+:" resp-line)))
-         (line-num-raw (s-match ":?\\([0-9]+\\):" resp-line)))
+                          (s-split "\\(?:^\\|:\\)[0-9]+:"  resp-line)))
+         (line-num-raw (s-match "\\(?:^\\|:\\)\\([0-9]+\\):" resp-line)))
 
     (cond
      ;; fixes rare bug where context is blank  but file is defined "/somepath/file.txt:14:"

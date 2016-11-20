@@ -627,12 +627,15 @@
 
 (ert-deftest dumb-jump-parse-response-line-test ()
   (let ((t1 (dumb-jump-parse-response-line "/opt/test/foo.js:44: var test = 12;" "/opt/test/blah.js"))
+        (t1b (dumb-jump-parse-response-line "/path/to/file.f90:1701: subroutine test(foo)" "/path/to/file2.f90"))
         (t2 (dumb-jump-parse-response-line "47: var test = 13;" "/opt/test/blah.js"))
         (t3 (dumb-jump-parse-response-line "c:\\Users\\test\\foo.js:1: var test = 14;" "c:\\Users\\test\\foo.js"))
         (t4 (dumb-jump-parse-response-line "c:\\Users\\test\\foo2.js:2:test = {a:1,b:1};" "c:\\Users\\test\\foo.js"))
         (t5 (dumb-jump-parse-response-line "/opt/test/foo1.js:41: var test = {c:3, d: 4};" "/opt/test/b2.js")))
     ;; normal
     (should (equal t1 '("/opt/test/foo.js" "44" " var test = 12;")))
+    ;; normal fortran
+    (should (equal t1b '("/path/to/file.f90" "1701"  " subroutine test(foo)")))
     ;; no file name in response (searched single file)
     (should (equal t2 '("/opt/test/blah.js" "47" " var test = 13;")))
     ;; windows
