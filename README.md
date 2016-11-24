@@ -48,6 +48,10 @@ If you have any issues with the existing languages, or you want support for anot
 
 The recommended way to install Dumb Jump is via `package.el`. It's available on [MELPA](http://melpa.org/#/dumb-jump): <kbd>M-x</kbd> `package-install dumb-jump`
 
+#### Spacemacs
+
+If you're using an up-to-date Spacemacs, then you already have Dumb Jump by default just make sure you install `ag` (see below) to ensure you have the best experience.
+
 
 #### Installing `ag`
 
