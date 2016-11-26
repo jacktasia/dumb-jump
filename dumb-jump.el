@@ -24,7 +24,7 @@
 ;; Dumb Jump is an Emacs "jump to definition" package with support for multiple programming languages that favors
 ;; "just working" over speed or accuracy.  This means minimal -- and ideally zero -- configuration with absolutely
 ;; no stored indexes (TAGS) or persistent background processes.  Dumb Jump performs best with The Silver Searcher
-;; `ag` installed.  Dumb Jump requires at least GNU Emacs 24.3.
+;; `ag` or ripgrep `rg` installed.  Dumb Jump requires at least GNU Emacs 24.3.
 
 ;;; Code:
 (require 'etags)
@@ -1107,12 +1107,13 @@ When USE-TOOLTIP is t a tooltip jump preview will show instead."
          (result-count (length results)))
     (cond
      ((> fetch-time dumb-jump-max-find-time)
-      (dumb-jump-message "Took over %ss to find '%s'. Please install ag or add a .dumbjump file to '%s' with path exclusions"
-               (number-to-string dumb-jump-max-find-time) look-for proj-root))
+      (dumb-jump-message
+       "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
+       (number-to-string dumb-jump-max-find-time) look-for proj-root))
      ((eq issue 'unsaved)
       (dumb-jump-message "Please save your file before jumping."))
      ((eq issue 'nogrep)
-      (dumb-jump-message "Please install ag or grep!"))
+      (dumb-jump-message "Please install ag, rg, or grep!"))
      ((eq issue 'nosymbol)
       (dumb-jump-message "No symbol under point."))
      ((s-ends-with? " file" lang)
@@ -1373,9 +1374,9 @@ Ffrom the ROOT project CONFIG-FILE."
       (setq text (s-replace "\\j" boundary text))
       (when (eq variant 'gnu-grep)
         (setq text (s-replace "\\s" "[[:space:]]" text)))
+      (setq text (s-replace "JJJ" (regexp-quote look-for) text))
       (when (and (eq variant 'rg) (string-prefix-p "-" text))
         (setq text (concat "[-]" (substring text 1))))
-      (setq text (s-replace "JJJ" (regexp-quote look-for) text))
       text)))
 
 (defun dumb-jump-populate-regexes (look-for regexes variant)

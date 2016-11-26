@@ -3,6 +3,9 @@ before_install:
   - sudo add-apt-repository ppa:gekkio/ag -y
   - sudo apt-get -qq update
   - sudo apt-get install -y silversearcher-ag
+  - curl -fsSkL -o ripgrep.tar.gz https://github.com/BurntSushi/ripgrep/releases/download/0.3.1/ripgrep-0.3.1-x86_64-unknown-linux-musl.tar.gz
+  - tar -xvzf ripgrep.tar.gz
+  - export PATH="$PATH":"$PWD"/ripgrep-*/
   - curl -fsSkL https://gist.github.com/rejeep/ebcd57c3af83b049833b/raw > x.sh && source ./x.sh
   - evm install $EVM_EMACS --use --skip
   - cask
@@ -10,8 +13,10 @@ env:
   - EVM_EMACS=emacs-24.3-travis
   - EVM_EMACS=emacs-24.4-travis
   - EVM_EMACS=emacs-24.5-travis
+  - EVM_EMACS=emacs-25.1-travis
   - EVM_EMACS=emacs-git-snapshot-travis
 script:
+  - rg --version
   - ag --version
   - grep --version
   - emacs --version
