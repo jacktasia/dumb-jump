@@ -1370,12 +1370,12 @@ Ffrom the ROOT project CONFIG-FILE."
                         ((eq variant 'ag) dumb-jump-ag-word-boundary)
                         (t dumb-jump-grep-word-boundary))))
     (let ((text it))
-      (setq text (s-replace "JJJ" (regexp-quote look-for) text))
       (setq text (s-replace "\\j" boundary text))
       (when (eq variant 'gnu-grep)
         (setq text (s-replace "\\s" "[[:space:]]" text)))
       (when (and (eq variant 'rg) (string-prefix-p "-" text))
         (setq text (concat "[-]" (substring text 1))))
+      (setq text (s-replace "JJJ" (regexp-quote look-for) text))
       text)))
 
 (defun dumb-jump-populate-regexes (look-for regexes variant)
@@ -1465,7 +1465,9 @@ Ffrom the ROOT project CONFIG-FILE."
 
 (defun dumb-jump-get-rules-by-language (language)
   "Return a list of rules for the LANGUAGE."
-  (let* ((searcher (if (dumb-jump-use-ag?) "ag" "grep"))
+  (let* ((searcher (cond ((dumb-jump-use-rg?) "rg")
+                         ((dumb-jump-use-ag?) "ag")
+                         (t "grep")))
          (results (--filter (and
                              (string= (plist-get it ':language) language)
                              (member searcher (plist-get it ':supports)))
