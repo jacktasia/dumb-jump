@@ -72,7 +72,7 @@
 
 (ert-deftest dumb-jump-generate-cmd-include-args ()
   (let ((args (dumb-jump-get-ext-includes "javascript"))
-        (expected " --include \\*.js --include \\*.jsx --include \\*.html "))
+        (expected " --include \\*.js --include \\*.jsx --include \\*.vue --include \\*.html "))
     (should (string= expected args))))
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-test ()
@@ -765,6 +765,12 @@
     (should (equal t4 '("c:\\Users\\test\\foo2.js" "2" "test = {a:1,b:1};")))
     ;; normal w/ extra :
     (should (equal t5 '("/opt/test/foo1.js" "41" " var test = {c:3, d: 4};")))))
+
+(ert-deftest dumb-jump-agtype-test ()
+  (should (equal (dumb-jump-get-ag-type-by-language "python") '("python"))))
+
+(ert-deftest dumb-jump-rgtype-test ()
+  (should (equal (dumb-jump-get-rg-type-by-language "python") '("py"))))
 
 ;; react tests
 
