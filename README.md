@@ -50,7 +50,7 @@ The recommended way to install Dumb Jump is via `package.el`. It's available on 
 
 #### Spacemacs
 
-If you're using an up-to-date Spacemacs, then you already have Dumb Jump by default just make sure you install `ag` (see below) to ensure you have the best experience.
+If you're using an up-to-date Spacemacs, then you already have Dumb Jump by default just make sure you install `ag` or `rg` (see below) to ensure you have the best experience.
 
 
 #### Installing `ag` or `rg`
