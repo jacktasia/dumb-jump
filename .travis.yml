@@ -5,7 +5,7 @@ before_install:
   - sudo apt-get install -y silversearcher-ag
   - curl -fsSkL -o ripgrep.tar.gz https://github.com/BurntSushi/ripgrep/releases/download/0.3.1/ripgrep-0.3.1-x86_64-unknown-linux-musl.tar.gz
   - tar -xvzf ripgrep.tar.gz
-  - export PATH="$PATH":"$PWD"/ripgrep-*/
+  - export PATH="$PATH":"$PWD"/"$(echo ripgrep-*)"
   - curl -fsSkL https://gist.github.com/rejeep/ebcd57c3af83b049833b/raw > x.sh && source ./x.sh
   - evm install $EVM_EMACS --use --skip
   - cask
