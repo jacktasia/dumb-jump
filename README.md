@@ -9,10 +9,10 @@
 
 
 #### How  it works
-Dumb Jump uses [The Silver Searcher](https://github.com/ggreer/the_silver_searcher) `ag` (and falls back to `grep`) to find potential definitions of a function or variable under point. It uses a set of regular expressions based on the file extension, or `major-mode`, of the current buffer. Currently the `ag` matches are run through a shared set of heuristic methods to find the best candidate to jump to. If it can't decide it will present the user with a list in a pop-menu.
+Dumb Jump uses [The Silver Searcher](https://github.com/ggreer/the_silver_searcher) `ag`, [ripgrep](https://github.com/BurntSushi/ripgrep) `rg`, or `grep` to find potential definitions of a function or variable under point. It uses a set of regular expressions based on the file extension, or `major-mode`, of the current buffer. The matches are run through a shared set of heuristic methods to find the best candidate to jump to. If it can't decide it will present the user with a list in a pop-menu.
 
 #### Success Rate
-For the currently [supported languages](#supported-languages) it seems to do a good job of finding what you want. If you find a case where it does not work as expected do not hesitate to [open an issue](https://github.com/jacktasia/dumb-jump/issues). It can be slow if it needs to use `grep` and/or a project is large. Although it can be sped up by [installing `ag`](https://github.com/ggreer/the_silver_searcher#installing) and/or creating a `.dumbjump` file in your project's root directory with paths that should be excluded ([see configuration](#configuration)).
+For the currently [supported languages](#supported-languages) it seems to do a good job of finding what you want. If you find a case where it does not work as expected do not hesitate to [open an issue](https://github.com/jacktasia/dumb-jump/issues). It can be slow if it needs to use `grep` and/or a project is large. Although it can be sped up by [installing `ag`](https://github.com/ggreer/the_silver_searcher#installing) or [installing `rg`](https://github.com/BurntSushi/ripgrep#installation) and/or creating a `.dumbjump` file in your project's root directory with paths that should be excluded ([see configuration](#configuration)).
 
 
 ## Supported Languages
@@ -50,12 +50,12 @@ The recommended way to install Dumb Jump is via `package.el`. It's available on 
 
 #### Spacemacs
 
-If you're using an up-to-date Spacemacs, then you already have Dumb Jump by default just make sure you install `ag` (see below) to ensure you have the best experience.
+If you're using an up-to-date Spacemacs, then you already have Dumb Jump by default just make sure you install `ag` or `rg` (see below) to ensure you have the best experience.
 
 
-#### Installing `ag`
+#### Installing `ag` or `rg`
 
-Dumb Jump performs best with The Silver Searcher `ag` installed on your system. Please see their [install instructions](https://github.com/ggreer/the_silver_searcher#installing).
+Dumb Jump performs best with The Silver Searcher `ag` ([ag install instructions](https://github.com/ggreer/the_silver_searcher#installing)) or ripgrep `rg` ([rg install instructions](https://github.com/BurntSushi/ripgrep#installation)) installed on your system.
 
 ## Usage
 

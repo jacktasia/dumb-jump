@@ -72,40 +72,90 @@
 
 (ert-deftest dumb-jump-generate-cmd-include-args ()
   (let ((args (dumb-jump-get-ext-includes "javascript"))
-        (expected " --include \\*.js --include \\*.jsx --include \\*.html "))
+        (expected " --include \\*.js --include \\*.jsx --include \\*.vue --include \\*.html "))
     (should (string= expected args))))
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-test ()
-  (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn --include \\*.el --include \\*.el.gz -e '\\((defun|cl-defun)\\s+tester($|[^\\w-])' -e '\\(defvar\\b\\s*tester($|[^\\w-])' -e '\\(defcustom\\b\\s*tester($|[^\\w-])' -e '\\(setq\\b\\s*tester($|[^\\w-])' -e '\\(tester\\s+' -e '\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?' ."))
+  (let* ((system-type 'darwin)
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (expected-regexes (--map (concat " -e " (shell-quote-argument it))
+                                  '("\\((defun|cl-defun)\\s+tester($|[^\\w-])"
+                                    "\\(defvar\\b\\s*tester($|[^\\w-])"
+                                    "\\(defcustom\\b\\s*tester($|[^\\w-])"
+                                    "\\(setq\\b\\s*tester($|[^\\w-])"
+                                    "\\(tester\\s+"
+                                    "\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?")))
+         (expected (concat "LANG=C grep -REn --include \\*.el --include \\*.el.gz" (s-join "" expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
+(ert-deftest dumb-jump-generate-gnu-grep-command-no-ctx-test ()
+  (let* ((system-type 'darwin)
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (expected-regexes (--map (concat " -e " (shell-quote-argument it))
+                                  '("\\((defun|cl-defun)[[:space:]]+tester($|[^\\w-])"
+                                    "\\(defvar\\b[[:space:]]*tester($|[^\\w-])"
+                                    "\\(defcustom\\b[[:space:]]*tester($|[^\\w-])"
+                                    "\\(setq\\b[[:space:]]*tester($|[^\\w-])"
+                                    "\\(tester[[:space:]]+"
+                                    "\\((defun|cl-defun)[[:space:]]*.+\\(?[[:space:]]*tester($|[^\\w-])[[:space:]]*\\)?")))
+         (expected (concat "LANG=C grep -rEn" (s-join "" expected-regexes) " .")))
+    (should (string= expected  (dumb-jump-generate-gnu-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-test ()
-  (let ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "ag --nocolor --nogroup --elisp \"\\((defun|cl-defun)\\s+tester(?![\\w-])|\\(defvar\\b\\s*tester(?![\\w-])|\\(defcustom\\b\\s*tester(?![\\w-])|\\(setq\\b\\s*tester(?![\\w-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![\\w-])\\s*\\)?\" ."))
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester(?![\\w-])|\\(defvar\\b\\s*tester(?![\\w-])|\\(defcustom\\b\\s*tester(?![\\w-])|\\(setq\\b\\s*tester(?![\\w-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![\\w-])\\s*\\)?")
+         (expected (concat "ag --nocolor --nogroup --elisp " (shell-quote-argument expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
+(ert-deftest dumb-jump-generate-rg-command-no-ctx-test ()
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])|\\(defvar\\b\\s*tester($|[^\\w-])|\\(defcustom\\b\\s*tester($|[^\\w-])|\\(setq\\b\\s*tester($|[^\\w-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?")
+         (expected (concat "rg --color never --no-heading --line-number --type elisp " (shell-quote-argument expected-regexes) " .")))
+    (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
-  (let* ((dumb-jump-functions-only t)
-        (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-        (expected "LANG=C grep -REn -e '\\((defun|cl-defun)\\s+tester($|[^\\w-])' .")
-        (zexpected "LANG=C zgrep -REn -e '\\((defun|cl-defun)\\s+tester($|[^\\w-])' ."))
+  (let* ((system-type 'darwin)
+         (dumb-jump-functions-only t)
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])")
+         (expected (concat "LANG=C grep -REn -e " (shell-quote-argument expected-regexes) " ."))
+         (zexpected (concat "LANG=C zgrep -REn -e " (shell-quote-argument expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "" nil)))
     (should (string= zexpected  (dumb-jump-generate-grep-command  "tester" "blah.el.gz" "." regexes "" nil)))))
 
 (ert-deftest dumb-jump-generate-grep-command-with-ctx-test ()
-  (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
+  (let* ((system-type 'darwin)
+         (ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context nil) ;; overriding the default
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
-         (expected "LANG=C grep -REn -e '\\((defun|cl-defun)\\s+tester($|[^\\w-])' ."))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])")
+         (expected (concat "LANG=C grep -REn -e " (shell-quote-argument expected-regexes) " .")))
     ;; the point context being passed should match a "function" type so only the one command
     (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
 
+(ert-deftest dumb-jump-generate-grep-command-on-windows-test ()
+  (noflet ((shell-quote-argument (it) (format "'%s'" it)))
+    (let* ((system-type 'windows-nt)
+           (ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
+           (dumb-jump-ignore-context nil) ;; overriding the default
+           (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
+           (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])")
+           (expected (concat "grep -REn -e " (shell-quote-argument expected-regexes) " .")))
+      (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil))))))
+
 (ert-deftest dumb-jump-generate-grep-command-with-ctx-but-ignored-test ()
-  (let* ((ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
+  (let* ((system-type 'darwin)
+         (ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context t)
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
-         (expected "LANG=C grep -REn -e '\\((defun|cl-defun)\\s+tester($|[^\\w-])' -e '\\(defvar\\b\\s*tester($|[^\\w-])' -e '\\(defcustom\\b\\s*tester($|[^\\w-])' -e '\\(setq\\b\\s*tester($|[^\\w-])' -e '\\(tester\\s+' -e '\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?' ."))
+         (expected-regexes (--map (concat " -e " (shell-quote-argument it))
+                                  '("\\((defun|cl-defun)\\s+tester($|[^\\w-])"
+                                    "\\(defvar\\b\\s*tester($|[^\\w-])"
+                                    "\\(defcustom\\b\\s*tester($|[^\\w-])"
+                                    "\\(setq\\b\\s*tester($|[^\\w-])"
+                                    "\\(tester\\s+"
+                                    "\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?")))
+         (expected (concat "LANG=C grep -REn" (s-join "" expected-regexes) " .")))
 
     ;; the point context being passed is ignored so ALL should return
     (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
@@ -115,6 +165,9 @@
 
 (ert-deftest dumb-jump-generate-bad-ag-command-test ()
     (should (s-blank? (dumb-jump-generate-ag-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
+
+(ert-deftest dumb-jump-generate-bad-rg-command-test ()
+    (should (s-blank? (dumb-jump-generate-rg-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:(defvar some-var)")
@@ -137,6 +190,15 @@
 (ert-deftest dumb-jump-ag-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:1:(defvar some-var)")
          (parsed (dumb-jump-parse-ag-response resp "dumb-jump2.el" 28))
+         (test-result (nth 1 parsed)))
+    (should (= (plist-get test-result :diff) 2))
+    (should (= (length parsed) 2))
+    (should (string= (plist-get test-result :path) "dumb-jump.el"))
+    (should (= (plist-get test-result ':line) 26))))
+
+(ert-deftest dumb-jump-rg-parse-test ()
+  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:1:(defvar some-var)")
+         (parsed (dumb-jump-parse-rg-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
     (should (= (plist-get test-result :diff) 2))
     (should (= (length parsed) 2))
@@ -202,6 +264,11 @@
     (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
+(ert-deftest dumb-jump-test-rg-rules-test ()
+  (let ((rule-failures (dumb-jump-test-rg-rules)))
+    (dumb-jump-output-rule-test-failures rule-failures)
+    (should (= (length rule-failures) 0))))
+
 (ert-deftest dumb-jump-test-rules-not-test () ;; :not tests
   (let ((rule-failures (dumb-jump-test-rules t)))
     (dumb-jump-output-rule-test-failures rule-failures)
@@ -212,17 +279,29 @@
     (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
+(ert-deftest dumb-jump-test-rg-rules-not-test () ;; :not tests
+  (let ((rule-failures (dumb-jump-test-rg-rules t)))
+    (dumb-jump-output-rule-test-failures rule-failures)
+    (should (= (length rule-failures) 0))))
+
 (ert-deftest dumb-jump-test-rules-fail-test ()
-  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
          (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
          (rule-failures (dumb-jump-test-rules)))
     ;(message "%s" (prin1-to-string rule-failures))
     (should (= (length rule-failures) 1))))
 
 (ert-deftest dumb-jump-test-ag-rules-fail-test ()
-  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
          (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
          (rule-failures (dumb-jump-test-ag-rules)))
+    ;(message "%s" (prin1-to-string rule-failures))
+    (should (= (length rule-failures) 1))))
+
+(ert-deftest dumb-jump-test-rg-rules-fail-test ()
+  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+         (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
+         (rule-failures (dumb-jump-test-rg-rules)))
     ;(message "%s" (prin1-to-string rule-failures))
     (should (= (length rule-failures) 1))))
 
@@ -495,11 +574,11 @@
     (with-current-buffer (find-file-noselect txt-file t)
       (goto-char (point-min))
       (noflet ((dumb-jump-fetch-file-results ()
-                                        (sleep-for 0 300)
-                                        '()))
-               (with-mock
-                (mock (dumb-jump-message "Took over %ss to find '%s'. Please install ag or add a .dumbjump file to '%s' with path exclusions" * * *))
-                (dumb-jump-go))))))
+                 (sleep-for 0 300)
+                 '()))
+        (with-mock
+          (mock (dumb-jump-message "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions" * * *))
+          (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-message-handle-results-test ()
   (let ((results '((:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
@@ -516,6 +595,37 @@
      (mock (dumb-jump-prompt-user-for-choice "/code/redux" *))
      (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
 
+(ert-deftest dumb-jump-grep-installed?-bsd-test ()
+  (let ((dumb-jump--grep-installed? 'unset))
+    (with-mock
+     (mock (shell-command-to-string *) => "grep (BSD grep) 2.5.1-FreeBSD\n" :times 1)
+     (should (eq (dumb-jump-grep-installed?) 'bsd)))
+     ;; confirm memoization of the previous result
+     (should (eq (dumb-jump-grep-installed?) 'bsd))))
+
+(ert-deftest dumb-jump-grep-installed?-gnu-test ()
+  (let ((dumb-jump--grep-installed? 'unset))
+    (with-mock
+     (mock (shell-command-to-string *) => "grep (GNU grep) 2.4.2\n" :times 1)
+     (should (eq (dumb-jump-grep-installed?) 'gnu))
+     ;; confirm memoization of the previous result
+     (should (eq (dumb-jump-grep-installed?) 'gnu)))))
+
+(ert-deftest dumb-jump-ag-installed?-test ()
+  (let ((dumb-jump--ag-installed? 'unset))
+    (with-mock
+     (mock (shell-command-to-string *) => "ag version 0.33.0\n" :times 1)
+     (should (eq (dumb-jump-ag-installed?) t))
+     ;; confirm memoization of the previous result
+     (should (eq (dumb-jump-ag-installed?) t)))))
+
+(ert-deftest dumb-jump-rg-installed?-test ()
+  (let ((dumb-jump--rg-installed? 'unset))
+    (with-mock
+     (mock (shell-command-to-string *) => "ripgrep 0.3.1\n" :times 1)
+     (should (eq (dumb-jump-rg-installed?) t))
+     ;; confirm memoization of the previous result
+     (should (eq (dumb-jump-rg-installed?) t)))))
 
 (ert-deftest dumb-jump-go-unsaved-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
@@ -533,9 +643,10 @@
       (goto-char (point-min))
       (forward-char 13)
       (with-mock
+       (mock (dumb-jump-rg-installed?) => nil)
        (mock (dumb-jump-ag-installed?) => nil)
        (mock (dumb-jump-grep-installed?) => nil)
-       (mock (dumb-jump-message "Please install ag or grep!"))
+       (mock (dumb-jump-message "Please install ag, rg, or grep!"))
        (dumb-jump-go)))))
 
 (ert-deftest dumb-jump-go-nosymbol-test ()
@@ -555,6 +666,7 @@
 
 (ert-deftest dumb-jump-message-get-results-nogrep-test ()
   (with-mock
+   (mock (dumb-jump-rg-installed?) => nil)
    (mock (dumb-jump-ag-installed?) => nil)
    (mock (dumb-jump-grep-installed?) => nil)
    (let ((results (dumb-jump-get-results)))
@@ -572,9 +684,18 @@
    (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
      (dumb-jump-result-follow result t "src"))))
 
-(ert-deftest dumb-jump-populate-regexes-test ()
-  (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") nil) '("testvar\\s*=\\s*")))
-  (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") nil) '("\\$testvar\\s*=\\s*"))))
+(ert-deftest dumb-jump-populate-regexes-grep-test ()
+  (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'grep) '("testvar\\s*=\\s*")))
+  (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'grep) '("\\$testvar\\s*=\\s*"))))
+
+(ert-deftest dumb-jump-populate-regexes-ag-test ()
+  (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'ag) '("testvar\\s*=\\s*")))
+  (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'ag) '("\\$testvar\\s*=\\s*"))))
+
+(ert-deftest dumb-jump-populate-regexes-rg-test ()
+  (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'rg) '("testvar\\s*=\\s*")))
+  (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'rg) '("\\$testvar\\s*=\\s*")))
+  (should (equal (dumb-jump-populate-regexes "-testvar" '("JJJ\\s*=\\s*") 'rg) '("[-]testvar\\s*=\\s*"))))
 
 (ert-deftest dumb-jump-message-prin1-test ()
   (with-mock
@@ -644,6 +765,12 @@
     (should (equal t4 '("c:\\Users\\test\\foo2.js" "2" "test = {a:1,b:1};")))
     ;; normal w/ extra :
     (should (equal t5 '("/opt/test/foo1.js" "41" " var test = {c:3, d: 4};")))))
+
+(ert-deftest dumb-jump-agtype-test ()
+  (should (equal (dumb-jump-get-ag-type-by-language "python") '("python"))))
+
+(ert-deftest dumb-jump-rgtype-test ()
+  (should (equal (dumb-jump-get-rg-type-by-language "python") '("py"))))
 
 ;; react tests
 
