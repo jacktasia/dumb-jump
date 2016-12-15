@@ -3,6 +3,7 @@
 ;; Copyright (C) 2015-2016 jack angers
 ;; Author: jack angers
 ;; Version: 0.4.3
+;; Package-Version: 20161126.2045
 ;; Package-Requires: ((emacs "24.3") (f "0.17.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
@@ -55,9 +56,10 @@
 
 (defcustom dumb-jump-selector
   'popup
-  "Which selector to use when there is multiple choices.  `ivy` also supported."
+  "Which selector to use when there is multiple choices.  `ivy` and `helm' are also supported."
   :group 'dumb-jump
   :type '(choice (const :tag "Popup" popup)
+                 (const :tag "Helm" helm)
                  (const :tag "Ivy" other)))
 
 (defcustom dumb-jump-grep-prefix
@@ -932,9 +934,16 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
                                   (plist-get result :line)
                                   (s-trim (plist-get result :context))))
                         results)))
-    (if (and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
-      (dumb-jump-to-selected results choices (ivy-read "Jump to: " choices))
-      (dumb-jump-to-selected results choices (popup-menu* choices)))))
+    (cond
+     ((and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
+      (dumb-jump-to-selected results choices (ivy-read "Jump to: " choices)))
+     ((and (eq dumb-jump-selector 'helm) (fboundp 'helm))
+      (dumb-jump-to-selected results choices (helm :sources (helm-build-sync-source "Jump to:"
+                                                              :candidates choices
+                                                              :fuzzy-match t)
+                                                   :buffer "*helm dumb-jump*")))
+     (t
+      (dumb-jump-to-selected results choices (popup-menu* choices))))))
 
 (defun dumb-jump-get-project-root (filepath)
   "Keep looking at the parent dir of FILEPATH until a denoter file/dir is found."
