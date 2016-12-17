@@ -926,7 +926,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
           (dumb-jump-result-follow result))))
 
 (defun dumb-jump-prompt-user-for-choice (proj results)
-  "Put a PROJ's list of RESULTS in a 'popup-menu' (or ivy) for user to select.  Filters PROJ path from files for display."
+  "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy) for user to select.  Filters PROJ path from files for display."
   (let* ((choices (-map (lambda (result)
                           (format "%s:%s %s"
                                   (s-replace proj "" (plist-get result :path))
@@ -937,8 +937,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
      ((and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
       (dumb-jump-to-selected results choices (ivy-read "Jump to: " choices)))
      ((and (eq dumb-jump-selector 'helm) (fboundp 'helm))
-      (dumb-jump-to-selected results choices (helm :sources (helm-build-sync-source "Jump to:" :candidates choices :fuzzy-match t)
-                                                   :buffer "*helm dumb-jump*")))
+      (dumb-jump-to-selected results choices (helm :sources (helm-build-sync-source "Jump to: " :candidates choices))))
      (t
       (dumb-jump-to-selected results choices (popup-menu* choices))))))
 
