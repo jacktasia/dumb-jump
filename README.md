@@ -90,6 +90,7 @@ Dumb Jump will automatically look for a project root. If it's not finding one th
 * To support more languages and/or definition types use `add-to-list` on `dumb-jump-find-rules` (see source code).
 * `(add-hook 'dumb-jump-after-jump-hook 'some-function)` to execute code after you jump
 * `(setq dumb-jump-selector 'ivy)` to use [ivy](https://github.com/abo-abo/swiper#ivy) instead of the default popup for multiple options.
+* `(setq dumb-jump-selector 'helm)` to use [helm](https://github.com/emacs-helm/helm) instead of the default popup for multiple options.
 
 ##### `use-package` example configuration.
 
