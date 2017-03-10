@@ -834,3 +834,35 @@
       (with-mock
        (mock (dumb-jump-goto-file-line * 37 6))
        (should (string= js-file (dumb-jump-go)))))))
+
+;; c++ tests
+
+(ert-deftest dumb-jump-cpp-test1 ()
+  (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "test.cpp")))
+    (with-current-buffer (find-file-noselect cpp-file t)
+      (goto-char (point-min))
+      (forward-line 8)
+      (forward-char 14)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 3 6))
+       (should (string= cpp-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-cpp-test2 ()
+  (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "test.cpp")))
+    (with-current-buffer (find-file-noselect cpp-file t)
+      (goto-char (point-min))
+      (forward-line 8)
+      (forward-char 9)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 1 6))
+       (should (string= cpp-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-cpp-issue87 ()
+  (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "issue-87.cpp")))
+    (with-current-buffer (find-file-noselect cpp-file t)
+      (goto-char (point-min))
+      (forward-line 16)
+      (forward-char 12)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 6 18))
+       (should (string= cpp-file (dumb-jump-go)))))))
