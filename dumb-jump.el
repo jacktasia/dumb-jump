@@ -1153,6 +1153,35 @@ When USE-TOOLTIP is t a tooltip jump preview will show instead."
      ((= result-count 0)
       (dumb-jump-message "'%s' %s %s declaration not found." look-for (if (s-blank? lang) "with unknown language so" lang) (plist-get info :ctx-type))))))
 
+(defcustom dumb-jump-language-comments
+  '((:comment "//" :language "c++")
+    (:comment ";" :language "elisp"))
+  "List of one-line comments organized by language."
+  :group 'dumb-jump
+  :type
+  '(repeat
+    (plist
+     :options ((:comment string)
+               (:language string)))))
+
+(defun dumb-jump-get-comment-by-language (lang)
+  "Yields the one-line comment for the given LANG."
+  (let* ((entries (-distinct
+                   (--filter (string= (plist-get it :language) lang)
+                             dumb-jump-language-comments))))
+    (if (= 1 (length entries))
+        (plist-get (car entries) :comment)
+      nil)))
+
+(defun dumb-jump-filter-no-start-comments (results lang)
+  "Filter out RESULTS with a :context that starts with a comment
+given the LANG of the current file."
+  (let ((comment (dumb-jump-get-comment-by-language lang)))
+    (if comment
+        (-concat
+         (--filter (not (s-starts-with? comment (s-trim (plist-get it :context)))) results))
+      results)))
+
 (defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for use-tooltip)
   "Handle the searchers results.
 RESULTS is a list of property lists with the searcher's results.
@@ -1161,22 +1190,31 @@ CTX-TYPE is a string of the current context.
 LOOK-FOR is the symbol we're jumping for.
 USE-TOOLTIP shows a preview instead of jumping."
   "Figure which of the RESULTS to jump to. Favoring the CUR-FILE"
-  (let* ((match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
-        ; moves current file results to the front of the list
-        (match-cur-file-front (-concat
-                               (--filter (and (> (plist-get it :diff) 0)
-                                              (string= (plist-get it :path) cur-file)) match-sorted)
+  (let* ((lang (dumb-jump-get-language-by-filename cur-file))
+         (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
+         (match-no-comments (dumb-jump-filter-no-start-comments match-sorted lang))
 
-                               (--filter (and (<= (plist-get it :diff) 0)
-                                              (string= (plist-get it :path) cur-file)) match-sorted)
+         ;; Moves current file results to the front of the list
+         (match-cur-file-front (-concat
+                                (--filter (and (> (plist-get it :diff) 0)
+                                               (string= (plist-get it :path) cur-file))
+                                          match-no-comments)
 
-                               (--filter (not (string= (plist-get it :path) cur-file)) match-sorted)))
+                                (--filter (and (<= (plist-get it :diff) 0)
+                                               (string= (plist-get it :path) cur-file))
+                                          match-no-comments)
 
-        (matches (dumb-jump-current-file-results cur-file match-cur-file-front))
-        (var-to-jump (car matches))
-        ;; TODO: handle if ctx-type is null but ALL results are variable
-        (do-var-jump (and (or (= (length matches) 1) (string= ctx-type "variable") (string= ctx-type "")) var-to-jump)))
-    ;(dumb-jump-message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s | results: %s" ctx-type var-to-jump matches match-sorted results)
+                                (--filter (not (string= (plist-get it :path) cur-file))
+                                          match-no-comments)))
+
+         (matches (dumb-jump-current-file-results cur-file match-cur-file-front))
+         (var-to-jump (car matches))
+         ;; TODO: handle if ctx-type is null but ALL results are variable
+         (do-var-jump (and (or (= (length matches) 1)
+                               (string= ctx-type "variable")
+                               (string= ctx-type ""))
+                           var-to-jump)))
+    ;; (dumb-jump-message-prin1 "type: %s | jump? %s | matches: %s | sorted-no-comments: %s | results: %s" ctx-type var-to-jump matches match-no-comments results)
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump use-tooltip proj-root)
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front))))
@@ -1277,7 +1315,7 @@ Ffrom the ROOT project CONFIG-FILE."
          (cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
          (rawresults (shell-command-to-string cmd)))
 
-;    (dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
+    ;(dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
     (when (and (s-blank? rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
