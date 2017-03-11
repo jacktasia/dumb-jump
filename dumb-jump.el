@@ -987,7 +987,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
 (defun dumb-jump-get-results ()
   "Run dumb-jump-fetch-results if searcher installed, buffer is saved, and there's a symbol under point."
   (cond
-   ((not (or (dumb-jump-rg-installed?) (dumb-jump-ag-installed?) (dumb-jump-grep-installed?)))
+   ((not (or (dumb-jump-ag-installed?) (dumb-jump-rg-installed?) (dumb-jump-grep-installed?)))
     (dumb-jump-issue-result "nogrep"))
    ((or (string= (buffer-name) "*shell*")
         (string= (buffer-name) "*eshell*"))
@@ -1320,10 +1320,10 @@ Ffrom the ROOT project CONFIG-FILE."
   (and (not dumb-jump-force-grep) (dumb-jump-rg-installed?)))
 
 (defun dumb-jump-pick-grep-variant (parse)
-  (cond ((dumb-jump-use-rg?)
-         (if parse #'dumb-jump-parse-rg-response #'dumb-jump-generate-rg-command))
-        ((dumb-jump-use-ag?)
+  (cond ((dumb-jump-use-ag?)
          (if parse #'dumb-jump-parse-ag-response #'dumb-jump-generate-ag-command))
+	((dumb-jump-use-rg?)
+         (if parse #'dumb-jump-parse-rg-response #'dumb-jump-generate-rg-command))
         ((eq (dumb-jump-grep-installed?) 'gnu)
          (if parse #'dumb-jump-parse-grep-response #'dumb-jump-generate-gnu-grep-command))
         (t
