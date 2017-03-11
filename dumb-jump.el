@@ -1155,7 +1155,29 @@ When USE-TOOLTIP is t a tooltip jump preview will show instead."
 
 (defcustom dumb-jump-language-comments
   '((:comment "//" :language "c++")
-    (:comment ";" :language "elisp"))
+    (:comment ";" :language "elisp")
+    (:comment "//" :language "javascript")
+    (:comment "--" :language "haskell")
+    (:comment "--" :language "lua")
+    (:comment "//" :language "rust")
+    (:comment "//" :language "objc")
+    (:comment "//" :language "csharp")
+    (:comment "//" :language "java")
+    (:comment ";" :language "clojure")
+    (:comment "#" :language "coffeescript")
+    (:comment "//" :language "faust")
+    (:comment "!" :language "fortran")
+    (:comment "//" :language "go")
+    (:comment ";" :language "lisp")
+    (:comment "#" :language "perl")
+    (:comment "//" :language "php")
+    (:comment "#" :language "python")
+    (:comment "#" :language "r")
+    (:comment "#" :language "ruby")
+    (:comment "//" :language "scala")
+    (:comment ";" :language "scheme")
+    (:comment "#" :language "shell")
+    (:comment "//" :language "swift"))
   "List of one-line comments organized by language."
   :group 'dumb-jump
   :type
