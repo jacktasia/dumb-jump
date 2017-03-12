@@ -61,6 +61,12 @@
                  (const :tag "Helm" helm)
                  (const :tag "Ivy" other)))
 
+(defcustom dumb-jump-searcher
+  "ag"
+  "The default searcher to use ag, rg, or grep"
+  :group 'dumb-jump
+  :type 'string)
+
 (defcustom dumb-jump-grep-prefix
   "LANG=C"
   "Prefix to grep command.  Seemingly makes it faster for pure text."
@@ -1317,16 +1323,16 @@ Ffrom the ROOT project CONFIG-FILE."
 
 (defun dumb-jump-use-ag? ()
   "Return t if we should use ag.  That is, ag is installed AND grep is not forced."
-  (and (not dumb-jump-force-grep) (dumb-jump-ag-installed?)))
+  (and (not dumb-jump-force-grep) (dumb-jump-ag-installed?) (string= dumb-jump-searcher "ag")))
 
 (defun dumb-jump-use-rg? ()
   "Return t if we should use rg.  That is, rg is installed AND grep is not forced."
-  (and (not dumb-jump-force-grep) (dumb-jump-rg-installed?)))
+  (and (not dumb-jump-force-grep) (dumb-jump-rg-installed?)  (string= dumb-jump-searcher "rg")))
 
 (defun dumb-jump-pick-grep-variant (parse)
   (cond ((dumb-jump-use-ag?)
          (if parse #'dumb-jump-parse-ag-response #'dumb-jump-generate-ag-command))
-	((dumb-jump-use-rg?)
+        ((dumb-jump-use-rg?)
          (if parse #'dumb-jump-parse-rg-response #'dumb-jump-generate-rg-command))
         ((eq (dumb-jump-grep-installed?) 'gnu)
          (if parse #'dumb-jump-parse-grep-response #'dumb-jump-generate-gnu-grep-command))
