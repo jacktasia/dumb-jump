@@ -949,10 +949,14 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       dumb-jump-default-project)))
 
 (defun dumb-jump-get-config (dir)
-  "If a project denoter is in DIR then return it.  Otherwise nil."
-  (car (--filter
+  "If a project denoter is in DIR then return it, otherwise
+nil. However, if DIR contains a `.dumbjumpignore' it returns nil
+to keep looking for another root."
+  (if (f-exists? (f-join dir ".dumbjumpignore"))
+      nil
+    (car (--filter
           (f-exists? (f-join dir it))
-        dumb-jump-project-denoters)))
+          dumb-jump-project-denoters))))
 
 (defun dumb-jump-get-language (file)
   "Get language from FILE extension and then fallback to using 'major-mode' name."
