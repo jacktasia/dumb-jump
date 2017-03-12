@@ -91,6 +91,8 @@ Dumb Jump will automatically look for a project root. If it's not finding one th
 * `(add-hook 'dumb-jump-after-jump-hook 'some-function)` to execute code after you jump
 * `(setq dumb-jump-selector 'ivy)` to use [ivy](https://github.com/abo-abo/swiper#ivy) instead of the default popup for multiple options.
 * `(setq dumb-jump-selector 'helm)` to use [helm](https://github.com/emacs-helm/helm) instead of the default popup for multiple options.
+* `(setq dumb-jump-searcher "rg")` to set the search program Dumb Jump should use. If not set Dumb Jump will use `ag` over `rg` or `grep` (if all are installed). `dumb-jump-selector` is ultimately only necessary if you have all installed and want to force `rg` over `ag`.
+
 
 ##### `use-package` example configuration.
 
