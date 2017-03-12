@@ -188,7 +188,7 @@
 
     ;; c++
     (:type "function" :supports ("ag" "rg") :language "c++"
-           :regex "\\bJJJ(\\s|\\))*\\((\\w|[,&*.]|\\s)*(\\))\\s*(const|->|\\{|$)|typedef\\s+(\\w|[(*]|\\s)+JJJ(\\)|\\s)*\\("
+           :regex "\\bJJJ(\\s|\\))*\\((\\w|[,&*.<>]|\\s)*(\\))\\s*(const|->|\\{|$)|typedef\\s+(\\w|[(*]|\\s)+JJJ(\\)|\\s)*\\("
            :tests ("int test(){" "my_struct (*test)(int a, int b){" "auto MyClass::test ( Builder& reference, ) -> decltype( builder.func() ) {" "int test( int *random_argument) const {" "test::test() {" "typedef int (*test)(int);")
            :not ("return test();)" "int test(a, b);" "if( test() ) {" "else test();"))
 
@@ -987,7 +987,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
 (defun dumb-jump-get-results ()
   "Run dumb-jump-fetch-results if searcher installed, buffer is saved, and there's a symbol under point."
   (cond
-   ((not (or (dumb-jump-rg-installed?) (dumb-jump-ag-installed?) (dumb-jump-grep-installed?)))
+   ((not (or (dumb-jump-ag-installed?) (dumb-jump-rg-installed?) (dumb-jump-grep-installed?)))
     (dumb-jump-issue-result "nogrep"))
    ((or (string= (buffer-name) "*shell*")
         (string= (buffer-name) "*eshell*"))
@@ -1153,6 +1153,57 @@ When USE-TOOLTIP is t a tooltip jump preview will show instead."
      ((= result-count 0)
       (dumb-jump-message "'%s' %s %s declaration not found." look-for (if (s-blank? lang) "with unknown language so" lang) (plist-get info :ctx-type))))))
 
+(defcustom dumb-jump-language-comments
+  '((:comment "//" :language "c++")
+    (:comment ";" :language "elisp")
+    (:comment "//" :language "javascript")
+    (:comment "--" :language "haskell")
+    (:comment "--" :language "lua")
+    (:comment "//" :language "rust")
+    (:comment "//" :language "objc")
+    (:comment "//" :language "csharp")
+    (:comment "//" :language "java")
+    (:comment ";" :language "clojure")
+    (:comment "#" :language "coffeescript")
+    (:comment "//" :language "faust")
+    (:comment "!" :language "fortran")
+    (:comment "//" :language "go")
+    (:comment ";" :language "lisp")
+    (:comment "#" :language "perl")
+    (:comment "//" :language "php")
+    (:comment "#" :language "python")
+    (:comment "#" :language "r")
+    (:comment "#" :language "ruby")
+    (:comment "//" :language "scala")
+    (:comment ";" :language "scheme")
+    (:comment "#" :language "shell")
+    (:comment "//" :language "swift"))
+  "List of one-line comments organized by language."
+  :group 'dumb-jump
+  :type
+  '(repeat
+    (plist
+     :options ((:comment string)
+               (:language string)))))
+
+(defun dumb-jump-get-comment-by-language (lang)
+  "Yields the one-line comment for the given LANG."
+  (let* ((entries (-distinct
+                   (--filter (string= (plist-get it :language) lang)
+                             dumb-jump-language-comments))))
+    (if (= 1 (length entries))
+        (plist-get (car entries) :comment)
+      nil)))
+
+(defun dumb-jump-filter-no-start-comments (results lang)
+  "Filter out RESULTS with a :context that starts with a comment
+given the LANG of the current file."
+  (let ((comment (dumb-jump-get-comment-by-language lang)))
+    (if comment
+        (-concat
+         (--filter (not (s-starts-with? comment (s-trim (plist-get it :context)))) results))
+      results)))
+
 (defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for use-tooltip)
   "Handle the searchers results.
 RESULTS is a list of property lists with the searcher's results.
@@ -1161,22 +1212,31 @@ CTX-TYPE is a string of the current context.
 LOOK-FOR is the symbol we're jumping for.
 USE-TOOLTIP shows a preview instead of jumping."
   "Figure which of the RESULTS to jump to. Favoring the CUR-FILE"
-  (let* ((match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
-        ; moves current file results to the front of the list
-        (match-cur-file-front (-concat
-                               (--filter (and (> (plist-get it :diff) 0)
-                                              (string= (plist-get it :path) cur-file)) match-sorted)
+  (let* ((lang (dumb-jump-get-language-by-filename cur-file))
+         (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
+         (match-no-comments (dumb-jump-filter-no-start-comments match-sorted lang))
 
-                               (--filter (and (<= (plist-get it :diff) 0)
-                                              (string= (plist-get it :path) cur-file)) match-sorted)
+         ;; Moves current file results to the front of the list
+         (match-cur-file-front (-concat
+                                (--filter (and (> (plist-get it :diff) 0)
+                                               (string= (plist-get it :path) cur-file))
+                                          match-no-comments)
 
-                               (--filter (not (string= (plist-get it :path) cur-file)) match-sorted)))
+                                (--filter (and (<= (plist-get it :diff) 0)
+                                               (string= (plist-get it :path) cur-file))
+                                          match-no-comments)
 
-        (matches (dumb-jump-current-file-results cur-file match-cur-file-front))
-        (var-to-jump (car matches))
-        ;; TODO: handle if ctx-type is null but ALL results are variable
-        (do-var-jump (and (or (= (length matches) 1) (string= ctx-type "variable") (string= ctx-type "")) var-to-jump)))
-    ;(dumb-jump-message-prin1 "type: %s | jump? %s | matches: %s | sorted: %s | results: %s" ctx-type var-to-jump matches match-sorted results)
+                                (--filter (not (string= (plist-get it :path) cur-file))
+                                          match-no-comments)))
+
+         (matches (dumb-jump-current-file-results cur-file match-cur-file-front))
+         (var-to-jump (car matches))
+         ;; TODO: handle if ctx-type is null but ALL results are variable
+         (do-var-jump (and (or (= (length matches) 1)
+                               (string= ctx-type "variable")
+                               (string= ctx-type ""))
+                           var-to-jump)))
+    ;; (dumb-jump-message-prin1 "type: %s | jump? %s | matches: %s | sorted-no-comments: %s | results: %s" ctx-type var-to-jump matches match-no-comments results)
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump use-tooltip proj-root)
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front))))
@@ -1260,10 +1320,10 @@ Ffrom the ROOT project CONFIG-FILE."
   (and (not dumb-jump-force-grep) (dumb-jump-rg-installed?)))
 
 (defun dumb-jump-pick-grep-variant (parse)
-  (cond ((dumb-jump-use-rg?)
-         (if parse #'dumb-jump-parse-rg-response #'dumb-jump-generate-rg-command))
-        ((dumb-jump-use-ag?)
+  (cond ((dumb-jump-use-ag?)
          (if parse #'dumb-jump-parse-ag-response #'dumb-jump-generate-ag-command))
+	((dumb-jump-use-rg?)
+         (if parse #'dumb-jump-parse-rg-response #'dumb-jump-generate-rg-command))
         ((eq (dumb-jump-grep-installed?) 'gnu)
          (if parse #'dumb-jump-parse-grep-response #'dumb-jump-generate-gnu-grep-command))
         (t
@@ -1277,7 +1337,7 @@ Ffrom the ROOT project CONFIG-FILE."
          (cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
          (rawresults (shell-command-to-string cmd)))
 
-;    (dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
+    ;(dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
     (when (and (s-blank? rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))

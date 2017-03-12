@@ -259,30 +259,34 @@
     (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
-(ert-deftest dumb-jump-test-ag-rules-test ()
-  (let ((rule-failures (dumb-jump-test-ag-rules)))
-    (dumb-jump-output-rule-test-failures rule-failures)
-    (should (= (length rule-failures) 0))))
+(when (dumb-jump-ag-installed?)
+  (ert-deftest dumb-jump-test-ag-rules-test ()
+    (let ((rule-failures (dumb-jump-test-ag-rules)))
+      (dumb-jump-output-rule-test-failures rule-failures)
+      (should (= (length rule-failures) 0)))))
 
-(ert-deftest dumb-jump-test-rg-rules-test ()
-  (let ((rule-failures (dumb-jump-test-rg-rules)))
-    (dumb-jump-output-rule-test-failures rule-failures)
-    (should (= (length rule-failures) 0))))
+(when (dumb-jump-rg-installed?)
+  (ert-deftest dumb-jump-test-rg-rules-test ()
+    (let ((rule-failures (dumb-jump-test-rg-rules)))
+      (dumb-jump-output-rule-test-failures rule-failures)
+      (should (= (length rule-failures) 0)))))
 
 (ert-deftest dumb-jump-test-rules-not-test () ;; :not tests
   (let ((rule-failures (dumb-jump-test-rules t)))
     (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
-(ert-deftest dumb-jump-test-ag-rules-not-test () ;; :not tests
-  (let ((rule-failures (dumb-jump-test-ag-rules t)))
+(when (dumb-jump-ag-installed?)
+  (ert-deftest dumb-jump-test-ag-rules-not-test () ;; :not tests
+    (let ((rule-failures (dumb-jump-test-ag-rules t)))
     (dumb-jump-output-rule-test-failures rule-failures)
-    (should (= (length rule-failures) 0))))
+    (should (= (length rule-failures) 0)))))
 
-(ert-deftest dumb-jump-test-rg-rules-not-test () ;; :not tests
-  (let ((rule-failures (dumb-jump-test-rg-rules t)))
-    (dumb-jump-output-rule-test-failures rule-failures)
-    (should (= (length rule-failures) 0))))
+(when (dumb-jump-rg-installed?)
+  (ert-deftest dumb-jump-test-rg-rules-not-test () ;; :not tests
+    (let ((rule-failures (dumb-jump-test-rg-rules t)))
+      (dumb-jump-output-rule-test-failures rule-failures)
+      (should (= (length rule-failures) 0)))))
 
 (ert-deftest dumb-jump-test-rules-fail-test ()
   (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
@@ -291,19 +295,21 @@
     ;(message "%s" (prin1-to-string rule-failures))
     (should (= (length rule-failures) 1))))
 
-(ert-deftest dumb-jump-test-ag-rules-fail-test ()
-  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
-         (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
-         (rule-failures (dumb-jump-test-ag-rules)))
-    ;(message "%s" (prin1-to-string rule-failures))
-    (should (= (length rule-failures) 1))))
+(when (dumb-jump-ag-installed?)
+  (ert-deftest dumb-jump-test-ag-rules-fail-test ()
+    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
+	   (rule-failures (dumb-jump-test-ag-rules)))
+					;(message "%s" (prin1-to-string rule-failures))
+      (should (= (length rule-failures) 1)))))
 
-(ert-deftest dumb-jump-test-rg-rules-fail-test ()
-  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
-         (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
-         (rule-failures (dumb-jump-test-rg-rules)))
-    ;(message "%s" (prin1-to-string rule-failures))
-    (should (= (length rule-failures) 1))))
+(when (dumb-jump-rg-installed?)
+  (ert-deftest dumb-jump-test-rg-rules-fail-test ()
+    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
+	   (rule-failures (dumb-jump-test-rg-rules)))
+					;(message "%s" (prin1-to-string rule-failures))
+      (should (= (length rule-failures) 1)))))
 
 (ert-deftest dumb-jump-match-test ()
   (should (not (dumb-jump-re-match nil "asdf")))
@@ -834,3 +840,35 @@
       (with-mock
        (mock (dumb-jump-goto-file-line * 37 6))
        (should (string= js-file (dumb-jump-go)))))))
+
+;; c++ tests
+
+(ert-deftest dumb-jump-cpp-test1 ()
+  (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "test.cpp")))
+    (with-current-buffer (find-file-noselect cpp-file t)
+      (goto-char (point-min))
+      (forward-line 8)
+      (forward-char 14)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 3 6))
+       (should (string= cpp-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-cpp-test2 ()
+  (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "test.cpp")))
+    (with-current-buffer (find-file-noselect cpp-file t)
+      (goto-char (point-min))
+      (forward-line 8)
+      (forward-char 9)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 1 6))
+       (should (string= cpp-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-cpp-issue87 ()
+  (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "issue-87.cpp")))
+    (with-current-buffer (find-file-noselect cpp-file t)
+      (goto-char (point-min))
+      (forward-line 16)
+      (forward-char 12)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 6 18))
+       (should (string= cpp-file (dumb-jump-go)))))))
