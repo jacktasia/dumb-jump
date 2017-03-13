@@ -901,3 +901,14 @@
       (with-mock
        (mock (dumb-jump-goto-file-line * 4 6))
        (should (string= header-file (dumb-jump-go-prefer-external)))))))
+
+(ert-deftest dumb-jump-prefer-external-other-window ()
+  (let ((main-file (f-join test-data-dir-proj1 "src" "cpp" "external.cpp"))
+        (header-file (f-join test-data-dir-proj1 "src" "cpp" "external.h")))
+    (with-current-buffer (find-file-noselect main-file t)
+      (goto-char (point-min))
+      (forward-line 6)
+      (forward-char 2)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 4 6))
+       (should (string= header-file (dumb-jump-go-prefer-external-other-window)))))))
