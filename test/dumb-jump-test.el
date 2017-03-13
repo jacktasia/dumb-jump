@@ -602,7 +602,7 @@
                    (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
     (with-mock
      (mock (dumb-jump-goto-file-line "src/file.js" 62 4))
-     (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
+     (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil nil))))
 
 (ert-deftest dumb-jump-message-handle-results-choices-test ()
   (let ((results '((:path "src/file2.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
@@ -610,7 +610,7 @@
                    (:path "src/file2.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
     (with-mock
      (mock (dumb-jump-prompt-user-for-choice "/code/redux" *))
-     (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil))))
+     (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil nil))))
 
 (ert-deftest dumb-jump-grep-installed?-bsd-test ()
   (let ((dumb-jump--grep-installed? 'unset))
@@ -888,3 +888,16 @@
       (with-mock
        (mock (dumb-jump-goto-file-line * 6 6))
        (should (string= header-file (dumb-jump-go)))))))
+
+;; This test makes sure that even though there's a local match it will jump to the external file
+;; match instead.
+(ert-deftest dumb-jump-prefer-external ()
+  (let ((main-file (f-join test-data-dir-proj1 "src" "cpp" "external.cpp"))
+        (header-file (f-join test-data-dir-proj1 "src" "cpp" "external.h")))
+    (with-current-buffer (find-file-noselect main-file t)
+      (goto-char (point-min))
+      (forward-line 6)
+      (forward-char 2)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 4 6))
+       (should (string= header-file (dumb-jump-go-prefer-external)))))))

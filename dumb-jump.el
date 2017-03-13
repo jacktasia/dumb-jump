@@ -1127,9 +1127,24 @@ of project configuraiton."
         (dumb-jump-go)))
 
 ;;;###autoload
-(defun dumb-jump-go (&optional use-tooltip)
+(defun dumb-jump-go-prefer-external ()
+  "Like dumb-jump-go but prefer external matches from the current file."
+  (interactive)
+  (dumb-jump-go nil t))
+
+;;;###autoload
+(defun dumb-jump-go-prefer-external-other-window ()
+  "Like dumb-jump-go-prefer-external but use 'find-file-other-window' instead of 'find-file'."
+  (interactive)
+  (let ((dumb-jump-window 'other))
+    (dumb-jump-go-prefer-external)))
+
+;;;###autoload
+(defun dumb-jump-go (&optional use-tooltip prefer-external)
   "Go to the function/variable declaration for thing at point.
-When USE-TOOLTIP is t a tooltip jump preview will show instead."
+When USE-TOOLTIP is t a tooltip jump preview will show instead.
+When PREFER-EXTERNAL is t it will sort external matches before
+current file."
   (interactive "P")
   (let* ((start-time (float-time))
          (info (dumb-jump-get-results))
@@ -1159,7 +1174,8 @@ When USE-TOOLTIP is t a tooltip jump preview will show instead."
      ((> result-count 1)
       ;; multiple results so let the user pick from a list
       ;; unless the match is in the current file
-      (dumb-jump-handle-results results (plist-get info :file) proj-root (plist-get info :ctx-type) look-for use-tooltip))
+      (dumb-jump-handle-results results (plist-get info :file) proj-root (plist-get info :ctx-type)
+                                look-for use-tooltip prefer-external))
      ((= result-count 0)
       (dumb-jump-message "'%s' %s %s declaration not found." look-for (if (s-blank? lang) "with unknown language so" lang) (plist-get info :ctx-type))))))
 
@@ -1214,39 +1230,50 @@ given the LANG of the current file."
          (--filter (not (s-starts-with? comment (s-trim (plist-get it :context)))) results))
       results)))
 
-(defun dumb-jump-handle-results (results cur-file proj-root ctx-type look-for use-tooltip)
+(defun dumb-jump-handle-results
+    (results cur-file proj-root ctx-type look-for use-tooltip prefer-external)
   "Handle the searchers results.
 RESULTS is a list of property lists with the searcher's results.
 CUR-FILE is the current file within PROJ-ROOT.
 CTX-TYPE is a string of the current context.
 LOOK-FOR is the symbol we're jumping for.
-USE-TOOLTIP shows a preview instead of jumping."
+USE-TOOLTIP shows a preview instead of jumping.
+PREFER-EXTERNAL will sort current file last."
   "Figure which of the RESULTS to jump to. Favoring the CUR-FILE"
   (let* ((lang (dumb-jump-get-language-by-filename cur-file))
          (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
          (match-no-comments (dumb-jump-filter-no-start-comments match-sorted lang))
 
-         ;; Moves current file results to the front of the list
-         (match-cur-file-front (-concat
-                                (--filter (and (> (plist-get it :diff) 0)
-                                               (string= (plist-get it :path) cur-file))
-                                          match-no-comments)
+         ;; Moves current file results to the front of the list, unless PREFER-EXTERNAL then put
+         ;; them last.
+         (match-cur-file-front
+          (-concat
+           (--filter (and (> (plist-get it :diff) 0)
+                          (and (string= (plist-get it :path) cur-file)
+                               (not prefer-external)))
+                     match-no-comments)
+           (--filter (and (<= (plist-get it :diff) 0)
+                          (and (string= (plist-get it :path) cur-file)
+                               (not prefer-external)))
+                     match-no-comments)
+           (--filter (not (and (string= (plist-get it :path) cur-file)
+                               (not prefer-external)))
+                     match-no-comments)))
 
-                                (--filter (and (<= (plist-get it :diff) 0)
-                                               (string= (plist-get it :path) cur-file))
-                                          match-no-comments)
+         (matches
+          (if (not prefer-external)
+              (dumb-jump-current-file-results cur-file match-cur-file-front)
+            match-cur-file-front))
 
-                                (--filter (not (string= (plist-get it :path) cur-file))
-                                          match-no-comments)))
-
-         (matches (dumb-jump-current-file-results cur-file match-cur-file-front))
          (var-to-jump (car matches))
          ;; TODO: handle if ctx-type is null but ALL results are variable
          (do-var-jump (and (or (= (length matches) 1)
                                (string= ctx-type "variable")
                                (string= ctx-type ""))
                            var-to-jump)))
-    ;; (dumb-jump-message-prin1 "type: %s | jump? %s | matches: %s | sorted-no-comments: %s | results: %s" ctx-type var-to-jump matches match-no-comments results)
+    ;; (dumb-jump-message-prin1
+    ;;  "type: %s | jump? %s | matches: %s | sorted-no-comments: %s | results: %s | prefer external: %s"
+    ;;  ctx-type var-to-jump matches match-no-comments results prefer-external)
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump use-tooltip proj-root)
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front))))
