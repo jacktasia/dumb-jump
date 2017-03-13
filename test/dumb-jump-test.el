@@ -14,6 +14,7 @@
 (setq test-data-dir (f-expand "./test/data"))
 (setq test-data-dir-elisp (f-join test-data-dir "proj2-elisp"))
 (setq test-data-dir-proj1 (f-join test-data-dir "proj1"))
+(setq test-data-dir-multiproj (f-join test-data-dir "multiproj"))
 
 (ert-deftest data-dir-exists-test ()
   (should (f-dir? test-data-dir)))
@@ -872,3 +873,18 @@
       (with-mock
        (mock (dumb-jump-goto-file-line * 6 18))
        (should (string= cpp-file (dumb-jump-go)))))))
+
+;; This test verifies that having ".dumbjumpignore" files in the two sub-projects will make it find
+;; the "multiproj" folder as project root since it has a ".dumbjump" file. The two sub-projects have
+;; a dummy ".git" folder to signify it as a repository that would normally become the root without
+;; the ignore file.
+(ert-deftest dumb-jump-multiproj ()
+  (let ((main-file (f-join test-data-dir-multiproj "subproj1" "main.cc"))
+        (header-file (f-join test-data-dir-multiproj "subproj2" "header.h")))
+    (with-current-buffer (find-file-noselect main-file t)
+      (goto-char (point-min))
+      (forward-line 3)
+      (forward-char 18)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 6 6))
+       (should (string= header-file (dumb-jump-go)))))))
