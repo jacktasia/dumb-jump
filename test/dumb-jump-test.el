@@ -114,6 +114,12 @@
          (expected (concat "rg --color never --no-heading --line-number --type elisp " (shell-quote-argument expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
+(ert-deftest dumb-jump-generate-git-grep-command-no-ctx-test ()
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])|\\(defvar\\b\\s*tester($|[^\\w-])|\\(defcustom\\b\\s*tester($|[^\\w-])|\\(setq\\b\\s*tester($|[^\\w-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?")
+         (expected (concat "git grep --color=never --line-number -E " (shell-quote-argument expected-regexes) " -- .")))
+    (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
   (let* ((system-type 'darwin)
          (dumb-jump-functions-only t)
@@ -168,7 +174,10 @@
     (should (s-blank? (dumb-jump-generate-ag-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
 
 (ert-deftest dumb-jump-generate-bad-rg-command-test ()
-    (should (s-blank? (dumb-jump-generate-rg-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
+  (should (s-blank? (dumb-jump-generate-rg-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
+
+(ert-deftest dumb-jump-generate-bad-git-grep-command-test ()
+    (should (s-blank? (dumb-jump-generate-git-grep-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:(defvar some-var)")
@@ -200,6 +209,15 @@
 (ert-deftest dumb-jump-rg-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:1:(defvar some-var)")
          (parsed (dumb-jump-parse-rg-response resp "dumb-jump2.el" 28))
+         (test-result (nth 1 parsed)))
+    (should (= (plist-get test-result :diff) 2))
+    (should (= (length parsed) 2))
+    (should (string= (plist-get test-result :path) "dumb-jump.el"))
+    (should (= (plist-get test-result ':line) 26))))
+
+(ert-deftest dumb-jump-git-grep-parse-test ()
+  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:1:(defvar some-var)")
+         (parsed (dumb-jump-parse-git-grep-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
     (should (= (plist-get test-result :diff) 2))
     (should (= (length parsed) 2))
@@ -272,6 +290,12 @@
       (dumb-jump-output-rule-test-failures rule-failures)
       (should (= (length rule-failures) 0)))))
 
+(when (dumb-jump-git-grep-installed?)
+  (ert-deftest dumb-jump-test-git-grep-rules-test ()
+    (let ((rule-failures (dumb-jump-test-git-grep-rules)))
+      (dumb-jump-output-rule-test-failures rule-failures)
+      (should (= (length rule-failures) 0)))))
+
 (ert-deftest dumb-jump-test-rules-not-test () ;; :not tests
   (let ((rule-failures (dumb-jump-test-rules t)))
     (dumb-jump-output-rule-test-failures rule-failures)
@@ -290,7 +314,7 @@
       (should (= (length rule-failures) 0)))))
 
 (ert-deftest dumb-jump-test-rules-fail-test ()
-  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
          (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
          (rule-failures (dumb-jump-test-rules)))
     ;(message "%s" (prin1-to-string rule-failures))
@@ -298,19 +322,33 @@
 
 (when (dumb-jump-ag-installed?)
   (ert-deftest dumb-jump-test-ag-rules-fail-test ()
-    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
-	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
-	   (rule-failures (dumb-jump-test-ag-rules)))
-					;(message "%s" (prin1-to-string rule-failures))
+    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+           (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
+           (rule-failures (dumb-jump-test-ag-rules)))
+                                        ;(message "%s" (prin1-to-string rule-failures))
       (should (= (length rule-failures) 1)))))
 
 (when (dumb-jump-rg-installed?)
   (ert-deftest dumb-jump-test-rg-rules-fail-test ()
-    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
 	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
 	   (rule-failures (dumb-jump-test-rg-rules)))
 					;(message "%s" (prin1-to-string rule-failures))
       (should (= (length rule-failures) 1)))))
+
+(when (dumb-jump-git-grep-installed?)
+  (ert-deftest dumb-jump-test-git-grep-rules-fail-test ()
+    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
+	   (rule-failures (dumb-jump-test-git-grep-rules)))
+					(message "%s" (prin1-to-string rule-failures))
+                                        (should (= (length rule-failures) 1)))))
+
+(when (dumb-jump-git-grep-installed?)
+  (ert-deftest dumb-jump-test-git-grep-rules-not-test () ;; :not tests
+    (let ((rule-failures (dumb-jump-test-git-grep-rules t)))
+    (dumb-jump-output-rule-test-failures rule-failures)
+    (should (= (length rule-failures) 0)))))
 
 (ert-deftest dumb-jump-match-test ()
   (should (not (dumb-jump-re-match nil "asdf")))
@@ -644,6 +682,14 @@
      ;; confirm memoization of the previous result
      (should (eq (dumb-jump-rg-installed?) t)))))
 
+(ert-deftest dumb-jump-git-grep-installed?-test ()
+  (let ((dumb-jump--git-grep-installed? 'unset))
+    (with-mock
+     (mock (shell-command-to-string *) => "fatal: no pattern given\n" :times 1)
+     (should (eq (dumb-jump-git-grep-installed?) t))
+     ;; confirm memoization of the previous result
+     (should (eq (dumb-jump-git-grep-installed?) t)))))
+
 (ert-deftest dumb-jump-go-unsaved-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
@@ -662,8 +708,9 @@
       (with-mock
        (mock (dumb-jump-rg-installed?) => nil)
        (mock (dumb-jump-ag-installed?) => nil)
+       (mock (dumb-jump-git-grep-installed?) => nil)
        (mock (dumb-jump-grep-installed?) => nil)
-       (mock (dumb-jump-message "Please install ag, rg, or grep!"))
+       (mock (dumb-jump-message "Please install ag, rg, git grep or grep!"))
        (dumb-jump-go)))))
 
 (ert-deftest dumb-jump-go-nosymbol-test ()
@@ -685,6 +732,7 @@
   (with-mock
    (mock (dumb-jump-rg-installed?) => nil)
    (mock (dumb-jump-ag-installed?) => nil)
+   (mock (dumb-jump-git-grep-installed?) => nil)
    (mock (dumb-jump-grep-installed?) => nil)
    (let ((results (dumb-jump-get-results)))
      (should (eq (plist-get results :issue) 'nogrep)))))
@@ -713,6 +761,10 @@
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'rg) '("testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'rg) '("\\$testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "-testvar" '("JJJ\\s*=\\s*") 'rg) '("[-]testvar\\s*=\\s*"))))
+
+(ert-deftest dumb-jump-populate-regexes-git-grep-test ()
+  (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'git-grep) '("testvar\\s*=\\s*")))
+  (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'git-grep) '("\\$testvar\\s*=\\s*"))))
 
 (ert-deftest dumb-jump-message-prin1-test ()
   (with-mock
@@ -888,3 +940,12 @@
       (with-mock
        (mock (dumb-jump-goto-file-line * 6 6))
        (should (string= header-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-filter-no-start-comments ()
+  (should (equal '((:context "yield me"))
+                 (dumb-jump-filter-no-start-comments '((:context "// filter me out")
+                                                       (:context "yield me")) "c++"))))
+
+(ert-deftest dumb-jump-filter-no-start-comments-unknown-language ()
+  (should (equal nil (dumb-jump-filter-no-start-comments '() "unknownlanguage"))))
+
