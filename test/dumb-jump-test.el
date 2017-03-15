@@ -114,6 +114,12 @@
          (expected (concat "rg --color never --no-heading --line-number --type elisp " (shell-quote-argument expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
+(ert-deftest dumb-jump-generate-git-grep-command-no-ctx-test ()
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])|\\(defvar\\b\\s*tester($|[^\\w-])|\\(defcustom\\b\\s*tester($|[^\\w-])|\\(setq\\b\\s*tester($|[^\\w-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?")
+         (expected (concat "git grep --color=never --line-number -E " (shell-quote-argument expected-regexes) " -- .")))
+    (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
   (let* ((system-type 'darwin)
          (dumb-jump-functions-only t)
@@ -676,6 +682,14 @@
      ;; confirm memoization of the previous result
      (should (eq (dumb-jump-rg-installed?) t)))))
 
+(ert-deftest dumb-jump-git-grep-installed?-test ()
+  (let ((dumb-jump--git-grep-installed? 'unset))
+    (with-mock
+     (mock (shell-command-to-string *) => "fatal: no pattern given\n" :times 1)
+     (should (eq (dumb-jump-git-grep-installed?) t))
+     ;; confirm memoization of the previous result
+     (should (eq (dumb-jump-git-grep-installed?) t)))))
+
 (ert-deftest dumb-jump-go-unsaved-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
@@ -747,6 +761,10 @@
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'rg) '("testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'rg) '("\\$testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "-testvar" '("JJJ\\s*=\\s*") 'rg) '("[-]testvar\\s*=\\s*"))))
+
+(ert-deftest dumb-jump-populate-regexes-git-grep-test ()
+  (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'git-grep) '("testvar\\s*=\\s*")))
+  (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'git-grep) '("\\$testvar\\s*=\\s*"))))
 
 (ert-deftest dumb-jump-message-prin1-test ()
   (with-mock
