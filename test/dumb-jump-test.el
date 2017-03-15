@@ -324,7 +324,13 @@
 	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
 	   (rule-failures (dumb-jump-test-git-grep-rules)))
 					(message "%s" (prin1-to-string rule-failures))
-      (should (= (length rule-failures) 1)))))
+                                        (should (= (length rule-failures) 1)))))
+
+(when (dumb-jump-git-grep-installed?)
+  (ert-deftest dumb-jump-test-git-grep-rules-not-test () ;; :not tests
+    (let ((rule-failures (dumb-jump-test-git-grep-rules t)))
+    (dumb-jump-output-rule-test-failures rule-failures)
+    (should (= (length rule-failures) 0)))))
 
 (ert-deftest dumb-jump-match-test ()
   (should (not (dumb-jump-re-match nil "asdf")))
