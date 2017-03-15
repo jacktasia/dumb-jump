@@ -1388,9 +1388,7 @@ Ffrom the ROOT project CONFIG-FILE."
 
 (defun dumb-jump-use-git-grep? ()
   "Return t if we should use git-grep.  That is, git-grep is installed AND grep is not forced."
-  (and (not dumb-jump-force-grep)
-       (dumb-jump-git-grep-installed?)
-       (string= dumb-jump-searcher "git-grep")))
+  (and (not dumb-jump-force-grep) (dumb-jump-git-grep-installed?) (string= dumb-jump-searcher "git-grep")))
 
 (defun dumb-jump-pick-grep-variant (parse)
   (cond ((dumb-jump-use-ag?)
