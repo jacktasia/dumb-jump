@@ -1589,15 +1589,13 @@ Ffrom the ROOT project CONFIG-FILE."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'git-grep))
          (cmd (concat dumb-jump-git-grep-cmd
                       " --color=never --line-number -E"))
-         ;; TODO: Support exclusion dirs somehow.
-         (exclude-args "")
-          ;; (dumb-jump-arg-joiner
-                       ;;  "-g" (--map (shell-quote-argument (concat "!" (s-replace proj "" it)))
-                       ;;              exclude-paths)))
+         (exclude-args (s-join " "
+                               (--map (shell-quote-argument (concat ":(exclude)" it))
+                                      exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
     (if (= (length regexes) 0)
         ""
-        (dumb-jump-concat-command cmd exclude-args regex-args proj))))
+        (dumb-jump-concat-command cmd regex-args "--" proj exclude-args))))
 
 (defun dumb-jump-generate-grep-command (look-for cur-file proj regexes lang exclude-paths)
   "Find LOOK-FOR's CUR-FILE in the PROJ with REGEXES for the LANG but not in EXCLUDE-PATHS."
