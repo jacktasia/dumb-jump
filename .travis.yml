@@ -2,7 +2,7 @@ language: generic
 before_install:
   - sudo add-apt-repository ppa:gekkio/ag -y
   - sudo apt-get -qq update
-  - sudo apt-get install -y silversearcher-ag
+  - sudo apt-get install -y silversearcher-ag git-all
   - curl -fsSkL -o ripgrep.tar.gz https://github.com/BurntSushi/ripgrep/releases/download/0.3.1/ripgrep-0.3.1-x86_64-unknown-linux-musl.tar.gz
   - tar -xvzf ripgrep.tar.gz
   - export PATH="$PATH":"$PWD"/"$(echo ripgrep-*)"
@@ -20,4 +20,5 @@ script:
   - ag --version
   - grep --version
   - emacs --version
+  - git --version
   - make test
