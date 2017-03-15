@@ -1391,12 +1391,12 @@ Ffrom the ROOT project CONFIG-FILE."
   (and (not dumb-jump-force-grep) (dumb-jump-git-grep-installed?) (string= dumb-jump-searcher "git-grep")))
 
 (defun dumb-jump-pick-grep-variant (parse)
-  (cond ((dumb-jump-use-ag?)
-         (if parse #'dumb-jump-parse-ag-response #'dumb-jump-generate-ag-command))
-        ((dumb-jump-use-rg?)
+  (cond ((dumb-jump-use-rg?)
          (if parse #'dumb-jump-parse-rg-response #'dumb-jump-generate-rg-command))
         ((dumb-jump-use-git-grep?)
          (if parse #'dumb-jump-parse-git-grep-response #'dumb-jump-generate-git-grep-command))
+        ((dumb-jump-use-ag?)
+         (if parse #'dumb-jump-parse-ag-response #'dumb-jump-generate-ag-command))
         ((eq (dumb-jump-grep-installed?) 'gnu)
          (if parse #'dumb-jump-parse-grep-response #'dumb-jump-generate-gnu-grep-command))
         (t
@@ -1654,9 +1654,9 @@ Ffrom the ROOT project CONFIG-FILE."
 
 (defun dumb-jump-get-rules-by-language (language)
   "Return a list of rules for the LANGUAGE."
-  (let* ((searcher (cond ((dumb-jump-use-rg?) "rg")
+  (let* ((searcher (cond ((dumb-jump-use-git-grep?) "git-grep")
+                         ((dumb-jump-use-rg?) "rg")
                          ((dumb-jump-use-ag?) "ag")
-                         ((dumb-jump-use-git-grep?) "git-grep")
                          (t "grep")))
          (results (--filter (and
                              (string= (plist-get it ':language) language)
