@@ -168,7 +168,10 @@
     (should (s-blank? (dumb-jump-generate-ag-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
 
 (ert-deftest dumb-jump-generate-bad-rg-command-test ()
-    (should (s-blank? (dumb-jump-generate-rg-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
+  (should (s-blank? (dumb-jump-generate-rg-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
+
+(ert-deftest dumb-jump-generate-bad-git-grep-command-test ()
+    (should (s-blank? (dumb-jump-generate-git-grep-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
 
 (ert-deftest dumb-jump-grep-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:(defvar some-var)")
@@ -200,6 +203,15 @@
 (ert-deftest dumb-jump-rg-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:1:(defvar some-var)")
          (parsed (dumb-jump-parse-rg-response resp "dumb-jump2.el" 28))
+         (test-result (nth 1 parsed)))
+    (should (= (plist-get test-result :diff) 2))
+    (should (= (length parsed) 2))
+    (should (string= (plist-get test-result :path) "dumb-jump.el"))
+    (should (= (plist-get test-result ':line) 26))))
+
+(ert-deftest dumb-jump-git-grep-parse-test ()
+  (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:1:(defvar some-var)")
+         (parsed (dumb-jump-parse-git-grep-response resp "dumb-jump2.el" 28))
          (test-result (nth 1 parsed)))
     (should (= (plist-get test-result :diff) 2))
     (should (= (length parsed) 2))
