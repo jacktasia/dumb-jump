@@ -109,6 +109,12 @@
   :group 'dumb-jump
   :type 'string)
 
+(defcustom dumb-jump-git-grep-word-boundary
+  "($|[^\\w-])"
+  "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and git grep will use this value."
+  :group 'dumb-jump
+  :type 'string)
+
 (defcustom dumb-jump-grep-word-boundary
   "($|[^\\w-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and grep will use this value."
@@ -208,7 +214,7 @@
     ;;        :regex "(\\b\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[([0-9]|\\s)*\\])*\\s*([=,){;]|:\\s*[0-9])|#define\\s+JJJ\\b"
     ;;        :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "unsigned int test:2;"))
 
-    (:type "variable" :supports ("ag" "git-grep") :language "c++"
+    (:type "variable" :supports ("ag") :language "c++"
            :regex "\\b(?!(class\\b|struct\\b|return\\b|else\\b|delete\\b))(\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[(\\d|\\s)*\\])*\\s*([=,(){;]|:\\s*\\d)|#define\\s+JJJ\\b"
            :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "typedef int test;" "unsigned int test:2")
            :not ("return test;" "#define NOT test" "else test=2;"))
@@ -864,6 +870,20 @@ a symbol then it's probably a function call"
     (shell-command-on-region (point-min) (point-max) cmd nil t)
     (buffer-substring-no-properties (point-min) (point-max))))
 
+(defun dumb-jump-run-git-grep-test (test cmd)
+  "Run CMD using string TEST as its input through a local,
+temporary file. Because git grep must be given a file as input,
+not just a string."
+  (let* ((thefile ".git.grep.test")
+         (realcmd (concat cmd " " thefile)))
+    (with-temp-buffer
+      (insert test)
+      (write-file thefile nil)
+      (delete-region (point-min) (point-max))
+      (shell-command realcmd t)
+      (delete-file thefile)
+      (buffer-substring-no-properties (point-min) (point-max)))))
+
 (defun dumb-jump-test-rules (&optional run-not-tests)
   "Test all the grep rules and return count of those that fail.
 Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
@@ -914,6 +934,25 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
             (let* ((cmd (concat "rg --color never --no-heading "
                                 (shell-quote-argument (dumb-jump-populate-regex (plist-get rule :regex) "test" 'rg))))
                    (resp (dumb-jump-run-test test cmd)))
+              (when (or
+                     (and (not run-not-tests) (not (s-contains? test resp)))
+                     (and run-not-tests (> (length resp) 0)))
+                (add-to-list 'failures (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule))))))))
+    failures))
+
+(defun dumb-jump-test-git-grep-rules (&optional run-not-tests)
+  "Test all the git grep rules and return count of those that fail.
+Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
+  (let ((failures '())
+        (fail-tmpl "git grep FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'"))
+    (-each (--filter (member "git-grep" (plist-get it :supports)) dumb-jump-find-rules)
+      (lambda (rule)
+        (-each (plist-get rule (if run-not-tests :not :tests))
+          (lambda (test)
+            (let* ((cmd (concat "git grep --color=never -h --untracked -E "
+                                (shell-quote-argument
+                                 (dumb-jump-populate-regex (plist-get rule :regex) "test" 'git-grep))))
+                   (resp (dumb-jump-run-git-grep-test test cmd)))
               (when (or
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
@@ -1167,7 +1206,7 @@ When USE-TOOLTIP is t a tooltip jump preview will show instead."
      ((eq issue 'unsaved)
       (dumb-jump-message "Please save your file before jumping."))
      ((eq issue 'nogrep)
-      (dumb-jump-message "Please install ag, rg, or grep!"))
+      (dumb-jump-message "Please install ag, rg, git grep or grep!"))
      ((eq issue 'nosymbol)
       (dumb-jump-message "No symbol under point."))
      ((s-ends-with? " file" lang)
@@ -1498,6 +1537,7 @@ Ffrom the ROOT project CONFIG-FILE."
   "Populate IT regex template with LOOK-FOR."
   (let ((boundary (cond ((eq variant 'rg) dumb-jump-rg-word-boundary)
                         ((eq variant 'ag) dumb-jump-ag-word-boundary)
+                        ((eq variant 'git-grep) dumb-jump-git-grep-word-boundary)
                         (t dumb-jump-grep-word-boundary))))
     (let ((text it))
       (setq text (s-replace "\\j" boundary text))
@@ -1549,9 +1589,11 @@ Ffrom the ROOT project CONFIG-FILE."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'git-grep))
          (cmd (concat dumb-jump-git-grep-cmd
                       " --color=never --line-number -E"))
-         (exclude-args (dumb-jump-arg-joiner
-                        "-g" (--map (shell-quote-argument (concat "!" (s-replace proj "" it)))
-                                    exclude-paths)))
+         ;; TODO: Support exclusion dirs somehow.
+         (exclude-args "")
+          ;; (dumb-jump-arg-joiner
+                       ;;  "-g" (--map (shell-quote-argument (concat "!" (s-replace proj "" it)))
+                       ;;              exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
     (if (= (length regexes) 0)
         ""
@@ -1618,6 +1660,7 @@ Ffrom the ROOT project CONFIG-FILE."
   "Return a list of rules for the LANGUAGE."
   (let* ((searcher (cond ((dumb-jump-use-rg?) "rg")
                          ((dumb-jump-use-ag?) "ag")
+                         ((dumb-jump-use-git-grep?) "git-grep")
                          (t "grep")))
          (results (--filter (and
                              (string= (plist-get it ':language) language)
