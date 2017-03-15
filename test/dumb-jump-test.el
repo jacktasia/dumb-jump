@@ -940,3 +940,12 @@
       (with-mock
        (mock (dumb-jump-goto-file-line * 6 6))
        (should (string= header-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-filter-no-start-comments ()
+  (should (equal '((:context "yield me"))
+                 (dumb-jump-filter-no-start-comments '((:context "// filter me out")
+                                                       (:context "yield me")) "c++"))))
+
+(ert-deftest dumb-jump-filter-no-start-comments-unknown-language ()
+  (should (equal nil (dumb-jump-filter-no-start-comments '() "unknownlanguage"))))
+
