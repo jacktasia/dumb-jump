@@ -1601,10 +1601,10 @@ Ffrom the ROOT project CONFIG-FILE."
 (defun dumb-jump-generate-rg-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the rg response based on the needle LOOK-FOR in the directory PROJ."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'rg))
-         (agtypes (dumb-jump-get-rg-type-by-language lang))
+         (rgtypes (dumb-jump-get-rg-type-by-language lang))
          (cmd (concat dumb-jump-rg-cmd
                       " --color never --no-heading --line-number"
-                      (s-join "" (--map (format " --type %s" it) agtypes))))
+                      (s-join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g" (--map (shell-quote-argument (concat "!" (s-replace proj "" it))) exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
@@ -1615,15 +1615,17 @@ Ffrom the ROOT project CONFIG-FILE."
 (defun dumb-jump-generate-git-grep-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the git grep response based on the needle LOOK-FOR in the directory PROJ."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'git-grep))
+         (ggtypes (dumb-jump-get-git-grep-type-by-language lang))
          (cmd (concat dumb-jump-git-grep-cmd
                       " --color=never --line-number -E"))
+         (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))
          (exclude-args (s-join " "
                                (--map (shell-quote-argument (concat ":(exclude)" it))
                                       exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
     (if (= (length regexes) 0)
         ""
-        (dumb-jump-concat-command cmd regex-args "--" proj exclude-args))))
+        (dumb-jump-concat-command cmd regex-args "--" fileexps exclude-args))))
 
 (defun dumb-jump-generate-grep-command (look-for cur-file proj regexes lang exclude-paths)
   "Find LOOK-FOR's CUR-FILE in the PROJ with REGEXES for the LANG but not in EXCLUDE-PATHS."
@@ -1679,6 +1681,14 @@ Ffrom the ROOT project CONFIG-FILE."
   (-distinct (--map (plist-get it :rgtype)
                     (--filter (and
                                (plist-get it :rgtype)
+                               (string= (plist-get it :language) language))
+                              dumb-jump-language-file-exts))))
+
+(defun dumb-jump-get-git-grep-type-by-language (language)
+  "Return list of git grep type argument for a LANGUAGE."
+  (-distinct (--map (plist-get it :ext)
+                    (--filter (and
+                               (plist-get it :ext)
                                (string= (plist-get it :language) language))
                               dumb-jump-language-file-exts))))
 
