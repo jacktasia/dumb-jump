@@ -954,6 +954,27 @@
        (mock (dumb-jump-goto-file-line * 4 6))
        (should (string= header-file (dumb-jump-go-prefer-external)))))))
 
+(ert-deftest dumb-jump-prefer-only-external ()
+  (let ((main-file (f-join test-data-dir-multiproj "subproj1" "main.cc"))
+        (header-file (f-join test-data-dir-multiproj "subproj2" "header.h")))
+    (with-current-buffer (find-file-noselect main-file t)
+      (goto-char (point-min))
+      (forward-line 3)
+      (forward-char 18)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 6 6))
+       (should (string= header-file (dumb-jump-go-prefer-external)))))))
+
+(ert-deftest dumb-jump-prefer-external-only-current ()
+  (let ((main-file (f-join test-data-dir-proj1 "src" "cpp" "only.cpp")))
+    (with-current-buffer (find-file-noselect main-file t)
+      (goto-char (point-min))
+      (forward-line 1)
+      (forward-char 2)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 6 6))
+       (should (string= main-file (dumb-jump-go-prefer-external)))))))
+
 (ert-deftest dumb-jump-prefer-external-other-window ()
   (let ((main-file (f-join test-data-dir-proj1 "src" "cpp" "external.cpp"))
         (header-file (f-join test-data-dir-proj1 "src" "cpp" "external.h")))
@@ -972,5 +993,3 @@
 
 (ert-deftest dumb-jump-filter-no-start-comments-unknown-language ()
   (should (equal nil (dumb-jump-filter-no-start-comments '() "unknownlanguage"))))
-
-
