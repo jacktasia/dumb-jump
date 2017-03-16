@@ -1315,11 +1315,7 @@ PREFER-EXTERNAL will sort current file last."
                (--filter (not (string= (plist-get it :path) cur-file))
                          match-no-comments))
             (-concat
-             (--filter (and (> (plist-get it :diff) 0)
-                            (not (string= (plist-get it :path) cur-file)))
-                       match-no-comments)
-             (--filter (and (<= (plist-get it :diff) 0)
-                            (not (string= (plist-get it :path) cur-file)))
+             (--filter (not (string= (plist-get it :path) cur-file))
                        match-no-comments)
              (--filter (string= (plist-get it :path) cur-file)
                        match-no-comments))))
