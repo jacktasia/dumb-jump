@@ -67,6 +67,8 @@ Adding `(dumb-jump-mode)` to your `.emacs` will enable the key bindings for two 
 * `dumb-jump-back` <kbd>C-M p</kbd> jumps back to where you were when you jumped. These are chained so if you go down a rabbit hole you can get back out or where you want to be.
 * `dumb-jump-quick-look` <kbd>C-M q</kbd> like `dumb-jump-go` but shows tooltip with `file`, `line`, and `context`
 * `dumb-jump-go-other-window` exactly like `dumb-jump-go` but uses `find-file-other-window` instead of `find-file`
+* `dumb-jump-go-prefer-external` like `dumb-jump-go` but will prefer definitions not in the current buffer
+* `dumb-jump-go-prefer-external-other-window` expected combination of `dumb-jump-go-prefer-external` and `dumb-jump-go-other-window`
 
 ## Configuration
 
@@ -104,8 +106,10 @@ I personally no longer use the `dumb-jump-mode` keybindings that were inspired b
 
     (use-package dumb-jump
       :bind (("M-g o" . dumb-jump-go-other-window)
-             ("M-g j" . dumb-jump-go))
-      :config (setq dumb-jump-selector 'ivy)
+             ("M-g j" . dumb-jump-go)
+             ("M-g x" . dumb-jump-go-prefer-external)
+             ("M-g z" . dumb-jump-go-prefer-external-other-window))
+      :config (setq dumb-jump-selector 'ivy) ;; (setq dumb-jump-selector 'helm)
       :ensure)
 
 ## Why?
