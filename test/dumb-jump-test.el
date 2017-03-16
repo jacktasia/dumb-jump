@@ -842,6 +842,9 @@
 (ert-deftest dumb-jump-rgtype-test ()
   (should (equal (dumb-jump-get-rg-type-by-language "python") '("py"))))
 
+(ert-deftest dumb-jump-git-grep-type-test ()
+  (should (equal (dumb-jump-get-git-grep-type-by-language "python") '("py"))))
+
 ;; react tests
 
 (ert-deftest dumb-jump-react-test1 ()
