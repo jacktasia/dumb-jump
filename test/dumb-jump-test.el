@@ -117,8 +117,9 @@
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])|\\(defvar\\b\\s*tester($|[^\\w-])|\\(defcustom\\b\\s*tester($|[^\\w-])|\\(setq\\b\\s*tester($|[^\\w-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?")
-         (expected (concat "git grep --color=never --line-number -E " (shell-quote-argument expected-regexes) " -- .")))
-    (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+         (excludes '("one" "two" "three"))
+         (expected (concat "git grep --color=never --line-number -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
+    (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
   (let* ((system-type 'darwin)
