@@ -1,5 +1,9 @@
 #include "external.h"
 
+int ExternalThing() {
+  return 0;
+}
+
 class ExternalThing {
 };
 

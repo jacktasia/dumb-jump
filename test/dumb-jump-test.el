@@ -948,7 +948,7 @@
         (header-file (f-join test-data-dir-proj1 "src" "cpp" "external.h")))
     (with-current-buffer (find-file-noselect main-file t)
       (goto-char (point-min))
-      (forward-line 6)
+      (forward-line 10)
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 4 6))
@@ -959,7 +959,7 @@
         (header-file (f-join test-data-dir-proj1 "src" "cpp" "external.h")))
     (with-current-buffer (find-file-noselect main-file t)
       (goto-char (point-min))
-      (forward-line 6)
+      (forward-line 10)
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 4 6))

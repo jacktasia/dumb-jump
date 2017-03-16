@@ -1304,18 +1304,25 @@ PREFER-EXTERNAL will sort current file last."
          ;; Moves current file results to the front of the list, unless PREFER-EXTERNAL then put
          ;; them last.
          (match-cur-file-front
-          (-concat
-           (--filter (and (> (plist-get it :diff) 0)
-                          (and (string= (plist-get it :path) cur-file)
-                               (not prefer-external)))
-                     match-no-comments)
-           (--filter (and (<= (plist-get it :diff) 0)
-                          (and (string= (plist-get it :path) cur-file)
-                               (not prefer-external)))
-                     match-no-comments)
-           (--filter (not (and (string= (plist-get it :path) cur-file)
-                               (not prefer-external)))
-                     match-no-comments)))
+          (if (not prefer-external)
+              (-concat
+               (--filter (and (> (plist-get it :diff) 0)
+                              (string= (plist-get it :path) cur-file))
+                         match-no-comments)
+               (--filter (and (<= (plist-get it :diff) 0)
+                              (string= (plist-get it :path) cur-file))
+                         match-no-comments)
+               (--filter (not (string= (plist-get it :path) cur-file))
+                         match-no-comments))
+            (-concat
+             (--filter (and (> (plist-get it :diff) 0)
+                            (not (string= (plist-get it :path) cur-file)))
+                       match-no-comments)
+             (--filter (and (<= (plist-get it :diff) 0)
+                            (not (string= (plist-get it :path) cur-file)))
+                       match-no-comments)
+             (--filter (string= (plist-get it :path) cur-file)
+                       match-no-comments))))
 
          (matches
           (if (not prefer-external)
@@ -1328,9 +1335,9 @@ PREFER-EXTERNAL will sort current file last."
                                (string= ctx-type "variable")
                                (string= ctx-type ""))
                            var-to-jump)))
-    ;; (dumb-jump-message-prin1
-    ;;  "type: %s | jump? %s | matches: %s | sorted-no-comments: %s | results: %s | prefer external: %s"
-    ;;  ctx-type var-to-jump matches match-no-comments results prefer-external)
+     ;; (dumb-jump-message-prin1
+     ;;  "type: %s | jump? %s | matches: %s | sorted-no-comments: %s | results: %s | prefer external: %s"
+     ;;  ctx-type var-to-jump matches match-no-comments results prefer-external)
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump use-tooltip proj-root)
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front))))
@@ -1437,17 +1444,17 @@ Ffrom the ROOT project CONFIG-FILE."
          (cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
          (rawresults (shell-command-to-string cmd)))
 
-    ;(dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
+    ;;(dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
     (when (and (s-blank? rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
       (setq rawresults (shell-command-to-string cmd))
-      ;(dumb-jump-message-prin1 "FALLBACK RUN CMD '%s' RESULTS: %s" cmd rawresults)
+      ;;(dumb-jump-message-prin1 "FALLBACK RUN CMD '%s' RESULTS: %s" cmd rawresults)
       )
+
     (unless (s-blank? cmd)
       (let ((results (funcall parse-fn rawresults cur-file line-num)))
         (--filter (s-contains? look-for (plist-get it :context)) results)))))
-
 
 (defun dumb-jump-parse-response-line (resp-line cur-file)
   "Parse a search program's single RESP-LINE for CUR-FILE into a list of (path line context)."
