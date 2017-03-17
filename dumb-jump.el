@@ -1139,7 +1139,13 @@ of project configuraiton."
                    nil))
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
-         (regexes (dumb-jump-get-contextual-regexes lang ctx-type))
+
+         (gen-funcs (dumb-jump-pick-grep-variant))
+         (parse-fn (plist-get gen-funcs :parse))
+         (generate-fn (plist-get gen-funcs :generate))
+         (searcher (plist-get gen-funcs :searcher))
+
+         (regexes (dumb-jump-get-contextual-regexes lang ctx-type searcher))
 
          (exclude-paths (when config (plist-get config :exclude)))
          (include-paths (when config (plist-get config :include)))
@@ -1148,7 +1154,8 @@ of project configuraiton."
          ; run command for all
          (raw-results (--mapcat
                        ;; TODO: should only pass exclude paths to actual project root
-                       (dumb-jump-run-command look-for it regexes lang exclude-paths cur-file cur-line-num)
+                       (dumb-jump-run-command look-for it regexes lang exclude-paths cur-file
+                                              cur-line-num parse-fn generate-fn)
                        search-paths))
 
          (results (--map (plist-put it :target look-for) raw-results)))
@@ -1408,39 +1415,57 @@ Ffrom the ROOT project CONFIG-FILE."
   (let ((matched (--filter (string= path (plist-get it :path)) results)))
     matched))
 
-(defun dumb-jump-use-ag? ()
-  "Return t if we should use ag.  That is, ag is installed AND grep is not forced."
-  (and (not dumb-jump-force-grep) (dumb-jump-ag-installed?) (string= dumb-jump-searcher "ag")))
+(defun dumb-jump-generators-by-searcher (searcher)
+  "For a SEARCHER it yields a response parser and a command generator function."
+  (cond ((equal 'git-grep searcher)
+         `(:parse ,'dumb-jump-parse-git-grep-response
+                  :generate ,'dumb-jump-generate-git-grep-command
+                  :searcher ,searcher))
+        ((equal 'ag searcher)
+         `(:parse ,'dumb-jump-parse-ag-response
+                  :generate ,'dumb-jump-generate-ag-command
+                  :searcher ,searcher))
+        ((equal 'rg searcher)
+         `(:parse ,'dumb-jump-parse-rg-response
+                  :generate ,'dumb-jump-generate-rg-command
+                  :searcher ,searcher))
+        ((equal 'gnu-grep searcher)
+         `(:parse ,'dumb-jump-parse-grep-response
+                  :generate ,'dumb-jump-generate-gnu-grep-command
+                  :searcher ,searcher))
+        ((equal 'grep searcher)
+         `(:parse ,'dumb-jump-parse-grep-response
+                  :generate ,'dumb-jump-generate-grep-command
+                  :searcher ,searcher))))
 
-(defun dumb-jump-use-rg? ()
-  "Return t if we should use rg.  That is, rg is installed AND grep is not forced."
-  (and (not dumb-jump-force-grep) (dumb-jump-rg-installed?)  (string= dumb-jump-searcher "rg")))
+(defun dumb-jump-pick-grep-variant ()
+  (cond
+   ;; If `dumb-jump-force-searcher' is not nil then use that searcher.
 
-(defun dumb-jump-use-git-grep? ()
-  "Return t if we should use git-grep.  That is, git-grep is installed AND grep is not forced."
-  (and (not dumb-jump-force-grep) (dumb-jump-git-grep-installed?) (string= dumb-jump-searcher "git-grep")))
+   ;; TODO: If project denoter is .git then use git-grep.
+   (nil
+    (dumb-jump-generators-by-searcher 'git-grep))
 
-(defun dumb-jump-pick-grep-variant (parse)
-  (cond ((dumb-jump-use-rg?)
-         (if parse #'dumb-jump-parse-rg-response #'dumb-jump-generate-rg-command))
-        ((dumb-jump-use-git-grep?)
-         (if parse #'dumb-jump-parse-git-grep-response #'dumb-jump-generate-git-grep-command))
-        ((dumb-jump-use-ag?)
-         (if parse #'dumb-jump-parse-ag-response #'dumb-jump-generate-ag-command))
-        ((eq (dumb-jump-grep-installed?) 'gnu)
-         (if parse #'dumb-jump-parse-grep-response #'dumb-jump-generate-gnu-grep-command))
-        (t
-         (if parse #'dumb-jump-parse-grep-response #'dumb-jump-generate-grep-command))))
+   ;; If `dumb-jump-prefer-searcher' is not nil then use if installed.
+
+   ;; Fallback searcher order.
+   ((dumb-jump-ag-installed?)
+    (dumb-jump-generators-by-searcher 'ag))
+   ((dumb-jump-rg-installed?)
+    (dumb-jump-generators-by-searcher 'rg))
+   ((eq (dumb-jump-grep-installed?) 'gnu)
+    (dumb-jump-generators-by-searcher 'gnu-grep))
+   (t
+    (dumb-jump-generators-by-searcher 'grep))))
 
 ;; TODO: rename dumb-jump-run-definition-command
-(defun dumb-jump-run-command (look-for proj regexes lang exclude-args cur-file line-num)
+(defun dumb-jump-run-command
+    (look-for proj regexes lang exclude-args cur-file line-num parse-fn generate-fn)
   "Run the grep command based on the needle LOOK-FOR in the directory TOSEARCH"
-  (let* ((generate-fn (dumb-jump-pick-grep-variant nil))
-         (parse-fn (dumb-jump-pick-grep-variant t))
-         (cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
+  (let* ((cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
          (rawresults (shell-command-to-string cmd)))
 
-    ;;(dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
+    (dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
     (when (and (s-blank? rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
@@ -1549,9 +1574,9 @@ Ffrom the ROOT project CONFIG-FILE."
       (format " %s %s " prefix args)
       "")))
 
-(defun dumb-jump-get-contextual-regexes (lang ctx-type)
+(defun dumb-jump-get-contextual-regexes (lang ctx-type searcher)
   "Get list of search regular expressions by LANG and CTX-TYPE (variable, function, etc)."
-  (let* ((raw-rules (dumb-jump-get-rules-by-language lang))
+  (let* ((raw-rules (dumb-jump-get-rules-by-language lang searcher))
          (ctx-type (unless dumb-jump-ignore-context ctx-type))
          (ctx-rules
           (if ctx-type
@@ -1692,15 +1717,15 @@ Ffrom the ROOT project CONFIG-FILE."
                                (string= (plist-get it :language) language))
                               dumb-jump-language-file-exts))))
 
-(defun dumb-jump-get-rules-by-language (language)
+(defun dumb-jump-get-rules-by-language (language searcher)
   "Return a list of rules for the LANGUAGE."
-  (let* ((searcher (cond ((dumb-jump-use-git-grep?) "git-grep")
-                         ((dumb-jump-use-rg?) "rg")
-                         ((dumb-jump-use-ag?) "ag")
-                         (t "grep")))
+  (let* ((searcher-str (cond ((eq 'git-grep searcher) "git-grep")
+                             ((eq 'rg searcher) "rg")
+                             ((eq 'ag searcher) "ag")
+                             (t "grep")))
          (results (--filter (and
                              (string= (plist-get it ':language) language)
-                             (member searcher (plist-get it ':supports)))
+                             (member searcher-str (plist-get it ':supports)))
                            dumb-jump-find-rules)))
     (if dumb-jump-functions-only
         (--filter (string= (plist-get it ':type) "function") results)
