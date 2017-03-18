@@ -1461,8 +1461,9 @@ searcher symbol."
    (dumb-jump-force-searcher
     (dumb-jump-generators-by-searcher dumb-jump-force-searcher))
 
-   ;; If project root has a .git then use git-grep.
+   ;; If project root has a .git then use git-grep if installed.
    ((and proj-root
+         (dumb-jump-git-grep-installed?)
          (f-exists? (f-join proj-root ".git")))
     (dumb-jump-generators-by-searcher 'git-grep))
 
