@@ -97,7 +97,10 @@ If you want to stop a directory from registering as the project root (and have D
 * `(add-hook 'dumb-jump-after-jump-hook 'some-function)` to execute code after you jump
 * `(setq dumb-jump-selector 'ivy)` to use [ivy](https://github.com/abo-abo/swiper#ivy) instead of the default popup for multiple options.
 * `(setq dumb-jump-selector 'helm)` to use [helm](https://github.com/emacs-helm/helm) instead of the default popup for multiple options.
-* `(setq dumb-jump-searcher "rg")` to set the search program Dumb Jump should use. If not set Dumb Jump will use `ag` over `rg` or `grep` (if all are installed). `dumb-jump-selector` is ultimately only necessary if you have all installed and want to force `rg` over `ag`.
+* `(setq dumb-jump-force-searcher 'rg)` to force the search program Dumb Jump should use. It will _always_ use this searcher. If not set (`nil`) Dumb Jump will use `git-grep` if it's a git project and if not will try searchers in the following order `ag`, `rg`, `grep` (first installed wins). This is necessary if you want full control over the searcher Dumb Jump uses.
+* `(setq dumb-jump-prefer-searcher 'rg)` to let Dumb Jump know your searcher preference. If set this will still use `git-grep` if it's a git project (because it's the fastest), but will you use whatever you set here in any other situation. If not set Dumb Jump will follow the same order as mentioned in the `dumb-jump-force-searcher` description. At this time setting this value is only necessary if you prefer `rg` but have `ag` installed too.
+
+To learn more about how Dumb Jump picks a searcher see [this issue](https://github.com/jacktasia/dumb-jump/issues/109) and this [pull request](https://github.com/jacktasia/dumb-jump/pull/111).
 
 
 ##### `use-package` example configuration.
