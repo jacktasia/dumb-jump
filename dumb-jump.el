@@ -61,9 +61,19 @@
                  (const :tag "Helm" helm)
                  (const :tag "Ivy" other)))
 
-(defcustom dumb-jump-searcher
-  "ag"
-  "The default searcher to use ag, rg, git grep or grep"
+(defcustom dumb-jump-prefer-searcher
+  nil
+  "The preferred searcher to use 'ag, 'rg, 'git-grep, 'gnu-grep,
+or 'grep. If `nil' then the most optimal searcher will be chosen
+at runtime."
+  :group 'dumb-jump
+  :type 'string)
+
+(defcustom dumb-jump-force-searcher
+  nil
+  "Forcibly use searcher: 'ag, 'rg, 'git-grep, 'gnu-grep,
+or 'grep. Set to `nil' to not force anything and use
+`dumb-jump-prefer-searcher' or most optimal searcher."
   :group 'dumb-jump
   :type 'string)
 
@@ -1416,37 +1426,50 @@ Ffrom the ROOT project CONFIG-FILE."
     matched))
 
 (defun dumb-jump-generators-by-searcher (searcher)
-  "For a SEARCHER it yields a response parser and a command generator function."
+  "For a SEARCHER it yields a response parser, a command
+generator function, an installed? function, and the corresponding
+searcher symbol."
   (cond ((equal 'git-grep searcher)
          `(:parse ,'dumb-jump-parse-git-grep-response
                   :generate ,'dumb-jump-generate-git-grep-command
+                  :installed ,'dumb-jump-git-grep-installed?
                   :searcher ,searcher))
         ((equal 'ag searcher)
          `(:parse ,'dumb-jump-parse-ag-response
                   :generate ,'dumb-jump-generate-ag-command
+                  :installed ,'dumb-jump-ag-installed?
                   :searcher ,searcher))
         ((equal 'rg searcher)
          `(:parse ,'dumb-jump-parse-rg-response
                   :generate ,'dumb-jump-generate-rg-command
+                  :installed ,'dumb-jump-rg-installed?
                   :searcher ,searcher))
         ((equal 'gnu-grep searcher)
          `(:parse ,'dumb-jump-parse-grep-response
                   :generate ,'dumb-jump-generate-gnu-grep-command
+                  :installed ,'dumb-jump-grep-installed?
                   :searcher ,searcher))
         ((equal 'grep searcher)
          `(:parse ,'dumb-jump-parse-grep-response
                   :generate ,'dumb-jump-generate-grep-command
+                  :installed ,'dumb-jump-grep-installed?
                   :searcher ,searcher))))
 
 (defun dumb-jump-pick-grep-variant ()
   (cond
    ;; If `dumb-jump-force-searcher' is not nil then use that searcher.
+   (dumb-jump-force-searcher
+    (dumb-jump-generators-by-searcher dumb-jump-force-searcher))
 
    ;; TODO: If project denoter is .git then use git-grep.
    (nil
     (dumb-jump-generators-by-searcher 'git-grep))
 
    ;; If `dumb-jump-prefer-searcher' is not nil then use if installed.
+   ((and dumb-jump-prefer-searcher
+         (funcall (plist-get (dumb-jump-generators-by-searcher dumb-jump-prefer-searcher)
+                             :installed)))
+    (dumb-jump-generators-by-searcher dumb-jump-prefer-searcher))
 
    ;; Fallback searcher order.
    ((dumb-jump-ag-installed?)
