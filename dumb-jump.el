@@ -1150,7 +1150,7 @@ of project configuraiton."
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
 
-         (gen-funcs (dumb-jump-pick-grep-variant))
+         (gen-funcs (dumb-jump-pick-grep-variant proj-root))
          (parse-fn (plist-get gen-funcs :parse))
          (generate-fn (plist-get gen-funcs :generate))
          (searcher (plist-get gen-funcs :searcher))
@@ -1455,14 +1455,15 @@ searcher symbol."
                   :installed ,'dumb-jump-grep-installed?
                   :searcher ,searcher))))
 
-(defun dumb-jump-pick-grep-variant ()
+(defun dumb-jump-pick-grep-variant (&optional proj-root)
   (cond
    ;; If `dumb-jump-force-searcher' is not nil then use that searcher.
    (dumb-jump-force-searcher
     (dumb-jump-generators-by-searcher dumb-jump-force-searcher))
 
-   ;; TODO: If project denoter is .git then use git-grep.
-   (nil
+   ;; If project root has a .git then use git-grep.
+   ((and proj-root
+         (f-exists? (f-join proj-root ".git")))
     (dumb-jump-generators-by-searcher 'git-grep))
 
    ;; If `dumb-jump-prefer-searcher' is not nil then use if installed.
@@ -1488,7 +1489,7 @@ searcher symbol."
   (let* ((cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
          (rawresults (shell-command-to-string cmd)))
 
-    (dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
+    ;;(dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
     (when (and (s-blank? rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
