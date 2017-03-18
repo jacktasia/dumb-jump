@@ -78,44 +78,42 @@
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-test ()
   (let* ((system-type 'darwin)
-         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'grep))
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
                                   '("\\((defun|cl-defun)\\s+tester($|[^\\w-])"
                                     "\\(defvar\\b\\s*tester($|[^\\w-])"
                                     "\\(defcustom\\b\\s*tester($|[^\\w-])"
                                     "\\(setq\\b\\s*tester($|[^\\w-])"
-                                    "\\(tester\\s+"
-                                    "\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?")))
+                                    "\\(tester\\s+")))
          (expected (concat "LANG=C grep -REn --include \\*.el --include \\*.el.gz" (s-join "" expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-gnu-grep-command-no-ctx-test ()
   (let* ((system-type 'darwin)
-         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'gnu-grep))
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
                                   '("\\((defun|cl-defun)[[:space:]]+tester($|[^\\w-])"
                                     "\\(defvar\\b[[:space:]]*tester($|[^\\w-])"
                                     "\\(defcustom\\b[[:space:]]*tester($|[^\\w-])"
                                     "\\(setq\\b[[:space:]]*tester($|[^\\w-])"
-                                    "\\(tester[[:space:]]+"
-                                    "\\((defun|cl-defun)[[:space:]]*.+\\(?[[:space:]]*tester($|[^\\w-])[[:space:]]*\\)?")))
+                                    "\\(tester[[:space:]]+")))
          (expected (concat "LANG=C grep -rEn" (s-join "" expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-gnu-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-test ()
-  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
          (expected-regexes "\\((defun|cl-defun)\\s+tester(?![\\w-])|\\(defvar\\b\\s*tester(?![\\w-])|\\(defcustom\\b\\s*tester(?![\\w-])|\\(setq\\b\\s*tester(?![\\w-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![\\w-])\\s*\\)?")
          (expected (concat "ag --nocolor --nogroup --elisp " (shell-quote-argument expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-rg-command-no-ctx-test ()
-  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])|\\(defvar\\b\\s*tester($|[^\\w-])|\\(defcustom\\b\\s*tester($|[^\\w-])|\\(setq\\b\\s*tester($|[^\\w-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?")
          (expected (concat "rg --color never --no-heading --line-number --type elisp " (shell-quote-argument expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-test ()
-  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])|\\(defvar\\b\\s*tester($|[^\\w-])|\\(defcustom\\b\\s*tester($|[^\\w-])|\\(setq\\b\\s*tester($|[^\\w-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?")
          (excludes '("one" "two" "three"))
          (expected (concat "git grep --color=never --line-number -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
@@ -124,7 +122,7 @@
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
   (let* ((system-type 'darwin)
          (dumb-jump-functions-only t)
-         (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'grep))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])")
          (expected (concat "LANG=C grep -REn -e " (shell-quote-argument expected-regexes) " ."))
          (zexpected (concat "LANG=C zgrep -REn -e " (shell-quote-argument expected-regexes) " .")))
@@ -135,7 +133,7 @@
   (let* ((system-type 'darwin)
          (ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context nil) ;; overriding the default
-         (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
+         (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type 'grep))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])")
          (expected (concat "LANG=C grep -REn -e " (shell-quote-argument expected-regexes) " .")))
     ;; the point context being passed should match a "function" type so only the one command
@@ -146,7 +144,7 @@
     (let* ((system-type 'windows-nt)
            (ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
            (dumb-jump-ignore-context nil) ;; overriding the default
-           (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
+           (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type 'grep))
            (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^\\w-])")
            (expected (concat "grep -REn -e " (shell-quote-argument expected-regexes) " .")))
       (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil))))))
@@ -155,14 +153,13 @@
   (let* ((system-type 'darwin)
          (ctx-type (dumb-jump-get-ctx-type-by-language "elisp" '(:left "(" :right nil)))
          (dumb-jump-ignore-context t)
-         (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type))
+         (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type nil))
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
                                   '("\\((defun|cl-defun)\\s+tester($|[^\\w-])"
                                     "\\(defvar\\b\\s*tester($|[^\\w-])"
                                     "\\(defcustom\\b\\s*tester($|[^\\w-])"
                                     "\\(setq\\b\\s*tester($|[^\\w-])"
-                                    "\\(tester\\s+"
-                                    "\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^\\w-])\\s*\\)?")))
+                                    "\\(tester\\s+")))
          (expected (concat "LANG=C grep -REn" (s-join "" expected-regexes) " .")))
 
     ;; the point context being passed is ignored so ALL should return
@@ -226,8 +223,13 @@
     (should (= (plist-get test-result ':line) 26))))
 
 (ert-deftest dumb-jump-run-cmd-test ()
-  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""  "blah.el" 3))
+  (let* ((gen-funcs (dumb-jump-pick-grep-variant test-data-dir-elisp))
+         (parse-fn (plist-get gen-funcs :parse))
+         (generate-fn (plist-get gen-funcs :generate))
+         (searcher (plist-get gen-funcs :searcher))
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil searcher))
+         (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""
+                                         "blah.el" 3 parse-fn generate-fn))
         (first-result (car results)))
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (= (plist-get first-result :line) 6))))
@@ -241,7 +243,11 @@
 ;;     (should (= (plist-get first-result :line) 6))))
 
 (ert-deftest dumb-jump-run-cmd-fail-test ()
-  (let* ((results (dumb-jump-run-command "hidden-function" test-data-dir-elisp nil "" "" "blah.el" 3))
+  (let* ((gen-funcs (dumb-jump-pick-grep-variant test-data-dir-elisp))
+         (parse-fn (plist-get gen-funcs :parse))
+         (generate-fn (plist-get gen-funcs :generate))
+         (results (dumb-jump-run-command "hidden-function" test-data-dir-elisp nil "" "" "blah.el" 3
+                                         parse-fn generate-fn))
         (first-result (car results)))
     (should (null first-result))))
 
