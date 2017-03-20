@@ -19,28 +19,28 @@ For the currently [supported languages](#supported-languages) it seems to do a g
 
 There is currently basic support for the following languages:
 
-* Emacs Lisp
-* Python
-* JavaScript
-* PHP
-* Ruby
-* Java
-* C#
-* C/C++
-* CoffeeScript
-* Perl
-* Go
-* Swift
-* Objective-C
-* Scala
-* Clojure
-* Haskell
-* Lua
-* Rust
-* Faust
-* R
 * Bash
+* C/C++
+* C#
+* Clojure
+* CoffeeScript
+* Emacs Lisp
+* Faust
 * Fortran
+* Go
+* Haskell
+* Java
+* JavaScript
+* Lua
+* Objective-C
+* Perl
+* PHP
+* Python
+* R
+* Ruby
+* Rust
+* Scala
+* Swift
 
 If you have any issues with the existing languages, or you want support for another one, then please [open an issue](https://github.com/jacktasia/dumb-jump/issues). PRs are also welcome. If you'd like to add a language these PRs for [lua](https://github.com/jacktasia/dumb-jump/pull/33) and [rust](https://github.com/jacktasia/dumb-jump/pull/57) are good examples.
 
