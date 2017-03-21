@@ -996,6 +996,8 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
           (dumb-jump-result-follow result))))
 
 (defun dumb-jump-helm-persist-action (match)
+  "Previews a MATCH in a temporary buffer at the matched line
+number when pressing C-j in helm."
   (let* ((parts (--remove (string= it "")
                           (s-split "\\(?:^\\|:\\)[0-9]+:"  match)))
          (file-line-part (s-split ":" (nth 0 parts)))
