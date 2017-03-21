@@ -394,6 +394,10 @@
      (mock (dumb-jump-result-follow '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
+(ert-deftest dumb-jump-prompt-user-for-choice-correct-helm-persistent-action-test ()
+  (dumb-jump-helm-persist-action "dumb-jump.el:1")
+  (should (get-buffer " *helm dumb jump persistent*")))
+
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-ivy-test ()
   (let* ((dumb-jump-selector 'ivy)
          (results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")

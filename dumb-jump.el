@@ -1004,7 +1004,7 @@ number when pressing C-j in helm."
          (file (nth 0 file-line-part))
          (line (string-to-number (nth 1 file-line-part)))
          (default-directory-old default-directory))
-    (switch-to-buffer (get-buffer-create " *helm dump jump persistent*"))
+    (switch-to-buffer (get-buffer-create " *helm dumb jump persistent*"))
     (setq default-directory default-directory-old)
     (fundamental-mode)
     (erase-buffer)
