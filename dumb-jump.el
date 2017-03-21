@@ -996,8 +996,9 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
           (dumb-jump-result-follow result))))
 
 (defun dumb-jump-helm-persist-action (match)
-  (let* ((values (s-split " " match))
-         (file-line-part (s-split ":" (nth 0 values)))
+  (let* ((parts (--remove (string= it "")
+                          (s-split "\\(?:^\\|:\\)[0-9]+:"  match)))
+         (file-line-part (s-split ":" (nth 0 parts)))
          (file (nth 0 file-line-part))
          (line (string-to-number (nth 1 file-line-part)))
          (default-directory-old default-directory))
