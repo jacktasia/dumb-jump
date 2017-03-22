@@ -189,6 +189,13 @@ or 'grep. Set to `nil' to not force anything and use
   :group 'dumb-jump
   :type 'boolean)
 
+(defcustom dumb-jump-git-grep-search-untracked
+  t
+  "If non-nil Dumb Jump will also search untracked files when
+using searcher git-grep."
+  :group 'dumb-jump
+  :type 'boolean)
+
 (defcustom dumb-jump-find-rules
   '((:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\((defun|cl-defun)\\s+JJJ\\j"
            ;; \\j usage see `dumb-jump-ag-word-boundary`
@@ -1692,7 +1699,11 @@ searcher symbol."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'git-grep))
          (ggtypes (dumb-jump-get-git-grep-type-by-language lang))
          (cmd (concat dumb-jump-git-grep-cmd
-                      " --color=never --line-number -E"))
+                      " --color=never --line-number"
+                      (if dumb-jump-git-grep-search-untracked
+                          " --untracked"
+                        "")
+                      " -E"))
          (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))
          (exclude-args (s-join " "
                                (--map (shell-quote-argument (concat ":(exclude)" it))
