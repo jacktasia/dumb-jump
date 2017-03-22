@@ -995,8 +995,28 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
         (when result
           (dumb-jump-result-follow result))))
 
+(defun dumb-jump-helm-persist-action (match)
+  "Previews a MATCH in a temporary buffer at the matched line
+number when pressing C-j in helm."
+  (let* ((parts (--remove (string= it "")
+                          (s-split "\\(?:^\\|:\\)[0-9]+:"  match)))
+         (file-line-part (s-split ":" (nth 0 parts)))
+         (file (nth 0 file-line-part))
+         (line (string-to-number (nth 1 file-line-part)))
+         (default-directory-old default-directory))
+    (switch-to-buffer (get-buffer-create " *helm dumb jump persistent*"))
+    (setq default-directory default-directory-old)
+    (fundamental-mode)
+    (erase-buffer)
+    (insert-file-contents file)
+    (let ((buffer-file-name file))
+      (set-auto-mode)
+      (font-lock-fontify-region (point-min) (point-max))
+      (goto-line line))))
+
 (defun dumb-jump-prompt-user-for-choice (proj results)
-  "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy) for user to select.  Filters PROJ path from files for display."
+  "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy)
+for user to select.  Filters PROJ path from files for display."
   (let* ((choices (-map (lambda (result)
                           (format "%s:%s %s"
                                   (s-replace proj "" (plist-get result :path))
@@ -1007,7 +1027,12 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
      ((and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
       (dumb-jump-to-selected results choices (ivy-read "Jump to: " choices)))
      ((and (eq dumb-jump-selector 'helm) (fboundp 'helm))
-      (dumb-jump-to-selected results choices (helm :sources (helm-build-sync-source "Jump to: " :candidates choices))))
+      (dumb-jump-to-selected results choices
+                             (helm :sources
+                                   (helm-build-sync-source "Jump to: "
+                                     :candidates choices
+                                     :persistent-action 'dumb-jump-helm-persist-action)
+                                   :buffer "*helm dumb jump choices*")))
      (t
       (dumb-jump-to-selected results choices (popup-menu* choices))))))
 
