@@ -190,7 +190,7 @@ or 'grep. Set to `nil' to not force anything and use
   :type 'boolean)
 
 (defcustom dumb-jump-git-grep-search-untracked
-  nil
+  t
   "If non-nil Dumb Jump will also search untracked files when
 using searcher git-grep."
   :group 'dumb-jump
