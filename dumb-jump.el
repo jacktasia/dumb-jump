@@ -449,8 +449,8 @@ using searcher git-grep."
            :tests ("function test()" "function test ()"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "php"
-           :regex "JJJ\\s*=\\s*"
-           :tests ("$test = 1234"))
+           :regex "(\\s|->|\\$|::)JJJ\\s*=\\s*"
+           :tests ("$test = 1234" "$foo->test = 1234"))
 
     (:type "trait" :supports ("ag" "grep" "rg" "git-grep") :language "php"
            :regex "trait\\s*JJJ\\s*\\\{"
@@ -461,8 +461,8 @@ using searcher git-grep."
            :tests ("interface test{" "interface test {"))
 
     (:type "class" :supports ("ag" "grep" "rg" "git-grep") :language "php"
-           :regex "class\\s*JJJ\\s*\\\{"
-           :tests ("class test{" "class test {"))
+           :regex "class\\s*JJJ\\s*(extends|implements|\\\{)"
+           :tests ("class test{" "class test {" "class test extends foo" "class test implements foo"))
 
     ;; faust
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "faust"
