@@ -1113,3 +1113,12 @@
          (gen-funcs (dumb-jump-generators-by-searcher 'grep))
          (variant (dumb-jump-pick-grep-variant)))
     (should (generator-plist-equal gen-funcs variant))))
+
+;; This test makes sure that if the `cur-file' is absolute but results are relative, then it must
+;; still find and sort results correctly.
+(ert-deftest dumb-jump-handle-results-relative-current-file-test ()
+  (let ((results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
+                   (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
+    (with-mock
+     (mock (dumb-jump-goto-file-line "relfile.js" 62 4))
+     (dumb-jump-handle-results results "/code/redux/relfile.js" "/code/redux" "" "isNow" nil nil))))
