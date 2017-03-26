@@ -1351,11 +1351,19 @@ PREFER-EXTERNAL will sort current file last."
          (match-no-comments (dumb-jump-filter-no-start-comments match-sorted lang))
 
          ;; Find the relative current file path by the project root. In some cases the results will
-         ;; not be absolute but relative and the "current file" filters must match in both cases.
+         ;; not be absolute but relative and the "current file" filters must match in both
+         ;; cases. Also works when current file is in an arbitrary sub folder.
          (rel-cur-file
-          (if (s-starts-with? proj-root cur-file)
-              (substring cur-file (1+ (length proj-root)) (length cur-file))
-            cur-file))
+          (cond ((and (s-starts-with? proj-root cur-file)
+                      (s-starts-with? default-directory cur-file))
+                 (substring cur-file (length default-directory) (length cur-file)))
+
+                ((and (s-starts-with? proj-root cur-file)
+                      (not (s-starts-with? default-directory cur-file)))
+                 (substring cur-file (1+ (length proj-root)) (length cur-file)))
+
+                (t
+                 cur-file)))
 
          ;; Moves current file results to the front of the list, unless PREFER-EXTERNAL then put
          ;; them last.
