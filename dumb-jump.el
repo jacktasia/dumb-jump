@@ -1370,13 +1370,22 @@ PREFER-EXTERNAL will sort current file last."
                               (or (string= (plist-get it :path) cur-file)
                                   (string= (plist-get it :path) rel-cur-file)))
                          match-no-comments)
-               (--filter (not (or (string= (plist-get it :path) cur-file)
-                                  (string= (plist-get it :path) rel-cur-file)))
-                         match-no-comments))
+
+               ;; Sort non-current files by path length so the nearest file is more likely to be
+               ;; sorted higher to the top. Also sorts by line number for sanity.
+               (-sort (lambda (x y)
+                        (and (< (plist-get x :line) (plist-get y :line))
+                             (< (length (plist-get x :path)) (length (plist-get y :path)))))
+                      (--filter (not (or (string= (plist-get it :path) cur-file)
+                                         (string= (plist-get it :path) rel-cur-file)))
+                                match-no-comments)))
             (-concat
-             (--filter (not (or (string= (plist-get it :path) cur-file)
-                                (string= (plist-get it :path) rel-cur-file)))
-                       match-no-comments)
+             (-sort (lambda (x y)
+                      (and (< (plist-get x :line) (plist-get y :line))
+                           (< (length (plist-get x :path)) (length (plist-get y :path)))))
+                    (--filter (not (or (string= (plist-get it :path) cur-file)
+                                       (string= (plist-get it :path) rel-cur-file)))
+                              match-no-comments))
              (--filter (or (string= (plist-get it :path) cur-file)
                            (string= (plist-get it :path) rel-cur-file))
                        match-no-comments))))
