@@ -790,7 +790,6 @@ using searcher git-grep."
     (:language "javascript" :type "variable" :right "^)" :left "($")
     (:language "javascript" :type "variable" :right "^\\." :left nil)
     (:language "javascript" :type "variable" :right "^;" :left nil)
-    (:language "php" :type "function" :right "^(" :left nil)
     (:language "perl" :type "function" :right "^(" :left nil)
     (:language "elisp" :type "function" :right nil :left "($")
     (:language "elisp" :type "variable" :right "^)" :left nil))
