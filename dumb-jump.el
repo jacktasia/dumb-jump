@@ -1349,28 +1349,59 @@ PREFER-EXTERNAL will sort current file last."
          (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
          (match-no-comments (dumb-jump-filter-no-start-comments match-sorted lang))
 
+         ;; Find the relative current file path by the project root. In some cases the results will
+         ;; not be absolute but relative and the "current file" filters must match in both
+         ;; cases. Also works when current file is in an arbitrary sub folder.
+         (rel-cur-file
+          (cond ((and (s-starts-with? proj-root cur-file)
+                      (s-starts-with? default-directory cur-file))
+                 (substring cur-file (length default-directory) (length cur-file)))
+
+                ((and (s-starts-with? proj-root cur-file)
+                      (not (s-starts-with? default-directory cur-file)))
+                 (substring cur-file (1+ (length proj-root)) (length cur-file)))
+
+                (t
+                 cur-file)))
+
          ;; Moves current file results to the front of the list, unless PREFER-EXTERNAL then put
          ;; them last.
          (match-cur-file-front
           (if (not prefer-external)
               (-concat
                (--filter (and (> (plist-get it :diff) 0)
-                              (string= (plist-get it :path) cur-file))
+                              (or (string= (plist-get it :path) cur-file)
+                                  (string= (plist-get it :path) rel-cur-file)))
                          match-no-comments)
                (--filter (and (<= (plist-get it :diff) 0)
-                              (string= (plist-get it :path) cur-file))
+                              (or (string= (plist-get it :path) cur-file)
+                                  (string= (plist-get it :path) rel-cur-file)))
                          match-no-comments)
-               (--filter (not (string= (plist-get it :path) cur-file))
-                         match-no-comments))
+
+               ;; Sort non-current files by path length so the nearest file is more likely to be
+               ;; sorted higher to the top. Also sorts by line number for sanity.
+               (-sort (lambda (x y)
+                        (and (< (plist-get x :line) (plist-get y :line))
+                             (< (length (plist-get x :path)) (length (plist-get y :path)))))
+                      (--filter (not (or (string= (plist-get it :path) cur-file)
+                                         (string= (plist-get it :path) rel-cur-file)))
+                                match-no-comments)))
             (-concat
-             (--filter (not (string= (plist-get it :path) cur-file))
-                       match-no-comments)
-             (--filter (string= (plist-get it :path) cur-file)
+             (-sort (lambda (x y)
+                      (and (< (plist-get x :line) (plist-get y :line))
+                           (< (length (plist-get x :path)) (length (plist-get y :path)))))
+                    (--filter (not (or (string= (plist-get it :path) cur-file)
+                                       (string= (plist-get it :path) rel-cur-file)))
+                              match-no-comments))
+             (--filter (or (string= (plist-get it :path) cur-file)
+                           (string= (plist-get it :path) rel-cur-file))
                        match-no-comments))))
 
          (matches
           (if (not prefer-external)
-              (dumb-jump-current-file-results cur-file match-cur-file-front)
+              (-distinct
+               (append (dumb-jump-current-file-results cur-file match-cur-file-front)
+                       (dumb-jump-current-file-results rel-cur-file match-cur-file-front)))
             match-cur-file-front))
 
          (var-to-jump (car matches))
@@ -1380,8 +1411,8 @@ PREFER-EXTERNAL will sort current file last."
                                (string= ctx-type ""))
                            var-to-jump)))
      ;; (dumb-jump-message-prin1
-     ;;  "type: %s | jump? %s | matches: %s | sorted-no-comments: %s | results: %s | prefer external: %s"
-     ;;  ctx-type var-to-jump matches match-no-comments results prefer-external)
+     ;;  "type: %s | jump? %s | matches: %s  | results: %s | prefer external: %s\n\nmatch-cur-file-front: %s\nproj-root: %s\ncur-file: %s\nreal-cur-file: %s"
+     ;;  ctx-type var-to-jump match-cur-file-front results prefer-external match-cur-file-front proj-root cur-file rel-cur-file)
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump use-tooltip proj-root)
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front))))
