@@ -1122,3 +1122,29 @@
     (with-mock
      (mock (dumb-jump-goto-file-line "relfile.js" 62 4))
      (dumb-jump-handle-results results "/code/redux/relfile.js" "/code/redux" "" "isNow" nil nil))))
+
+;; Make sure it jumps aggressively, i.e. normally.
+(ert-deftest dumb-jump-handle-results-aggressively-test ()
+  (let ((dumb-jump-aggressive t)
+        (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
+                   (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
+    (with-mock
+     (mock (dumb-jump-goto-file-line "relfile.js" 62 4))
+     (dumb-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" nil nil))))
+
+;; Make sure non-aggressive mode shows choices when more than one possibility.
+(ert-deftest dumb-jump-handle-results-non-aggressively-test ()
+  (let ((dumb-jump-aggressive nil)
+        (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
+                   (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
+    (with-mock
+     (mock (dumb-jump-prompt-user-for-choice "/code/redux" *))
+     (dumb-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" nil nil))))
+
+;; Make sure it jumps when there's only one possiblity in non-aggressive mode.
+(ert-deftest dumb-jump-handle-results-non-aggressive-do-jump-test ()
+  (let ((dumb-jump-aggressive nil)
+        (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow"))))
+    (with-mock
+     (mock (dumb-jump-goto-file-line "relfile.js" 62 4))
+     (dumb-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" nil nil))))
