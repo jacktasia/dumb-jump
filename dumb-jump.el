@@ -827,6 +827,13 @@ a symbol then it's probably a function call"
   :group 'dumb-jump
   :type 'hook)
 
+(defcustom dumb-jump-aggressive
+  t
+  "If `t' jump aggressively with the possiblity of a false
+positive. If `nil' always show list of more than 1 match."
+  :group 'dumb-jump
+  :type 'boolean)
+
 (defun dumb-jump-message-prin1 (str &rest args)
   "Helper function when debugging apply STR 'prin1-to-string' to all ARGS."
   (apply 'message str (-map 'prin1-to-string args)))
@@ -1406,10 +1413,16 @@ PREFER-EXTERNAL will sort current file last."
 
          (var-to-jump (car matches))
          ;; TODO: handle if ctx-type is null but ALL results are variable
-         (do-var-jump (and (or (= (length matches) 1)
-                               (string= ctx-type "variable")
-                               (string= ctx-type ""))
-                           var-to-jump)))
+
+         ;; When non-aggressive it should only jump when there is only one match, regardless of
+         ;; context.
+         (do-var-jump
+          (and (or dumb-jump-aggressive
+                   (= (length match-cur-file-front) 1))
+               (or (= (length matches) 1)
+                   (string= ctx-type "variable")
+                   (string= ctx-type ""))
+               var-to-jump)))
      ;; (dumb-jump-message-prin1
      ;;  "type: %s | jump? %s | matches: %s  | results: %s | prefer external: %s\n\nmatch-cur-file-front: %s\nproj-root: %s\ncur-file: %s\nreal-cur-file: %s"
      ;;  ctx-type var-to-jump match-cur-file-front results prefer-external match-cur-file-front proj-root cur-file rel-cur-file)
