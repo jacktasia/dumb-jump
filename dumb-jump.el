@@ -1570,10 +1570,10 @@ searcher symbol."
       "-icf")
 
      ((string-equal "bash" base-name)
-      "--noprofile --norc -c")
+      "-c")
 
      (t
-      "-c"))))
+      shell-command-switch))))
 
 ;; TODO: rename dumb-jump-run-definition-command
 (defun dumb-jump-run-command

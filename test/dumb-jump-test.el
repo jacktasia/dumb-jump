@@ -1163,4 +1163,4 @@
 
 (ert-deftest dumb-jump-shell-command-switch-bash-test ()
   (let ((shell-file-name "/usr/bin/bash"))
-    (should (string-equal "--noprofile --norc -c" (dumb-jump-shell-command-switch)))))
+    (should (string-equal "-c" (dumb-jump-shell-command-switch)))))
