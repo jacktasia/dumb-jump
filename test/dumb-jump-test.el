@@ -1148,3 +1148,19 @@
     (with-mock
      (mock (dumb-jump-goto-file-line "relfile.js" 62 4))
      (dumb-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" nil nil))))
+
+(ert-deftest dumb-jump-shell-command-switch-zsh-test ()
+  (let ((shell-file-name "/usr/bin/zsh"))
+    (should (string-equal "-icf" (dumb-jump-shell-command-switch)))))
+
+(ert-deftest dumb-jump-shell-command-switch-csh-test ()
+  (let ((shell-file-name "/usr/bin/csh"))
+    (should (string-equal "-icf" (dumb-jump-shell-command-switch)))))
+
+(ert-deftest dumb-jump-shell-command-switch-tcsh-test ()
+  (let ((shell-file-name "/usr/bin/zsh"))
+    (should (string-equal "-icf" (dumb-jump-shell-command-switch)))))
+
+(ert-deftest dumb-jump-shell-command-switch-bash-test ()
+  (let ((shell-file-name "/usr/bin/bash"))
+    (should (string-equal "--noprofile --norc -c" (dumb-jump-shell-command-switch)))))
