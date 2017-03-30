@@ -1164,3 +1164,7 @@
 (ert-deftest dumb-jump-shell-command-switch-bash-test ()
   (let ((shell-file-name "/usr/bin/bash"))
     (should (string-equal "-c" (dumb-jump-shell-command-switch)))))
+
+(ert-deftest dumb-jump-shell-command-switch-unknown-test ()
+  (let ((shell-file-name "/usr/bin/thisshelldoesnotexist"))
+    (should (string-equal shell-command-switch (dumb-jump-shell-command-switch)))))
