@@ -1558,11 +1558,29 @@ searcher symbol."
    (t
     (dumb-jump-generators-by-searcher 'grep))))
 
+(defun dumb-jump-shell-command-switch ()
+  "Yields the shell command switch to use for the current
+  `shell-file-name' in order to not load the shell profile/RC for
+  speeding up things."
+  (let ((base-name (downcase (file-name-base shell-file-name))))
+    (cond
+     ((or (string-equal "zsh" base-name)
+          (string-equal "csh" base-name)
+          (string-equal "tcsh" base-name))
+      "-icf")
+
+     ((string-equal "bash" base-name)
+      "-c")
+
+     (t
+      shell-command-switch))))
+
 ;; TODO: rename dumb-jump-run-definition-command
 (defun dumb-jump-run-command
     (look-for proj regexes lang exclude-args cur-file line-num parse-fn generate-fn)
   "Run the grep command based on the needle LOOK-FOR in the directory TOSEARCH"
   (let* ((cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
+         (shell-command-switch (dumb-jump-shell-command-switch))
          (rawresults (shell-command-to-string cmd)))
 
     ;;(dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
