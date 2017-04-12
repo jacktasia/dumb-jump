@@ -834,6 +834,13 @@ positive. If `nil' always show list of more than 1 match."
   :group 'dumb-jump
   :type 'boolean)
 
+(defcustom dumb-jump-debug
+  nil
+  "If `t` will print helpful debug information."
+  :group 'dumb-jump
+  :type 'boolean)
+
+
 (defun dumb-jump-message-prin1 (str &rest args)
   "Helper function when debugging apply STR 'prin1-to-string' to all ARGS."
   (apply 'message str (-map 'prin1-to-string args)))
@@ -1423,9 +1430,11 @@ PREFER-EXTERNAL will sort current file last."
                    (string= ctx-type "variable")
                    (string= ctx-type ""))
                var-to-jump)))
-     ;; (dumb-jump-message-prin1
-     ;;  "type: %s | jump? %s | matches: %s  | results: %s | prefer external: %s\n\nmatch-cur-file-front: %s\nproj-root: %s\ncur-file: %s\nreal-cur-file: %s"
-     ;;  ctx-type var-to-jump match-cur-file-front results prefer-external match-cur-file-front proj-root cur-file rel-cur-file)
+
+    (when dumb-jump-debug
+      (dumb-jump-message
+       "-----\nDUMB JUMP DEBUG START\n----- \n\nlook for: \n\t%s\n\ntype: \n\t%s \n\njump? \n\t%s \n\nmatches: \n\t%s \n\nresults: \n\t%s \n\nprefer external: \n\t%s\n\nmatch-cur-file-front: \n\t%s\n\nproj-root: \n\t%s\n\ncur-file: \n\t%s\n\nreal-cur-file: \n\t%s \n\n-----\nDUMB JUMP DEBUG END\n-----\n"
+       look-for ctx-type var-to-jump (pp-to-string match-cur-file-front) (pp-to-string results) prefer-external match-cur-file-front proj-root cur-file rel-cur-file))
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump use-tooltip proj-root)
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front))))
