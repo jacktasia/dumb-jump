@@ -1433,7 +1433,7 @@ PREFER-EXTERNAL will sort current file last."
 
     (when dumb-jump-debug
       (dumb-jump-message
-       "-----\nDUMB JUMP DEBUG START\n----- \n\nlook for: \n\t%s\n\ntype: \n\t%s \n\njump? \n\t%s \n\nmatches: \n\t%s \n\nresults: \n\t%s \n\nprefer external: \n\t%s\n\nmatch-cur-file-front: \n\t%s\n\nproj-root: \n\t%s\n\ncur-file: \n\t%s\n\nreal-cur-file: \n\t%s \n\n-----\nDUMB JUMP DEBUG END\n-----\n"
+       "-----\nDUMB JUMP DEBUG `dumb-jump-handle-results` START\n----- \n\nlook for: \n\t%s\n\ntype: \n\t%s \n\njump? \n\t%s \n\nmatches: \n\t%s \n\nresults: \n\t%s \n\nprefer external: \n\t%s\n\nmatch-cur-file-front: \n\t%s\n\nproj-root: \n\t%s\n\ncur-file: \n\t%s\n\nreal-cur-file: \n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-handle-results` END\n-----\n"
        look-for ctx-type var-to-jump (pp-to-string match-cur-file-front) (pp-to-string results) prefer-external match-cur-file-front proj-root cur-file rel-cur-file))
     (if do-var-jump
         (dumb-jump-result-follow var-to-jump use-tooltip proj-root)
@@ -1592,13 +1592,17 @@ searcher symbol."
          (shell-command-switch (dumb-jump-shell-command-switch))
          (rawresults (shell-command-to-string cmd)))
 
-    ;;(dumb-jump-message-prin1 "NORMAL RUN: CMD '%s' RESULTS: %s" cmd rawresults)
+    (when dumb-jump-debug
+      (dumb-jump-message
+       "-----\nDUMB JUMP DEBUG `dumb-jump-run-command` START\n----- \n\ncmd: \n\t%s\n\nraw results: \n\n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-run-command` END\n-----\n" cmd rawresults))
+
     (when (and (s-blank? rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
       (setq rawresults (shell-command-to-string cmd))
-      ;;(dumb-jump-message-prin1 "FALLBACK RUN CMD '%s' RESULTS: %s" cmd rawresults)
-      )
+      (when dumb-jump-debug
+        (dumb-jump-message
+       "-----\nDUMB JUMP DEBUG `dumb-jump-run-command` (FALLBACK!) START\n----- \n\ncmd: \n\t%s\n\nraw results: \n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-run-command` (FALLBACK) END\n-----\n" cmd rawresults)))
 
     (unless (s-blank? cmd)
       (let ((results (funcall parse-fn rawresults cur-file line-num)))
