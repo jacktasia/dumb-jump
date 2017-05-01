@@ -59,7 +59,7 @@
   :group 'dumb-jump
   :type '(choice (const :tag "Popup" popup)
                  (const :tag "Helm" helm)
-                 (const :tag "Ivy" other)))
+                 (const :tag "Ivy" ivy)))
 
 (defcustom dumb-jump-prefer-searcher
   nil
@@ -67,7 +67,12 @@
 or 'grep. If `nil' then the most optimal searcher will be chosen
 at runtime."
   :group 'dumb-jump
-  :type 'string)
+  :type '(choice (const :tag "Best Available" nil)
+                 (const :tag "ag" ag)
+                 (const :tag "rg" rg)
+                 (const :tag "grep" gnu-grep)
+                 (const :tag "git grep" git-grep)))
+
 
 (defcustom dumb-jump-force-searcher
   nil
@@ -75,7 +80,11 @@ at runtime."
 or 'grep. Set to `nil' to not force anything and use
 `dumb-jump-prefer-searcher' or most optimal searcher."
   :group 'dumb-jump
-  :type 'string)
+  :type '(choice (const :tag "Best Available" nil)
+                 (const :tag "ag" ag)
+                 (const :tag "rg" rg)
+                 (const :tag "grep" gnu-grep)
+                 (const :tag "git grep" git-grep)))
 
 (defcustom dumb-jump-grep-prefix
   "LANG=C"
