@@ -48,7 +48,7 @@
 
 (defcustom dumb-jump-window
   'current
-  "Which window to use when jumping valid options are 'current (default) or 'other."
+  "Which window to use when jumping. Valid options are 'current (default) or 'other."
   :group 'dumb-jump
   :type '(choice (const :tag "Current window" current)
                  (const :tag "Other window" other)))
