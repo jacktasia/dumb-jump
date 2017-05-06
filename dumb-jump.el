@@ -48,7 +48,7 @@
 
 (defcustom dumb-jump-window
   'current
-  "Which window to use when jumping valid options are 'current (default) or 'other."
+  "Which window to use when jumping. Valid options are 'current (default) or 'other."
   :group 'dumb-jump
   :type '(choice (const :tag "Current window" current)
                  (const :tag "Other window" other)))
@@ -1041,7 +1041,8 @@ number when pressing C-j in helm."
     (let ((buffer-file-name file))
       (set-auto-mode)
       (font-lock-fontify-region (point-min) (point-max))
-      (goto-line line))))
+      (goto-char (point-min))
+      (forward-line (1- line)))))
 
 (defun dumb-jump-prompt-user-for-choice (proj results)
   "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy)
