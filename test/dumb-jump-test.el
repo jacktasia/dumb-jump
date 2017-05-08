@@ -647,7 +647,7 @@
         (dumb-jump-max-find-time 0.2))
     (with-current-buffer (find-file-noselect txt-file t)
       (goto-char (point-min))
-      (noflet ((dumb-jump-fetch-file-results ()
+      (noflet ((dumb-jump-fetch-file-results (&optional prompt)
                  (sleep-for 0 300)
                  '()))
         (with-mock
