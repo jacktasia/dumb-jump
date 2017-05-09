@@ -1113,7 +1113,7 @@ to keep looking for another root."
   "Return a result property list with the ISSUE set as :issue property symbol."
   `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil :issue ,(intern issue)))
 
-(defun dumb-jump-get-results ()
+(defun dumb-jump-get-results (&optional prompt)
   "Run dumb-jump-fetch-results if searcher installed, buffer is saved, and there's a symbol under point."
   (cond
    ((not (or (dumb-jump-ag-installed?)
@@ -1123,15 +1123,15 @@ to keep looking for another root."
     (dumb-jump-issue-result "nogrep"))
    ((or (string= (buffer-name) "*shell*")
         (string= (buffer-name) "*eshell*"))
-    (dumb-jump-fetch-shell-results))
+    (dumb-jump-fetch-shell-results prompt))
    ((buffer-modified-p (current-buffer))
     (dumb-jump-issue-result "unsaved"))
-   ((and (not (region-active-p)) (not (thing-at-point 'symbol)))
+   ((and (not prompt) (not (region-active-p)) (not (thing-at-point 'symbol)))
     (dumb-jump-issue-result "nosymbol"))
    (t
-    (dumb-jump-fetch-file-results))))
+    (dumb-jump-fetch-file-results prompt))))
 
-(defun dumb-jump-fetch-shell-results ()
+(defun dumb-jump-fetch-shell-results (&optional prompt)
   (let* ((cur-file (buffer-name))
          (proj-root (dumb-jump-get-project-root default-directory))
          (proj-config (dumb-jump-get-config proj-root))
@@ -1139,9 +1139,9 @@ to keep looking for another root."
                    (dumb-jump-read-config proj-root proj-config)))
          (lang (or (plist-get config :language)
                    (car (dumb-jump-get-lang-by-shell-contents (buffer-name))))))
-    (dumb-jump-fetch-results cur-file proj-root lang config)))
+    (dumb-jump-fetch-results cur-file proj-root lang config prompt)))
 
-(defun dumb-jump-fetch-file-results ()
+(defun dumb-jump-fetch-file-results (&optional prompt)
   (let* ((cur-file (or (buffer-file-name) ""))
          (proj-root (dumb-jump-get-project-root cur-file))
          (proj-config (dumb-jump-get-config proj-root))
@@ -1149,7 +1149,7 @@ to keep looking for another root."
                    (dumb-jump-read-config proj-root proj-config)))
          (lang (or (plist-get config :language)
                    (dumb-jump-get-language cur-file))))
-    (dumb-jump-fetch-results cur-file proj-root lang config)))
+    (dumb-jump-fetch-results cur-file proj-root lang config prompt)))
 
 (defun dumb-jump-process-symbol-by-lang (lang look-for)
   "Process LANG's LOOK-FOR.  For instance, clojure needs namespace part removed."
@@ -1184,22 +1184,23 @@ to keep looking for another root."
               dumb-jump-language-file-exts)))
     (--map (plist-get it :language) found)))
 
-(defun dumb-jump-fetch-results (cur-file proj-root lang config)
+(defun dumb-jump-fetch-results (cur-file proj-root lang config &optional prompt)
   "Return a list of results based on current file context and calling grep/ag.
 CUR-FILE is the path of the current buffer.
 PROJ-ROOT is that file's root project directory.
 LANG is a string programming langage with CONFIG a property list
 of project configuraiton."
-  (let* ((cur-line (dumb-jump-get-point-line))
-         (look-for-start (- (car (bounds-of-thing-at-point 'symbol))
-                            (point-at-bol)))
+  (let* ((cur-line (if prompt 0 (dumb-jump-get-point-line)))
+         (look-for-start (when (not prompt)
+                           (- (car (bounds-of-thing-at-point 'symbol))
+                            (point-at-bol))))
          (cur-line-num (line-number-at-pos))
          (proj-config (dumb-jump-get-config proj-root))
          (config (when (s-ends-with? ".dumbjump" proj-config)
                    (dumb-jump-read-config proj-root proj-config)))
-         (found-symbol (dumb-jump-get-point-symbol))
-         (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
-         (pt-ctx (if (not (string= cur-line look-for))
+         (found-symbol (or prompt (dumb-jump-get-point-symbol)))
+         (look-for (or prompt (dumb-jump-process-symbol-by-lang lang found-symbol)))
+         (pt-ctx (if (and (not prompt) (not (string= cur-line look-for)))
                      (dumb-jump-get-point-context cur-line look-for look-for-start)
                    nil))
          (ctx-type
@@ -1262,6 +1263,12 @@ of project configuraiton."
   (dumb-jump-go nil t))
 
 ;;;###autoload
+(defun dumb-jump-go-prompt ()
+  "Like dumb-jump-go but prompts for function instead of using under point"
+  (interactive)
+  (dumb-jump-go nil nil (read-from-minibuffer "Jump to: ")))
+
+;;;###autoload
 (defun dumb-jump-go-prefer-external-other-window ()
   "Like dumb-jump-go-prefer-external but use 'find-file-other-window' instead of 'find-file'."
   (interactive)
@@ -1269,18 +1276,18 @@ of project configuraiton."
     (dumb-jump-go-prefer-external)))
 
 ;;;###autoload
-(defun dumb-jump-go (&optional use-tooltip prefer-external)
+(defun dumb-jump-go (&optional use-tooltip prefer-external prompt)
   "Go to the function/variable declaration for thing at point.
 When USE-TOOLTIP is t a tooltip jump preview will show instead.
 When PREFER-EXTERNAL is t it will sort external matches before
 current file."
   (interactive "P")
   (let* ((start-time (float-time))
-         (info (dumb-jump-get-results))
+         (info (dumb-jump-get-results prompt))
          (end-time (float-time))
          (fetch-time (- end-time start-time))
          (results (plist-get info :results))
-         (look-for (plist-get info :symbol))
+         (look-for (or prompt (plist-get info :symbol)))
          (proj-root (plist-get info :root))
          (issue (plist-get info :issue))
          (lang (plist-get info :lang))
