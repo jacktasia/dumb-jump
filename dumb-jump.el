@@ -53,6 +53,12 @@
   :type '(choice (const :tag "Current window" current)
                  (const :tag "Other window" other)))
 
+(defcustom dumb-jump-use-visible-window
+  t
+  "When true will jump in a visible window if that window already has the file open."
+  :group 'dumb-jump
+  :type 'boolean)
+
 (defcustom dumb-jump-selector
   'popup
   "Which selector to use when there is multiple choices.  `ivy` and `helm' are also supported."
@@ -1511,10 +1517,15 @@ Ffrom the ROOT project CONFIG-FILE."
       (xref-push-marker-stack)
    (ring-insert find-tag-marker-ring (point-marker)))
 
-  (if (eq dumb-jump-window 'other)
-      (find-file-other-window thefile)
-    (unless (string= thefile (buffer-file-name))
-      (find-file thefile)))
+  (let* ((visible-buffer (find-buffer-visiting thefile))
+         (visible-window (when visible-buffer (get-buffer-window visible-buffer))))
+    (cond
+     ((and visible-window dumb-jump-use-visible-window)
+      (select-window visible-window))
+     ((eq dumb-jump-window 'other)
+      (find-file-other-window thefile))
+     (t (find-file thefile))))
+
   (goto-char (point-min))
   (forward-line (1- theline))
   (forward-char pos)
