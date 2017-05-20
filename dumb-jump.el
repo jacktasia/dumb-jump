@@ -319,7 +319,7 @@ using searcher git-grep."
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "objc"
            :regex "\\b\\*?JJJ\\s*=[^=\\n]+"
            :tests ("NSString *test = @\"asdf\"")
-           :tests ("NSString *testnot = @\"asdf\"" "NSString *nottest = @\"asdf\""))
+           :not ("NSString *testnot = @\"asdf\"" "NSString *nottest = @\"asdf\""))
 
     ;; swift
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
