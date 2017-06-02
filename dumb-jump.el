@@ -844,8 +844,8 @@ a symbol then it's probably a function call"
 
 (defcustom dumb-jump-aggressive
   t
-  "If `t' jump aggressively with the possiblity of a false
-positive. If `nil' always show list of more than 1 match."
+  "If `t` jump aggressively with the possiblity of a false positive.
+If `nil` always show list of more than 1 match."
   :group 'dumb-jump
   :type 'boolean)
 
@@ -1130,8 +1130,6 @@ to keep looking for another root."
    ((or (string= (buffer-name) "*shell*")
         (string= (buffer-name) "*eshell*"))
     (dumb-jump-fetch-shell-results prompt))
-   ((buffer-modified-p (current-buffer))
-    (dumb-jump-issue-result "unsaved"))
    ((and (not prompt) (not (region-active-p)) (not (thing-at-point 'symbol)))
     (dumb-jump-issue-result "nosymbol"))
    (t
@@ -1303,8 +1301,6 @@ current file."
       (dumb-jump-message
        "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
        (number-to-string dumb-jump-max-find-time) look-for proj-root))
-     ((eq issue 'unsaved)
-      (dumb-jump-message "Please save your file before jumping."))
      ((eq issue 'nogrep)
       (dumb-jump-message "Please install ag, rg, git grep or grep!"))
      ((eq issue 'nosymbol)
@@ -1488,7 +1484,24 @@ Ffrom the ROOT project CONFIG-FILE."
 
     `(:exclude ,exclude-paths :include ,include-paths :language ,lang)))
 
+(defun dumb-jump-file-modified-p (path)
+  "Check if PATH is currently open in Emacs and has a modified buffer."
+  (let ((modified-file-buffers
+         (--filter
+          (and (buffer-modified-p it)
+               (buffer-file-name it)
+               (file-exists-p (buffer-file-name it)))
+          (buffer-list))))
+    (member path (--map (buffer-file-name it) modified-file-buffers))))
+
 (defun dumb-jump-result-follow (result &optional use-tooltip proj)
+  "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump.  Prompt if we should continue if destentation has been modified."
+  (if (dumb-jump-file-modified-p (plist-get result :path))
+      (when (y-or-n-p (concat (plist-get result :path) " has been modified so we may have the wrong location. Continue?"))
+        (dumb-jump--result-follow result use-tooltip proj))
+    (dumb-jump--result-follow result use-tooltip proj)))
+
+(defun dumb-jump--result-follow (result &optional use-tooltip proj)
   "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump."
   (let* ((target-boundary (s-matched-positions-all
                            (concat "\\b" (regexp-quote (plist-get result :target)) "\\b")

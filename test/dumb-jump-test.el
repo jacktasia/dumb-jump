@@ -709,16 +709,6 @@
      ;; confirm memoization of the previous result
      (should (eq (dumb-jump-git-grep-installed?) t)))))
 
-(ert-deftest dumb-jump-go-unsaved-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
-    (with-current-buffer (find-file-noselect js-file t)
-      (goto-char (point-min))
-      (forward-char 13)
-      (with-mock
-       (mock (buffer-modified-p *) => t)
-       (mock (dumb-jump-message "Please save your file before jumping."))
-       (dumb-jump-go)))))
-
 (ert-deftest dumb-jump-go-nogrep-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
@@ -741,12 +731,6 @@
        (mock (dumb-jump-message "No symbol under point."))
        (dumb-jump-go)))))
 
-(ert-deftest dumb-jump-message-get-results-unsaved-test ()
-  (with-mock
-   (mock (buffer-modified-p *) => t)
-   (let ((results (dumb-jump-get-results)))
-     (should (eq (plist-get results :issue) 'unsaved)))))
-
 (ert-deftest dumb-jump-message-get-results-nogrep-test ()
   (with-mock
    (mock (dumb-jump-rg-installed?) => nil)
@@ -760,13 +744,13 @@
   (with-mock
    (mock (dumb-jump-goto-file-line "src/file.js" 62 4))
    (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
-     (dumb-jump-result-follow result))))
+     (dumb-jump--result-follow result))))
 
 (ert-deftest dumb-jump-message-result-follow-tooltip-test ()
   (with-mock
    (mock (popup-tip "/file.js:62 var isNow = true"))
    (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
-     (dumb-jump-result-follow result t "src"))))
+     (dumb-jump--result-follow result t "src"))))
 
 (ert-deftest dumb-jump-populate-regexes-grep-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'grep) '("testvar\\s*=\\s*")))
@@ -811,11 +795,11 @@
     (should (string= result2 "myfunc"))
     (should (string= result3 "myrubyfunc"))))
 
-(ert-deftest dumb-jump-result-follow-test ()
+(ert-deftest dumb-jump--result-follow-test ()
   (let* ((data '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
     (with-mock
      (mock (dumb-jump-goto-file-line "/usr/blah/test2.txt" 52 1))
-     (dumb-jump-result-follow data nil "/usr/blah"))))
+     (dumb-jump--result-follow data nil "/usr/blah"))))
 
 (ert-deftest dumb-jump-find-start-pos-test ()
   (let ((cur-pos 9)
