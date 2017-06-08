@@ -24,6 +24,7 @@ There is currently basic support for the following languages:
 * C#
 * Clojure
 * CoffeeScript
+* Coq
 * Emacs Lisp
 * Faust
 * Fortran
@@ -89,6 +90,8 @@ If you want to stop a directory from registering as the project root (and have D
     -images
     +../some-lib/src
     +/usr/lib/src
+
+*NOTE* When adding paths outside of the project (using `+`) ensure you use `dumb-jump-force-searcher` of either `'ag` or `'rg` (see below). This is required because the default searcher (`git-grep`) won't be able to search outside of the project root. This edge case will be fixed in a future release. That is, `git-grep` will NOT be set as the default searcher if a `.dumpjump` is present with a `+` path outside of the repo.
 
 ##### `.emacs` options
 

@@ -366,6 +366,52 @@ using searcher git-grep."
            :tests ("class test:" "public class test implements Something")
            :not ("class testnot:" "public class testnot implements Something"))
 
+    ;; coq
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Variable\\s+JJJ\\b"
+           :tests ("Variable test")
+           :not ("Variable testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Inductive\\s+JJJ\\b"
+           :tests ("Inductive test")
+           :not ("Inductive testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Lemma\\s+JJJ\\b"
+           :tests ("Lemma test")
+           :not ("Lemma testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Definition\\s+JJJ\\b"
+           :tests ("Definition test")
+           :not ("Definition testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Hypothesis\\s+JJJ\\b"
+           :tests ("Hypothesis test")
+           :not ("Hypothesis testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Theorm\\s+JJJ\\b"
+           :tests ("Theorm test")
+           :not ("Theorm testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Fixpoint\\s+JJJ\\b"
+           :tests ("Fixpoint test")
+           :not ("Fixpoint testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Module\\s+JJJ\\b"
+           :tests ("Module test")
+           :not ("Module testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*CoInductive\\s+JJJ\\b"
+           :tests ("CoInductive test")
+           :not ("CoInductive testx"))
+
     ;; python
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "python"
            :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234:"))
@@ -727,6 +773,7 @@ using searcher git-grep."
     (:language "c++" :ext "hh" :agtype "cpp" :rgtype "cpp")
     (:language "c++" :ext "c++" :agtype nil :rgtype nil)
     (:language "c++" :ext "h++" :agtype nil :rgtype nil)
+    (:language "coq" :ext "v" :agtype nil :rgtype nil)
     (:language "haskell" :ext "hs" :agtype "haskell" :rgtype "haskell")
     (:language "haskell" :ext "lhs" :agtype "haskell" :rgtype "haskell")
     (:language "objc" :ext "m" :agtype "objc" :rgtype "objc")
