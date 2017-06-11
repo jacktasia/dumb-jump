@@ -500,6 +500,11 @@ using searcher git-grep."
            :tests ("function test{" "function test {" "function test () {")
            :not   ("function nottest {"))
 
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "shell"
+           :regex "JJJ\\\(\\\)\\s*\\{"
+           :tests ("test() {")
+           :not ("testx() {"))
+
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "shell"
            :regex "\\bJJJ\\s*=\\s*"
            :tests ("test = 1234") :not ("blahtest = 1234"))
@@ -830,12 +835,12 @@ using searcher git-grep."
     (:language "rust" :ext "rs" :agtype "rust" :rgtype "rust")
     (:language "scala" :ext "scala" :agtype "scala" :rgtype "scala")
     (:language "scheme" :ext "scm" :agtype "scheme" :rgtype "lisp")
-    (:language "shell" :ext "sh" :agtype "shell" :rgtype "sh")
-    (:language "shell" :ext "bash" :agtype "shell" :rgtype "sh")
-    (:language "shell" :ext "csh" :agtype "shell" :rgtype "sh")
-    (:language "shell" :ext "ksh" :agtype "shell" :rgtype "sh")
-    (:language "shell" :ext "tcsh" :agtype "shell" :rgtype "sh")
-    (:language "swift" :ext "swift" :agtype "swift" :rgtype "swift"))
+    (:language "shell" :ext "sh" :agtype nil :rgtype nil)
+    (:language "shell" :ext "bash" :agtype nil :rgtype nil)
+    (:language "shell" :ext "csh" :agtype nil :rgtype nil)
+    (:language "shell" :ext "ksh" :agtype nil :rgtype nil)
+    (:language "shell" :ext "tcsh" :agtype nil :rgtype nil)
+    (:language "swift" :ext "swift" :agtype nil :rgtype "swift"))
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
   :type
@@ -1145,11 +1150,14 @@ to keep looking for another root."
                        (dumb-jump-get-language-from-mode))))
     (if (member language languages)
       language
-      (format ".%s file" (or (f-ext file) "?")))))
+      (format ".%s file" (or (f-ext file) "")))))
 
 (defun dumb-jump-get-language-from-mode ()
   "Extract the language from the 'major-mode' name.  Currently just everything before '-mode'."
-  (s-replace "-mode" "" (symbol-name major-mode)))
+  (let ((lookup '(sh "shell"))
+        (m (s-replace "-mode" "" (symbol-name major-mode))))
+        (or (plist-get lookup (intern m)) m)))
+
 
 (defun dumb-jump-get-language-by-filename (file)
   "Get the programming language from the FILE."
