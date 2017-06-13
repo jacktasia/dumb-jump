@@ -895,7 +895,7 @@ a symbol then it's probably a function call"
   :type 'hook)
 
 (defcustom dumb-jump-aggressive
-  t
+  nil
   "If `t` jump aggressively with the possiblity of a false positive.
 If `nil` always show list of more than 1 match."
   :group 'dumb-jump

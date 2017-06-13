@@ -554,7 +554,8 @@
 
 
 (ert-deftest dumb-jump-go-sig-def-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
+  (let ((dumb-jump-aggressive t)
+        (js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 7)
@@ -564,7 +565,8 @@
        (should (string= js-file (dumb-jump-go)))))))
 
 (ert-deftest dumb-jump-go-sig-def2-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
+  (let ((dumb-jump-aggressive t)
+        (js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 13)
@@ -574,7 +576,8 @@
        (should (string= js-file (dumb-jump-go)))))))
 
 (ert-deftest dumb-jump-go-sig-def3-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
+  (let ((dumb-jump-aggressive t)
+        (js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 20)
@@ -584,7 +587,8 @@
        (should (string= js-file (dumb-jump-go)))))))
 
 (ert-deftest dumb-jump-go-var-let-test ()
-  (let ((el-file (f-join test-data-dir-elisp "fake2.el")))
+  (let ((dumb-jump-aggressive t)
+        (el-file (f-join test-data-dir-elisp "fake2.el")))
     (with-current-buffer (find-file-noselect el-file t)
       (goto-char (point-min))
       (forward-line 13)
@@ -594,7 +598,8 @@
        (should (string= el-file (dumb-jump-go)))))))
 
 (ert-deftest dumb-jump-go-var-let-repeat-test ()
-  (let ((el-file (f-join test-data-dir-elisp "fake2.el")))
+  (let ((dumb-jump-aggressive t)
+        (el-file (f-join test-data-dir-elisp "fake2.el")))
     (with-current-buffer (find-file-noselect el-file t)
       (goto-char (point-min))
       (forward-line 21)
@@ -604,7 +609,8 @@
        (should (string= el-file (dumb-jump-go)))))))
 
 (ert-deftest dumb-jump-go-var-arg-test ()
-  (let ((el-file (f-join test-data-dir-elisp "fake2.el")))
+  (let ((dumb-jump-aggressive t)
+        (el-file (f-join test-data-dir-elisp "fake2.el")))
     (with-current-buffer (find-file-noselect el-file t)
       (goto-char (point-min))
       (forward-line 4)
@@ -655,7 +661,8 @@
           (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-message-handle-results-test ()
-  (let ((results '((:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
+  (let ((dumb-jump-aggressive t)
+        (results '((:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
                    (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
     (with-mock
      (mock (dumb-jump-goto-file-line "src/file.js" 62 4))
@@ -950,7 +957,8 @@
 ;; This test makes sure that even though there's a local match it will jump to the external file
 ;; match instead.
 (ert-deftest dumb-jump-prefer-external ()
-  (let ((main-file (f-join test-data-dir-proj1 "src" "cpp" "external.cpp"))
+  (let ((dumb-jump-aggressive t)
+        (main-file (f-join test-data-dir-proj1 "src" "cpp" "external.cpp"))
         (header-file (f-join test-data-dir-proj1 "src" "cpp" "external.h")))
     (with-current-buffer (find-file-noselect main-file t)
       (goto-char (point-min))
@@ -982,7 +990,8 @@
        (should (string= main-file (dumb-jump-go-prefer-external)))))))
 
 (ert-deftest dumb-jump-prefer-external-other-window ()
-  (let ((main-file (f-join test-data-dir-proj1 "src" "cpp" "external.cpp"))
+  (let ((dumb-jump-aggressive t)
+        (main-file (f-join test-data-dir-proj1 "src" "cpp" "external.cpp"))
         (header-file (f-join test-data-dir-proj1 "src" "cpp" "external.h")))
     (with-current-buffer (find-file-noselect main-file t)
       (goto-char (point-min))
@@ -1101,7 +1110,8 @@
 ;; This test makes sure that if the `cur-file' is absolute but results are relative, then it must
 ;; still find and sort results correctly.
 (ert-deftest dumb-jump-handle-results-relative-current-file-test ()
-  (let ((results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
+  (let ((dumb-jump-aggressive t)
+        (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
                    (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
     (with-mock
      (mock (dumb-jump-goto-file-line "relfile.js" 62 4))
