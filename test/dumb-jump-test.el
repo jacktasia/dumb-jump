@@ -73,7 +73,7 @@
 
 (ert-deftest dumb-jump-generate-cmd-include-args ()
   (let ((args (dumb-jump-get-ext-includes "javascript"))
-        (expected " --include \\*.js --include \\*.jsx --include \\*.vue --include \\*.html "))
+        (expected " --include \\*.js --include \\*.jsx --include \\*.vue --include \\*.html --include \\*.css "))
     (should (string= expected args))))
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-test ()
