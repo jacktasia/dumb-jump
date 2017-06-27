@@ -888,6 +888,11 @@ a symbol then it's probably a function call"
   :group 'dumb-jump
   :type 'string)
 
+(defcustom dumb-jump-project nil
+  "The project to search within if normal denoters will not work.  This should only be needed in the rarest of cases."
+  :group 'dumb-jump
+  :type 'string)
+
 (defcustom dumb-jump-after-jump-hook nil
   "Hooks called after jumping."
   :type 'hook
@@ -1128,6 +1133,7 @@ for user to select.  Filters PROJ path from files for display."
   "Keep looking at the parent dir of FILEPATH until a denoter file/dir is found."
   (f-expand
     (or
+      dumb-jump-project
       (locate-dominating-file filepath #'dumb-jump-get-config)
       dumb-jump-default-project)))
 
