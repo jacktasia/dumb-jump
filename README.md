@@ -34,6 +34,7 @@ There is currently basic support for the following languages:
 * JavaScript
 * Lua
 * Objective-C
+* OCaml
 * Perl
 * PHP
 * Python
