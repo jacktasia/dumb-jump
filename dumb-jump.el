@@ -1,4 +1,4 @@
-;;; dumb-jump.el --- jump to definition for multiple languages without configuration. -*- lexical-binding: t; -*-
+;;; dumb-jump.el --- jump to definition for multiple languages without configuration.
 
 ;; Copyright (C) 2015-2016 jack angers
 ;; Author: jack angers
