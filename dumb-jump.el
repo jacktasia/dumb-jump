@@ -1,4 +1,4 @@
-;;; dumb-jump.el --- jump to definition for multiple languages without configuration.
+;;; dumb-jump.el --- jump to definition for multiple languages without configuration. -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2015-2016 jack angers
 ;; Author: jack angers
@@ -1025,12 +1025,11 @@ not just a string."
 (defun dumb-jump-test-rules (&optional run-not-tests)
   "Test all the grep rules and return count of those that fail.
 Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
-  (let ((failures '())
-        (fail-tmpl "grep %s FAILURE '%s' %s in response '%s' | CMD: '%s' | regex: '%s'")
-        (variant (if (eq (dumb-jump-grep-installed?) 'gnu) 'gnu-grep 'grep)))
-    (-each (--filter (member "grep" (plist-get it :supports)) dumb-jump-find-rules)
+  (let ((fail-tmpl "grep FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'")
+	(variant (if (eq (dumb-jump-grep-installed?) 'gnu) 'gnu-grep 'grep)))
+    (-mapcat
       (lambda (rule)
-        (-each (plist-get rule (if run-not-tests :not :tests))
+        (-mapcat
           (lambda (test)
             (let* ((cmd (concat "grep -En -e "
                                 (shell-quote-argument (dumb-jump-populate-regex (plist-get rule :regex) "test" variant))))
@@ -1038,18 +1037,18 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
               (when (or
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
-                (add-to-list 'failures (format fail-tmpl (if run-not-tests "not" "")
-                                               test (if run-not-tests "IS unexpectedly" "NOT") resp cmd (plist-get rule :regex)))))))))
-    failures))
+                (list (format fail-tmpl (if run-not-tests "not" "")
+                              test (if run-not-tests "IS unexpectedly" "NOT") resp cmd (plist-get rule :regex))))))
+	  (plist-get rule (if run-not-tests :not :tests))))
+      (--filter (member "grep" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-test-ag-rules (&optional run-not-tests)
   "Test all the ag rules and return count of those that fail.
 Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
-  (let ((failures '())
-        (fail-tmpl "ag FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'"))
-    (-each (--filter (member "ag" (plist-get it :supports)) dumb-jump-find-rules)
+  (let ((fail-tmpl "ag FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'"))
+    (-mapcat
       (lambda (rule)
-        (-each (plist-get rule (if run-not-tests :not :tests))
+        (-mapcat
           (lambda (test)
             (let* ((cmd (concat "ag --nocolor --nogroup "
                                 (shell-quote-argument (dumb-jump-populate-regex (plist-get rule :regex) "test" 'ag))))
@@ -1057,17 +1056,17 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
               (when (or
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
-                (add-to-list 'failures (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule))))))))
-    failures))
+                (list (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule)))))
+	  (plist-get rule (if run-not-tests :not :tests))))
+      (--filter (member "ag" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-test-rg-rules (&optional run-not-tests)
   "Test all the rg rules and return count of those that fail.
 Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
-  (let ((failures '())
-        (fail-tmpl "rg FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'"))
-    (-each (--filter (member "rg" (plist-get it :supports)) dumb-jump-find-rules)
+  (let ((fail-tmpl "rg FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'"))
+    (-mapcat
       (lambda (rule)
-        (-each (plist-get rule (if run-not-tests :not :tests))
+        (-mapcat
           (lambda (test)
             (let* ((cmd (concat "rg --color never --no-heading "
                                 (shell-quote-argument (dumb-jump-populate-regex (plist-get rule :regex) "test" 'rg))))
@@ -1075,27 +1074,27 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
               (when (or
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
-                (add-to-list 'failures (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule))))))))
-    failures))
+                (list (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule)))))
+	  (plist-get rule (if run-not-tests :not :tests))))
+      (--filter (member "rg" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-test-git-grep-rules (&optional run-not-tests)
   "Test all the git grep rules and return count of those that fail.
 Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
-  (let ((failures '())
-        (fail-tmpl "git grep FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'"))
-    (-each (--filter (member "git-grep" (plist-get it :supports)) dumb-jump-find-rules)
+  (let ((fail-tmpl "rg FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'"))
+    (-mapcat
       (lambda (rule)
-        (-each (plist-get rule (if run-not-tests :not :tests))
+        (-mapcat
           (lambda (test)
-            (let* ((cmd (concat "git grep --color=never -h --untracked -E "
-                                (shell-quote-argument
-                                 (dumb-jump-populate-regex (plist-get rule :regex) "test" 'git-grep))))
+            (let* ((cmd (concat "git grep --color=never -h --untracked -E  "
+                                (shell-quote-argument (dumb-jump-populate-regex (plist-get rule :regex) "test" 'git-grep))))
                    (resp (dumb-jump-run-git-grep-test test cmd)))
               (when (or
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
-                (add-to-list 'failures (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule))))))))
-    failures))
+                (list (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule)))))
+	  (plist-get rule (if run-not-tests :not :tests))))
+      (--filter (member "grep" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-message (str &rest args)
   "Log message STR with ARGS to the *Messages* buffer if not using dumb-jump-quiet."
