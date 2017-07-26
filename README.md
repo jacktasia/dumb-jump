@@ -98,7 +98,7 @@ If you want to stop a directory from registering as the project root (and have D
 
 * `(setq dumb-jump-default-project "~/code")` to change default project if one is not found (defaults to `~`)
 * `(setq dumb-jump-quiet t)` if Dumb Jump is too chatty.
-* To support more languages and/or definition types use `add-to-list` on `dumb-jump-find-rules` (see source code).
+* To support more languages and/or definition types customize `dumb-jump-find-rules` variable.
 * `(add-hook 'dumb-jump-after-jump-hook 'some-function)` to execute code after you jump
 * `(setq dumb-jump-selector 'ivy)` to use [ivy](https://github.com/abo-abo/swiper#ivy) instead of the default popup for multiple options.
 * `(setq dumb-jump-selector 'helm)` to use [helm](https://github.com/emacs-helm/helm) instead of the default popup for multiple options.
