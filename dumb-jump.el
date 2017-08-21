@@ -1,6 +1,5 @@
 ;;; dumb-jump.el --- jump to definition for multiple languages without configuration. -*- lexical-binding: t; -*-
-
-;; Copyright (C) 2015-2016 jack angers
+;; Copyright (C) 2015-2017 jack angers
 ;; Author: jack angers
 ;; Version: 0.5.0
 ;; Package-Requires: ((emacs "24.3") (f "0.17.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
@@ -48,7 +47,7 @@
 
 (defcustom dumb-jump-window
   'current
-  "Which window to use when jumping. Valid options are 'current (default) or 'other."
+  "Which window to use when jumping.  Valid options are 'current (default) or 'other."
   :group 'dumb-jump
   :type '(choice (const :tag "Current window" current)
                  (const :tag "Other window" other)))
@@ -69,9 +68,8 @@
 
 (defcustom dumb-jump-prefer-searcher
   nil
-  "The preferred searcher to use 'ag, 'rg, 'git-grep, 'gnu-grep,
-or 'grep. If `nil' then the most optimal searcher will be chosen
-at runtime."
+  "The preferred searcher to use 'ag, 'rg, 'git-grep, 'gnu-grep,or 'grep.
+If nil then the most optimal searcher will be chosen at runtime."
   :group 'dumb-jump
   :type '(choice (const :tag "Best Available" nil)
                  (const :tag "ag" ag)
@@ -82,9 +80,9 @@ at runtime."
 
 (defcustom dumb-jump-force-searcher
   nil
-  "Forcibly use searcher: 'ag, 'rg, 'git-grep, 'gnu-grep,
-or 'grep. Set to `nil' to not force anything and use
-`dumb-jump-prefer-searcher' or most optimal searcher."
+  "Forcibly use searcher: 'ag, 'rg, 'git-grep, 'gnu-grep, or 'grep.
+Set to nil to not force anything and use `dumb-jump-prefer-searcher'
+or most optimal searcher."
   :group 'dumb-jump
   :type '(choice (const :tag "Best Available" nil)
                  (const :tag "ag" ag)
@@ -206,8 +204,7 @@ or 'grep. Set to `nil' to not force anything and use
 
 (defcustom dumb-jump-git-grep-search-untracked
   t
-  "If non-nil Dumb Jump will also search untracked files when
-using searcher git-grep."
+  "If non-nil Dumb Jump will also search untracked files when using searcher git-grep."
   :group 'dumb-jump
   :type 'boolean)
 
@@ -1033,16 +1030,15 @@ If `nil` always show list of more than 1 match."
     (1+ cur-pos)))
 
 (defun dumb-jump-run-test (test cmd)
-  "Run CMD using string TEST as its standard input."
+  "Use TEST as the standard input for the CMD."
   (with-temp-buffer
     (insert test)
     (shell-command-on-region (point-min) (point-max) cmd nil t)
     (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun dumb-jump-run-git-grep-test (test cmd)
-  "Run CMD using string TEST as its input through a local,
-temporary file. Because git grep must be given a file as input,
-not just a string."
+  "Use string TEST as input through a local, temporary file for CMD.
+Because git grep must be given a file as input, not just a string."
   (let* ((thefile ".git.grep.test")
          (realcmd (concat cmd " " thefile)))
     (with-temp-buffer
@@ -1154,8 +1150,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
           (dumb-jump-result-follow result))))
 
 (defun dumb-jump-helm-persist-action (match)
-  "Previews a MATCH in a temporary buffer at the matched line
-number when pressing C-j in helm."
+  "Previews a MATCH in a temporary buffer at the matched line number when pressing \\<keymap>C-j</keymap> in helm."
   (let* ((parts (--remove (string= it "")
                           (s-split "\\(?:^\\|:\\)[0-9]+:"  match)))
          (file-line-part (s-split ":" (nth 0 parts)))
@@ -2022,7 +2017,7 @@ searcher symbol."
                               dumb-jump-language-file-exts))))
 
 (defun dumb-jump-get-rules-by-language (language searcher)
-  "Return a list of rules for the LANGUAGE."
+  "Return a list of rules for the LANGUAGE by SEARCHER."
   (let* ((searcher-str (cond ((eq 'git-grep searcher) "git-grep")
                              ((eq 'rg searcher) "rg")
                              ((eq 'ag searcher) "ag")
