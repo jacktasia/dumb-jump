@@ -610,6 +610,15 @@ or most optimal searcher."
            :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
            :tests ("test = function()"))
 
+    ;; julia
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
+           :regex "function\\s*JJJ\\s*\\\("
+           :tests ("function test()" "function test ()"))
+
+    (:type "variable" :supports ("ag" "rg") :language "julia"
+           :regex "const\\s+JJJ\\b"
+           :tests ("const test = "))
+
     ;; haskell
     (:type "function" :supports ("ag") :language "haskell"
            :regex "^\\s*(let)?\\s*JJJ\\b\\s*(.+)?(?<==)"
@@ -817,6 +826,7 @@ or most optimal searcher."
                (:not (repeat string))))))
 
 ; https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t
+; https://github.com/BurntSushi/ripgrep/blob/master/ignore/src/types.rs#L99
 (defcustom dumb-jump-language-file-exts
   '((:language "elisp" :ext "el" :agtype "elisp" :rgtype "elisp")
     (:language "elisp" :ext "el.gz" :agtype "elisp" :rgtype "elisp")
@@ -843,6 +853,7 @@ or most optimal searcher."
     (:language "objc" :ext "m" :agtype "objc" :rgtype "objc")
     (:language "csharp" :ext "cs" :agtype "csharp" :rgtype "csharp")
     (:language "java" :ext "java" :agtype "java" :rgtype "java")
+    (:language "julia" :ext "jl" :agtype "julia" :rgtype "julia")
     (:language "clojure" :ext "clj" :agtype "clojure" :rgtype "clojure")
     (:language "clojure" :ext "cljc" :agtype "clojure" :rgtype "clojure")
     (:language "clojure" :ext "cljs" :agtype "clojure" :rgtype "clojure")
