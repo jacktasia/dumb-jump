@@ -653,6 +653,25 @@ or most optimal searcher."
            :regex "^\\s*module\\s*type\\s*\\bJJJ\\b"
            :tests ("module type test ="))
 
+    ;; julia
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
+           :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234:"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
+           :regex "(?:\s*|@inline|@noinline)function\\s*JJJ\\b\\s*\\\("
+           :tests ("\tfunction test(asdf)" "function test()")
+           :not ("\tfunction testnot(asdf)" "function testnot()"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
+           :regex "struct\\s*JJJ\\b\\s*"
+           :tests ("struct test" "struct test")
+           :not ("struct testnot" "struct testnot"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
+           :regex "struct\\s*JJJ\\b\\s*"
+           :tests ("struct test" "struct test")
+           :not ("struct testnot" "struct testnot"))
+           )
     ;; lua
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "lua"
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test === 1234"))
@@ -864,6 +883,7 @@ or most optimal searcher."
     (:language "javascript" :ext "vue" :agtype "js" :rgtype "js")
     (:language "javascript" :ext "html" :agtype "html" :rgtype "html")
     (:language "javascript" :ext "css" :agtype "css" :rgtype "css")
+    (:language "julia" :ext "jl" :agtype "jl" :rgtype "jl")
     (:language "lisp" :ext "lisp" :agtype "lisp" :rgtype "lisp")
     (:language "lisp" :ext "lsp" :agtype "lisp" :rgtype "lisp")
     (:language "lua" :ext "lua" :agtype "lua" :rgtype "lua")
@@ -1449,6 +1469,7 @@ current file."
     (:comment "--" :language "haskell")
     (:comment "--" :language "lua")
     (:comment "//" :language "rust")
+    (:comment "#"  :language "julia")
     (:comment "//" :language "objc")
     (:comment "//" :language "csharp")
     (:comment "//" :language "java")
