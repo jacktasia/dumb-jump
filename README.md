@@ -25,6 +25,7 @@ There is currently basic support for the following languages:
 * Clojure
 * CoffeeScript
 * Coq
+* Elixir
 * Emacs Lisp
 * Faust
 * Fortran
@@ -32,6 +33,7 @@ There is currently basic support for the following languages:
 * Haskell
 * Java
 * JavaScript
+* Julia
 * Lua
 * Objective-C
 * OCaml
