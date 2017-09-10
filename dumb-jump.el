@@ -612,12 +612,20 @@ or most optimal searcher."
 
     ;; julia
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
-           :regex "function\\s*JJJ\\s*\\\("
-           :tests ("function test()" "function test ()"))
+           :regex "(@noinline|@inline)?\\s*function\\s*JJJ\\s*\\\("
+           :tests ("function test()" "function test ()" "@noinline function test()"))
 
     (:type "variable" :supports ("ag" "rg") :language "julia"
            :regex "const\\s+JJJ\\b"
            :tests ("const test = "))
+
+    (:type "type" :supports ("ag","rg") :language "julia"
+           :regex "(mutable)?\\s*struct\\s*JJJ"
+           :tests ("struct test"))
+
+    (:type "type" :supports ("ag","rg") :language "julia"
+           :regex "(type|immutable|abstract)\\s*JJJ"
+           :tests ("type test" "immutable test" "abstract test <:Testable" ))
 
     ;; haskell
     (:type "function" :supports ("ag") :language "haskell"
@@ -662,25 +670,6 @@ or most optimal searcher."
            :regex "^\\s*module\\s*type\\s*\\bJJJ\\b"
            :tests ("module type test ="))
 
-    ;; julia
-    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
-           :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234:"))
-
-    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
-           :regex "(?:\s*|@inline|@noinline)function\\s*JJJ\\b\\s*\\\("
-           :tests ("\tfunction test(asdf)" "function test()")
-           :not ("\tfunction testnot(asdf)" "function testnot()"))
-
-    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
-           :regex "struct\\s*JJJ\\b\\s*"
-           :tests ("struct test" "struct test")
-           :not ("struct testnot" "struct testnot"))
-
-    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
-           :regex "struct\\s*JJJ\\b\\s*"
-           :tests ("struct test" "struct test")
-           :not ("struct testnot" "struct testnot"))
-           )
     ;; lua
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "lua"
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test === 1234"))
