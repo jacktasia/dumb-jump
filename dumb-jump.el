@@ -621,7 +621,7 @@ or most optimal searcher."
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
            :regex "macro\\s*JJJ\\("
-           :tests ("macro test(a)=1" " macro test (a,b)=1*8"))
+           :tests ("macro test(a)=1" " macro test(a,b)=1*8"))
 
     (:type "variable" :supports ("ag" "rg") :language "julia"
            :regex "const\\s+JJJ\\b"
