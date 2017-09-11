@@ -612,8 +612,16 @@ or most optimal searcher."
 
     ;; julia
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
-           :regex "(@noinline|@inline)?\\s*function\\s*JJJ\\s*\\\("
-           :tests ("function test()" "function test ()" "@noinline function test()"))
+           :regex "(@noinline|@inline)?\\s*function\\s*JJJ\\("
+           :tests ("function test()" "@inline function test()"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
+           :regex "(@noinline|@inline)?JJJ\\([^\\)]*\\)\s*="
+           :tests ("test(a)=1" "test(a,b)=1*8" "@noinline test()=1"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
+           :regex "macro\\s*JJJ\\("
+           :tests ("macro test(a)=1" " macro test(a,b)=1*8"))
 
     (:type "variable" :supports ("ag" "rg") :language "julia"
            :regex "const\\s+JJJ\\b"
