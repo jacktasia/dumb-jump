@@ -423,28 +423,28 @@ or most optimal searcher."
            :tests ("class test(object):" "class test:")
            :not ("class testnot:" "class testnot(object):"))
 
-    ;; ruby
-    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "ruby"
-           :regex "\\s*JJJ\\s*=[^=\\n]+"
-           :tests ("test = 1234")
-           :not ("if test == 1234"))
+    (:type "variable" :supports ("ag" "rg" "git-grep") :language "ruby"
+           :regex "^\\s*((\\w+[.])*\\w+,\\s*)*JJJ(,\\s*(\\w+[.])*\\w+)*\\s*=([^=>~]|$)"
+           :tests ("test = 1234" "self.foo, test, bar = args")
+           :not ("if test == 1234" "foo_test = 1234"))
 
-    (:type "function" :supports ("ag" "rg") :language "ruby"
-           :regex "\\bdef\\s+(?:\\w+(::|\\.))*JJJ\\j"
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "ruby"
+           :regex "(^|[^\\w.])((private|public|protected)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|\\W)"
            :tests ("def test(foo)" "def test()" "def test foo" "def test; end"
-                   "def self.test()" "def MODULE::test()"))
+                   "def self.test()" "def MODULE::test()" "private def test")
+           :not ("def test_foo"))
 
-    (:type "function" :supports ("ag" "rg") :language "ruby"
-           :regex "\\bdefine(?:_singleton|_instance)?_method\\s*(?:\\(\\s*)?:JJJ\\j"
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "ruby"
+           :regex "(^|\\W)define(_singleton|_instance)?_method(\\s|[(])\\s*:JJJ($|\\W)"
            :tests ("define_method(:test, &body)"
                    "mod.define_instance_method(:test) { body }"))
 
-    (:type "type" :supports ("ag" "rg") :language "ruby"
-           :regex "\\bclass\\s+(?:\\w*::)*JJJ\\j"
+    (:type "type" :supports ("ag" "rg" "git-grep") :language "ruby"
+           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|\\W)"
            :tests ("class test" "class Foo::test"))
 
-    (:type "type" :supports ("ag" "rg") :language "ruby"
-           :regex "\\bmodule\\s+(?:\\w*::)*JJJ\\j"
+    (:type "type" :supports ("ag" "rg" "git-grep") :language "ruby"
+           :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|\\W)"
            :tests ("module test" "module Foo::test"))
 
     ;; scala
@@ -622,7 +622,6 @@ or most optimal searcher."
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
            :regex "macro\\s*JJJ\\("
            :tests ("macro test(a)=1" " macro test (a,b)=1*8"))
-
 
     (:type "variable" :supports ("ag" "rg") :language "julia"
            :regex "const\\s+JJJ\\b"
@@ -919,6 +918,7 @@ or most optimal searcher."
     (:language "r" :ext "Rtex" :agtype "r" :rgtype nil)
     (:language "r" :ext "Rrst" :agtype "r" :rgtype nil)
     (:language "ruby" :ext "rb" :agtype "ruby" :rgtype "ruby")
+    (:language "ruby" :ext "erb" :agtype "ruby" :rgtype nil)
     (:language "ruby" :ext "haml" :agtype "ruby" :rgtype nil)
     (:language "ruby" :ext "slim" :agtype "ruby" :rgtype nil)
     (:language "rust" :ext "rs" :agtype "rust" :rgtype "rust")
