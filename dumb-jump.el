@@ -612,12 +612,12 @@ or most optimal searcher."
 
     ;; julia
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
-           :regex "(@noinline|@inline)?\\s*function\\s*JJJ\\{[^\\}]*\\}\\("
+           :regex "(@noinline|@inline)?\\s*function\\s*JJJ(\\{[^\\}]*\\})?\\("
            :tests ("function test()" "@inline function test()"
                    "function test{T}(h)"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
-           :regex "(@noinline|@inline)?JJJ\\{[^\\}]*\\}\\([^\\)]*\\)\s*="
+           :regex "(@noinline|@inline)?JJJ(\\{[^\\}]*\\})?\\([^\\)]*\\)\s*="
            :tests ("test(a)=1" "test(a,b)=1*8"
                    "@noinline test()=1" "test{T}(x)=x"))
 
