@@ -615,6 +615,10 @@ or most optimal searcher."
            :regex "(@noinline|@inline)?\\s*function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()" "@noinline function test()"))
 
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
+           :regex "(@noinline|@inline)?JJJ\\([^\\)]*\\)\s*="
+           :tests ("test(a)=1" "test(a,b)=1*8" "@noinline test()=1"))
+
     (:type "variable" :supports ("ag" "rg") :language "julia"
            :regex "const\\s+JJJ\\b"
            :tests ("const test = "))
