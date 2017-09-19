@@ -27,6 +27,7 @@ There is currently basic support for the following languages:
 * Coq
 * Elixir
 * Emacs Lisp
+* Erlang
 * Faust
 * Fortran
 * Go
