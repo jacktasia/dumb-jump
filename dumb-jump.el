@@ -847,7 +847,7 @@ or most optimal searcher."
                  "if test == 1234"))
 
     (:type "module" :supports ("ag" "grep" "rg" "git-grep") :language "erlang"
-           :regex "^\\-module\\\(JJJ\\\)"
+           :regex "^-module\\\(JJJ\\\)"
            :tests ("-module(test).")))
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
