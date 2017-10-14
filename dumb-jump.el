@@ -66,6 +66,10 @@
                  (const :tag "Helm" helm)
                  (const :tag "Ivy" ivy)))
 
+(defcustom dumb-jump-ivy-jump-to-selected-function
+  #'dumb-jump-ivy-jump-to-selected
+  "Prompts user for a choice using ivy then dumb-jump to that choice")
+
 (defcustom dumb-jump-prefer-searcher
   nil
   "The preferred searcher to use 'ag, 'rg, 'git-grep, 'gnu-grep,or 'grep.
@@ -1219,10 +1223,16 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (forward-line (1- line)))))
 
 (defun dumb-jump--format-result (proj result)
-  (format "%s:%s %s"
+  (format "%s:%s: %s"
           (s-replace proj "" (plist-get result :path))
           (plist-get result :line)
           (s-trim (plist-get result :context))))
+
+(defun dumb-jump-ivy-jump-to-selected (results choices proj)
+  "Offer CHOICES as canidates through ivy-read then execute
+dumb-jump-to-selected on RESULTS CHOICES and selected choice.
+Ignore PROJ"
+  (dumb-jump-to-selected results choices (ivy-read "Jump to: " choices)))
 
 (defun dumb-jump-prompt-user-for-choice (proj results)
   "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy)
@@ -1232,7 +1242,7 @@ for user to select.  Filters PROJ path from files for display."
                         results)))
     (cond
      ((and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
-      (dumb-jump-to-selected results choices (ivy-read "Jump to: " choices)))
+      (funcall dumb-jump-ivy-jump-to-selected-function results choices proj))
      ((and (eq dumb-jump-selector 'helm) (fboundp 'helm))
       (dumb-jump-to-selected results choices
                              (helm :sources

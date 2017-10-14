@@ -388,7 +388,7 @@
   (let* ((results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
                     (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
     (with-mock
-     (mock (popup-menu* *) => "/test2.txt:52 var thing = function()")
+     (mock (popup-menu* *) => "/test2.txt:52: var thing = function()")
      (mock (dumb-jump-result-follow '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
@@ -398,7 +398,7 @@
                     (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
     (with-mock
      (mock (helm-build-sync-source * :candidates * :persistent-action *))
-     (mock (helm * * :buffer "*helm dumb jump choices*") => "/test2.txt:52 var thing = function()")
+     (mock (helm * * :buffer "*helm dumb jump choices*") => "/test2.txt:52: var thing = function()")
      (mock (dumb-jump-result-follow '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
@@ -411,7 +411,7 @@
          (results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
                     (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
     (with-mock
-     (mock (ivy-read * *)  => "/test2.txt:52 var thing = function()")
+     (mock (ivy-read * *)  => "/test2.txt:52: var thing = function()")
      (mock (dumb-jump-result-follow '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
@@ -484,7 +484,7 @@
       (goto-char (point-min))
       (forward-char 13)
       (with-mock
-       (mock (popup-tip "/src/js/fake.js:3 function doSomeStuff() {"))
+       (mock (popup-tip "/src/js/fake.js:3: function doSomeStuff() {"))
        (should (string= go-js-file (dumb-jump-quick-look)))))))
 
 (ert-deftest dumb-jump-go-js2-test ()
@@ -755,7 +755,7 @@
 
 (ert-deftest dumb-jump-message-result-follow-tooltip-test ()
   (with-mock
-   (mock (popup-tip "/file.js:62 var isNow = true"))
+   (mock (popup-tip "/file.js:62: var isNow = true"))
    (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
      (dumb-jump--result-follow result t "src"))))
 
