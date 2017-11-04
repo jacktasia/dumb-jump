@@ -2092,6 +2092,24 @@ searcher symbol."
         (--filter (string= (plist-get it ':type) "function") results)
       results)))
 
+;; from subr.el
+(defun dumb-jump-forward-symbol-with-question-mark (arg)
+  "UPDATED regex with quesition mark.
+Move point to the next position that is the end of a symbol.
+A symbol is any sequence of characters that are in either the
+word constituent or symbol constituent syntax class.
+With prefix argument ARG, do it ARG times if positive, or move
+backwards ARG times if negative."
+  (interactive "^p")
+  (let ((question-mark-regex "\\(\\sw\\|\\s_\\|\\?\\)+"))
+    (if (natnump arg)
+        (re-search-forward question-mark-regex nil 'move arg)
+      (while (< arg 0)
+        (if (re-search-backward question-mark-regex nil 'move)
+            (skip-syntax-backward "w_"))
+        (setq arg (1+ arg))))))
+
+
 ;;;###autoload
 (define-minor-mode dumb-jump-mode
   "Minor mode for jumping to variable and function definitions"
