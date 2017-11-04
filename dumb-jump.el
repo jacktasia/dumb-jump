@@ -856,16 +856,16 @@ or most optimal searcher."
 
     ;; scss
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scss"
-           :regex "@mixin JJJ\\b\\s*\\\("
-           :tests ("@include test()"))
+           :regex "@mixin\\sJJJ\\b\\s*\\\("
+           :tests ("@mixin test()"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scss"
-           :regex "@function JJJ\\b\\s*\\\("
-           :tests ("test()"))
+           :regex "@function\\sJJJ\\b\\s*\\\("
+           :tests ("@function test()"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "scss"
            :regex "JJJ\\s*:\\s*"
-           :tests ("$test")))
+           :tests ("test  :")))
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
   :group 'dumb-jump
