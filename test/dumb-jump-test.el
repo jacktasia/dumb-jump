@@ -677,7 +677,7 @@
      (mock (dumb-jump-prompt-user-for-choice "/code/redux" *))
      (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil nil))))
 
-(ert-deftest dumb-jump-grep-installed\\?-bsd-test ()
+(ert-deftest dumb-jump-grep-installed?-bsd-test ()
   (let ((dumb-jump--grep-installed? 'unset))
     (with-mock
      (mock (shell-command-to-string *) => "grep (BSD grep) 2.5.1-FreeBSD\n" :times 1)
@@ -685,7 +685,7 @@
      ;; confirm memoization of the previous result
      (should (eq (dumb-jump-grep-installed?) 'bsd))))
 
-(ert-deftest dumb-jump-grep-installed\\?-gnu-test ()
+(ert-deftest dumb-jump-grep-installed?-gnu-test ()
   (let ((dumb-jump--grep-installed? 'unset))
     (with-mock
      (mock (shell-command-to-string *) => "grep (GNU grep) 2.4.2\n" :times 1)
@@ -693,7 +693,7 @@
      ;; confirm memoization of the previous result
      (should (eq (dumb-jump-grep-installed?) 'gnu)))))
 
-(ert-deftest dumb-jump-ag-installed\\?-test ()
+(ert-deftest dumb-jump-ag-installed?-test ()
   (let ((dumb-jump--ag-installed? 'unset))
     (with-mock
      (mock (shell-command-to-string *) => "ag version 0.33.0\n" :times 1)
@@ -701,7 +701,7 @@
      ;; confirm memoization of the previous result
      (should (eq (dumb-jump-ag-installed?) t)))))
 
-(ert-deftest dumb-jump-rg-installed\\?-test ()
+(ert-deftest dumb-jump-rg-installed?-test ()
   (let ((dumb-jump--rg-installed? 'unset))
     (with-mock
      (mock (shell-command-to-string *) => "ripgrep 0.3.1\n" :times 1)
@@ -709,7 +709,7 @@
      ;; confirm memoization of the previous result
      (should (eq (dumb-jump-rg-installed?) t)))))
 
-(ert-deftest dumb-jump-git-grep-installed\\?-test ()
+(ert-deftest dumb-jump-git-grep-installed?-test ()
   (let ((dumb-jump--git-grep-installed? 'unset))
     (with-mock
      (mock (shell-command-to-string *) => "fatal: no pattern given\n" :times 1)
