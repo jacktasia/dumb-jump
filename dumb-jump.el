@@ -125,25 +125,25 @@ or most optimal searcher."
   :type 'string)
 
 (defcustom dumb-jump-ag-word-boundary
-  "(?![\\w\\?-])"
+  "(?![\\w\\?\\*-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and ag will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-rg-word-boundary
-  "($|[^\\w\\?-])"
+  "($|[^\\w\\?\\*-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and rg will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-git-grep-word-boundary
-  "($|[^\\w\\?-])"
+  "($|[^\\w\\?\\*-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and git grep will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-grep-word-boundary
-  "($|[^\\w\\?-])"
+  "($|[^\\w\\?\\*-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and grep will use this value."
   :group 'dumb-jump
   :type 'string)
@@ -270,6 +270,10 @@ or most optimal searcher."
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
            :regex "\\(defmacro\\s+JJJ\\j"
            :tests ("(defmacro test [foo]"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
+           :regex "\\(deftask\\s+JJJ\\j"
+           :tests ("(deftask test [foo]"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
            :regex "\\(deftype\\s+JJJ\\j"
