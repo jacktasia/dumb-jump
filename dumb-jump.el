@@ -558,9 +558,9 @@ or most optimal searcher."
            :regex "\\bJJJ\\s*=[^=><]" :tests ("test = 1234") :not ("if (test == 1234)"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "r"
-           :regex "\\bJJJ\\s*<-\\s*function"
-           :tests ("test <- function"))
-
+           :regex "\\bJJJ\\s*<-\\s*function\\b"
+           :tests ("test <- function")
+           :not   ("test <- functionX"))
 
     ;; perl
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "perl"
