@@ -586,7 +586,7 @@ or most optimal searcher."
            :tests ("const test = (foo) => " "test: (foo) => {" "  test: (foo) => {"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "javascript"
-           :regex "\\bJJJ\\s*\\\([^\\\)]*\\\)\\s*[{]" :tags ("es6")
+           :regex "\\bJJJ\\s*\\([^()]*\\)\\s*[{]" :tags ("es6")
            :tests ("test(foo) {" "test (foo){" "test(foo){"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "javascript" :tags ("es6")
