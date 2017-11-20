@@ -587,7 +587,8 @@ or most optimal searcher."
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "javascript"
            :regex "\\bJJJ\\s*\\([^()]*\\)\\s*[{]" :tags ("es6")
-           :tests ("test(foo) {" "test (foo){" "test(foo){"))
+           :tests ("test(foo) {" "test (foo){" "test(foo){")
+           :not ("test = blah.then(function(){"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "javascript" :tags ("es6")
            :regex "class\\s*JJJ\\s*[\\\(\\\{]"
