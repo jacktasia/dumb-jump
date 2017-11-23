@@ -432,28 +432,29 @@ or most optimal searcher."
            :tests ("class test(object):" "class test:")
            :not ("class testnot:" "class testnot(object):"))
 
+    ;; ruby
     (:type "variable" :supports ("ag" "rg" "git-grep") :language "ruby"
            :regex "^\\s*((\\w+[.])*\\w+,\\s*)*JJJ(,\\s*(\\w+[.])*\\w+)*\\s*=([^=>~]|$)"
            :tests ("test = 1234" "self.foo, test, bar = args")
            :not ("if test == 1234" "foo_test = 1234"))
 
     (:type "function" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|[^\\w.])((private|public|protected)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|\\W)"
+           :regex "(^|[^\\w.])((private|public|protected)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|[^\\w|:])"
            :tests ("def test(foo)" "def test()" "def test foo" "def test; end"
                    "def self.test()" "def MODULE::test()" "private def test")
            :not ("def test_foo"))
 
     (:type "function" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|\\W)define(_singleton|_instance)?_method(\\s|[(])\\s*:JJJ($|\\W)"
+           :regex "(^|\\W)define(_singleton|_instance)?_method(\\s|[(])\\s*:JJJ($|[^\\w|:])"
            :tests ("define_method(:test, &body)"
                    "mod.define_instance_method(:test) { body }"))
 
     (:type "type" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|\\W)"
+           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|[^\\w|:])"
            :tests ("class test" "class Foo::test"))
 
     (:type "type" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|\\W)"
+           :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|[^\\w|:])"
            :tests ("module test" "module Foo::test"))
 
     ;; crystal
