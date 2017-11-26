@@ -2056,7 +2056,7 @@ searcher symbol."
                       (if dumb-jump-git-grep-search-untracked
                           " --untracked"
                         "")
-                      " -E"))
+                      " -P"))
          (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))
          (exclude-args (s-join " "
                                (--map (shell-quote-argument (concat ":(exclude)" it))
@@ -2088,7 +2088,8 @@ searcher symbol."
          (cmd (concat (if (eq system-type 'windows-nt) "" (concat dumb-jump-grep-prefix " "))
                       (if (s-ends-with? ".gz" cur-file)
                           dumb-jump-zgrep-cmd
-                        dumb-jump-grep-cmd)))
+                        dumb-jump-grep-cmd)
+                      " -P"))
          ;; TODO: GNU grep doesn't support these, so skip them
          (exclude-args "")
          (include-args "")
