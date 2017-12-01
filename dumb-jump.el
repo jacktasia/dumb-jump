@@ -1366,7 +1366,7 @@ to keep looking for another root."
    ((or (string= (buffer-name) "*shell*")
         (string= (buffer-name) "*eshell*"))
     (dumb-jump-fetch-shell-results prompt))
-   ((and (not prompt) (not (region-active-p)) (not (thing-at-point 'symbol)))
+   ((and (not prompt) (not (region-active-p)) (not (thing-at-point 'sexp)))
     (dumb-jump-issue-result "nosymbol"))
    (t
     (dumb-jump-fetch-file-results prompt))))
@@ -1412,8 +1412,8 @@ to keep looking for another root."
   (if (region-active-p)
       (buffer-substring-no-properties (region-beginning) (region-end))
     (if (version< emacs-version "24.4")
-        (thing-at-point 'symbol)
-      (thing-at-point 'symbol t))))
+        (thing-at-point 'sexp)
+      (thing-at-point 'sexp t))))
 
 (defun dumb-jump-get-lang-by-shell-contents (buffer)
   "Return languages in BUFFER by checking if file extension is mentioned."
@@ -1432,7 +1432,7 @@ LANG is a string programming langage with CONFIG a property list
 of project configuraiton."
   (let* ((cur-line (if prompt 0 (dumb-jump-get-point-line)))
          (look-for-start (when (not prompt)
-                           (- (car (bounds-of-thing-at-point 'symbol))
+                           (- (car (bounds-of-thing-at-point 'sexp))
                             (point-at-bol))))
          (cur-line-num (line-number-at-pos))
          (proj-config (dumb-jump-get-config proj-root))
