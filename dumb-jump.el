@@ -664,7 +664,7 @@ or most optimal searcher."
            :regex "macro\\s*JJJ\\("
            :tests ("macro test(a)=1" " macro test(a,b)=1*8"))
 
-    (:type "variable" :supports ("ag" "rg") :language "julia" 
+    (:type "variable" :supports ("ag" "rg") :language "julia"
            :regex "const\\s+JJJ\\b"
            :tests ("const test = "))
 
@@ -688,6 +688,36 @@ or most optimal searcher."
                    "test :: PackageId -> Tar.Entry -> PkgIndexInfo")
            :not ("nottest :: FilePath -> HttpSession [PkgIndexIndex]"
                  "testnot :: PackageId -> Tar.Entry -> PkgIndexInfo"))
+
+    (:type "type-like" :supports ("ag") :language "haskell"
+           :regex "^((data(\\s+family)?)|(newtype)|(type(\\s+family)?))\\s+JJJ\\b"
+           :tests ("newtype Test a = Something { b :: Kek }"
+                   "data Test a b = Somecase a | Othercase b"
+                   "type family Test (x :: *) (xs :: [*]) :: Nat where"
+                   "data family Test"
+                   "type Test = TestAlias"))
+
+    (:type "(data)type constructor 1" :supports ("ag") :language "haskell"
+           :regex "^(data|newtype|type)\\s+(.+)?=\\s*JJJ\\b"
+           :tests ("data Something a  =  Test { b :: Kek }"))
+
+    (:type "record field" :supports ("ag") :language "haskell"
+           ; multiline support?
+           :regex "data.*{((.|\\s)*?::(.|\\s)*?,)*\\s*(JJJ)\\b\\s*::(.|\\s)*}"
+           :tests (
+;                   "data Mem = Mem { mda :: A \n , test :: Kek\n  ,\n aoeu :: E }"
+                   "data Mem = Mem { test :: Kek } deriving Mda"
+                   ))
+
+    (:type "typeclass" :supports ("ag") :language "haskell"
+           :regex "^class\\s+(.+=>\\s*)?JJJ\\b"
+           :tests (
+                   "class (Constr1 m, Constr 2) => Test (Kek a) where"
+                   "class  Test  (Veryovka a)  where "))
+
+    (:type "module" :supports ("ag") :language "haskell"
+           :regex "^module\\s+JJJ\\b"
+           :tests ("module Test (exportA, exportB) where"))
 
     ;; ocaml
     (:type "type" :supports ("ag" "rg") :language "ocaml"
@@ -1158,7 +1188,7 @@ Because git grep must be given a file as input, not just a string."
   "Test all the grep rules and return count of those that fail.
 Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
   (let ((fail-tmpl "grep FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'")
-	(variant (if (eq (dumb-jump-grep-installed?) 'gnu) 'gnu-grep 'grep)))
+        (variant (if (eq (dumb-jump-grep-installed?) 'gnu) 'gnu-grep 'grep)))
     (-mapcat
       (lambda (rule)
         (-mapcat
@@ -1171,7 +1201,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
                      (and run-not-tests (> (length resp) 0)))
                 (list (format fail-tmpl (if run-not-tests "not" "")
                               test (if run-not-tests "IS unexpectedly" "NOT") resp cmd (plist-get rule :regex))))))
-	  (plist-get rule (if run-not-tests :not :tests))))
+          (plist-get rule (if run-not-tests :not :tests))))
       (--filter (member "grep" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-test-ag-rules (&optional run-not-tests)
@@ -1189,7 +1219,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
                 (list (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule)))))
-	  (plist-get rule (if run-not-tests :not :tests))))
+          (plist-get rule (if run-not-tests :not :tests))))
       (--filter (member "ag" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-test-rg-rules (&optional run-not-tests)
@@ -1207,7 +1237,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
                 (list (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule)))))
-	  (plist-get rule (if run-not-tests :not :tests))))
+          (plist-get rule (if run-not-tests :not :tests))))
       (--filter (member "rg" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-test-git-grep-rules (&optional run-not-tests)
@@ -1225,7 +1255,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
                 (list (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule)))))
-	  (plist-get rule (if run-not-tests :not :tests))))
+          (plist-get rule (if run-not-tests :not :tests))))
       (--filter (member "grep" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-message (str &rest args)
