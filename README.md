@@ -148,7 +148,7 @@ Requires [Cask](https://github.com/cask/cask).
 
 Here is a list of potential alternative packages for emacs:
 
-* [Tags](http://www.gnu.org/software/emacs/manual/html_node/emacs/Tags.html) supports multiple languages
+* [Tags](https://www.gnu.org/software/emacs/manual/html_node/emacs/Tags-Tables.html) supports multiple languages
 * [GNU Global](http://www.gnu.org/software/global/) supports multiple languages
 * [Tern](http://ternjs.net/) for JavaScript
 * [elpy](https://github.com/jorgenschaefer/elpy) for Python
