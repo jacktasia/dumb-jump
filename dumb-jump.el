@@ -682,7 +682,7 @@ or most optimal searcher."
            :tests ("test n = n * 2" "let test x y = x * y")
            :not ("nottest n = n * 2" "let testnot x y = x * y" "test $ y z"))
 
-    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "haskell"
+    (:type "function" :supports ("ag") :language "haskell"
            :regex "^\\s*(let)?\\s*JJJ\\b\\s*::"
            :tests ("test :: FilePath -> HttpSession [PkgIndexIndex]"
                    "test :: PackageId -> Tar.Entry -> PkgIndexInfo")
@@ -699,13 +699,11 @@ or most optimal searcher."
 
     (:type "(data)type constructor 1" :supports ("ag") :language "haskell"
            :regex "^(data|newtype|type)\\s+(.+)?=\\s*JJJ\\b"
-           :tests ("data Something a  =  Test { b :: Kek }"))
+           :tests ("data Something a = Test { b :: Kek }"))
 
     (:type "record field" :supports ("ag") :language "haskell"
-           ; multiline support?
            :regex "data.*{((.|\\s)*?::(.|\\s)*?,)*\\s*(JJJ)\\b\\s*::(.|\\s)*}"
-           :tests (
-;                   "data Mem = Mem { mda :: A \n , test :: Kek\n  ,\n aoeu :: E }"
+           :tests ("data Mem = Mem { \n mda :: A \n  , test :: Kek \n , \n aoeu :: E \n }"
                    "data Mem = Mem { test :: Kek } deriving Mda"
                    ))
 
@@ -1168,21 +1166,31 @@ If `nil` always show list of more than 1 match."
   "Use TEST as the standard input for the CMD."
   (with-temp-buffer
     (insert test)
-    (shell-command-on-region (point-min) (point-max) cmd nil t)
+    (shell-command-on-region (point-min) (point-max) cmd (current-buffer) t)
+    (buffer-substring-no-properties (point-min) (point-max))))
+
+(defun dumb-jump-run-test-temp-file (test thefile realcmd)
+  "Write content to the temporary file, run cmd on it, return result"
+  (with-temp-buffer
+    (insert test)
+    (write-file thefile nil)
+    (delete-region (point-min) (point-max))
+    (shell-command realcmd t)
+    (delete-file thefile)
     (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun dumb-jump-run-git-grep-test (test cmd)
   "Use string TEST as input through a local, temporary file for CMD.
 Because git grep must be given a file as input, not just a string."
-  (let* ((thefile ".git.grep.test")
-         (realcmd (concat cmd " " thefile)))
-    (with-temp-buffer
-      (insert test)
-      (write-file thefile nil)
-      (delete-region (point-min) (point-max))
-      (shell-command realcmd t)
-      (delete-file thefile)
-      (buffer-substring-no-properties (point-min) (point-max)))))
+  (let ((thefile ".git.grep.test"))
+    (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
+
+(defun dumb-jump-run-ag-test (test cmd)
+  "Use TEST as input, but first write it into temporary file
+and then run ag on it. The difference is that ag ignores multiline
+matches when passed input from stdin, which is a crucial feature."
+  (let ((thefile ".ag.test"))
+    (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
 
 (defun dumb-jump-test-rules (&optional run-not-tests)
   "Test all the grep rules and return count of those that fail.
@@ -1212,9 +1220,9 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (lambda (rule)
         (-mapcat
           (lambda (test)
-            (let* ((cmd (concat "ag --nocolor --nogroup "
+            (let* ((cmd (concat "ag --nocolor --nogroup --nonumber "
                                 (shell-quote-argument (dumb-jump-populate-regex (plist-get rule :regex) "test" 'ag))))
-                   (resp (dumb-jump-run-test test cmd)))
+                   (resp (dumb-jump-run-ag-test test cmd)))
               (when (or
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
