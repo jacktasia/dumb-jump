@@ -128,6 +128,14 @@ I personally no longer use the `dumb-jump-mode` keybindings that were inspired b
              ("M-g z" . dumb-jump-go-prefer-external-other-window))
       :config (setq dumb-jump-selector 'ivy) ;; (setq dumb-jump-selector 'helm)
       :ensure)
+      
+#### Debugging a jump
+
+1. <kbd>M-x</kbd> `set-variable dumb-jump-debug t`
+1. try to jump
+1. go to buffer `*Messages*`
+
+More details [here](http://p.cweiske.de/506). Thanks to @cweiske and @Glumanda99 
 
 ## Why?
 
