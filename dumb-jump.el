@@ -677,45 +677,69 @@ or most optimal searcher."
            :tests ("type test" "immutable test" "abstract test <:Testable" ))
 
     ;; haskell
-    (:type "function" :supports ("ag") :language "haskell"
-           :regex "^\\s*(let)?\\s*JJJ\\b\\s*(.+)?(?<==)"
-           :tests ("test n = n * 2" "let test x y = x * y")
-           :not ("nottest n = n * 2" "let testnot x y = x * y" "test $ y z"))
+    (:type "module" :supports ("ag") :language "haskell"
+           :regex "^module\\s+JJJ\\b\\s+"
+           :tests ("module Test (exportA, exportB) where"))
 
-    (:type "function" :supports ("ag") :language "haskell"
-           :regex "^\\s*(let)?\\s*JJJ\\b\\s*::"
-           :tests ("test :: FilePath -> HttpSession [PkgIndexIndex]"
-                   "test :: PackageId -> Tar.Entry -> PkgIndexInfo")
-           :not ("nottest :: FilePath -> HttpSession [PkgIndexIndex]"
-                 "testnot :: PackageId -> Tar.Entry -> PkgIndexInfo"))
+                                        ; TODO Doesn't support any '=' in arguments. E.g. 'foo A{a = b,..} = bar'.
+    (:type "top level function" :supports ("ag") :language "haskell"
+           :regex "^(JJJ\\b)(?!(\\s+::))\\s+((.|\\s)*?)=\\s+"
+           :tests ("test n = n * 2"
+                   "test X{..} (Y a b c) \n bcd \n =\n x * y"
+                   "test ab cd e@Datatype {..} (Another thing, inTheRow) = \n undefined"
+                   "test = runRealBasedMode @ext @ctx identity identity"
+                   "test unwrap wrap nr@Naoeu {..} (Action action, specSpecs) = \n    undefined")
+           :not ("nottest n = n * 2"
+                 "let testnot x y = x * y" "test $ y z" "let test a o = mda"
+                 "test :: Sometype -> AnotherType aoeu kek = undefined"
+                 ))
+
+; 1. not every function has a type signature
+; 2. whenever it has type signature, we get 2 matches
+;    (:type "function type signature" :supports ("ag") :language "haskell"
+;           :regex "^\\s*(let)?\\s*JJJ\\b\\s*::"
+;           :tests ("test :: FilePath -> HttpSession [PkgIndexIndex]"
+;                   "test :: PackageId -> Tar.Entry -> PkgIndexInfo")
+;           :not ("nottest :: FilePath -> HttpSession [PkgIndexIndex]"
+;                 "testnot :: PackageId -> Tar.Entry -> PkgIndexInfo"))
 
     (:type "type-like" :supports ("ag") :language "haskell"
-           :regex "^((data(\\s+family)?)|(newtype)|(type(\\s+family)?))\\s+JJJ\\b"
+           :regex "^\\s*((data(\\s+family)?)|(newtype)|(type(\\s+family)?))\\s+JJJ\\b"
            :tests ("newtype Test a = Something { b :: Kek }"
                    "data Test a b = Somecase a | Othercase b"
                    "type family Test (x :: *) (xs :: [*]) :: Nat where"
                    "data family Test"
                    "type Test = TestAlias"))
 
-    (:type "(data)type constructor 1" :supports ("ag") :language "haskell"
-           :regex "^(data|newtype|type)\\s+(.+)?=\\s*JJJ\\b"
-           :tests ("data Something a = Test { b :: Kek }"))
+;    (:type "(data)type constructor 1" :supports ("ag") :language "haskell"
+;           :regex "^(data|newtype|(type(?!\\s+instance)))\\s+(.+)?=\\s*JJJ\\b"
+;           :tests ("data Something a = Test { b :: Kek }"))
 
-    (:type "record field" :supports ("ag") :language "haskell"
-           :regex "data.*{((.|\\s)*?::(.|\\s)*?,)*\\s*(JJJ)\\b\\s*::(.|\\s)*}"
-           :tests ("data Mem = Mem { \n mda :: A \n  , test :: Kek \n , \n aoeu :: E \n }"
-                   "data Mem = Mem { test :: Kek } deriving Mda"
-                   ))
+
+;    (:type "data record field" :supports ("ag") :language "haskell"
+;           :regex "data.*{((.*)?::(.*)?,)*\\s*(JJJ)\\b\\s*::(.|\\s)*}"
+;           :tests ("data Mem = Mem { \n mda :: A \n  , test :: Kek \n , \n aoeu :: E \n }"
+;                   "data Mem = Mem { \n test :: A \n  , mda :: Kek \n , \n aoeu :: E \n }"
+;                   "data Mem = Mem { \n mda :: A \n  , aoeu :: Kek \n , \n test :: E \n }"
+;                   "data Mem = Mem { test :: Kek } deriving Mda"
+;                   "data Mem = Mem { \n test :: Kek \n } deriving Mda"
+;                   ))
+
+;    (:type "newtype record field" :supports ("ag") :language "haskell"
+;           :regex "^newtype(.|\\s)*?{(.|\\s)*JJJ\\b([^=]|\\s)*?}"
+;           :tests (
+;                   "newtype Mem = Mem { \n test :: Kek \n } deriving (Eq)"
+;                   "newtype Mem = Mem { -- | Some docs \n test :: Kek -- ^ More docs } deriving Eq"
+;                   "newtype Mem = Mem { test :: Kek } deriving (Eq,Monad)"
+;                   "newtype NewMem = OldMem { test :: [Tx] }"
+;                   "newtype BlockHeaderList ssc = BHL\n { test :: ([Aoeu a], [Ssss])\n    } deriving (Eq)"
+;                   ))
 
     (:type "typeclass" :supports ("ag") :language "haskell"
            :regex "^class\\s+(.+=>\\s*)?JJJ\\b"
            :tests (
                    "class (Constr1 m, Constr 2) => Test (Kek a) where"
                    "class  Test  (Veryovka a)  where "))
-
-    (:type "module" :supports ("ag") :language "haskell"
-           :regex "^module\\s+JJJ\\b"
-           :tests ("module Test (exportA, exportB) where"))
 
     ;; ocaml
     (:type "type" :supports ("ag" "rg") :language "ocaml"
@@ -1166,7 +1190,7 @@ If `nil` always show list of more than 1 match."
   "Use TEST as the standard input for the CMD."
   (with-temp-buffer
     (insert test)
-    (shell-command-on-region (point-min) (point-max) cmd (current-buffer) t)
+    (shell-command-on-region (point-min) (point-max) cmd nil t)
     (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun dumb-jump-run-test-temp-file (test thefile realcmd)
