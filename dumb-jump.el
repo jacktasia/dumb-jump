@@ -694,15 +694,6 @@ or most optimal searcher."
                  "test :: Sometype -> AnotherType aoeu kek = undefined"
                  ))
 
-; 1. not every function has a type signature
-; 2. whenever it has type signature, we get 2 matches
-;    (:type "function type signature" :supports ("ag") :language "haskell"
-;           :regex "^\\s*(let)?\\s*JJJ\\b\\s*::"
-;           :tests ("test :: FilePath -> HttpSession [PkgIndexIndex]"
-;                   "test :: PackageId -> Tar.Entry -> PkgIndexInfo")
-;           :not ("nottest :: FilePath -> HttpSession [PkgIndexIndex]"
-;                 "testnot :: PackageId -> Tar.Entry -> PkgIndexInfo"))
-
     (:type "type-like" :supports ("ag") :language "haskell"
            :regex "^\\s*((data(\\s+family)?)|(newtype)|(type(\\s+family)?))\\s+JJJ\\b"
            :tests ("newtype Test a = Something { b :: Kek }"
@@ -711,9 +702,14 @@ or most optimal searcher."
                    "data family Test"
                    "type Test = TestAlias"))
 
-;    (:type "(data)type constructor 1" :supports ("ag") :language "haskell"
-;           :regex "^(data|newtype|(type(?!\\s+instance)))\\s+(.+)?=\\s*JJJ\\b"
-;           :tests ("data Something a = Test { b :: Kek }"))
+    ; datatype contstuctor that doesn't match type definition
+    (:type "(data)type constructor 1" :supports ("ag") :language "haskell"
+           :regex "(data|newtype)\\s{1,3}(?!JJJ\\b)([^=]{1,30})=((\\s{0,3}JJJ\\b)|([^=]{0,500}?(\\|\\s{0,3}JJJ\\b)))"
+           :tests ("data Something a = Test { b :: Kek }"
+                   "data Mem a = TrueMem { b :: Kek } | Test (Mem Int) deriving Mda"
+                   "newtype SafeTest a = Test (Kek a) deriving (YonedaEmbedding)"
+                   )
+           :not ("\ndata Test = Test { b :: Kek }"))
 
 
 ;    (:type "data record field" :supports ("ag") :language "haskell"
