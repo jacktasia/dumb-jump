@@ -699,7 +699,7 @@ or most optimal searcher."
            :tests ("newtype Test a = Something { b :: Kek }"
                    "data Test a b = Somecase a | Othercase b"
                    "type family Test (x :: *) (xs :: [*]) :: Nat where"
-                   "data family Test"
+                   "data family Test "
                    "type Test = TestAlias"))
 
     ; datatype contstuctor that doesn't match type definition.
@@ -709,27 +709,22 @@ or most optimal searcher."
                    "data Mem a = TrueMem { b :: Kek } | Test (Mem Int) deriving Mda"
                    "newtype SafeTest a = Test (Kek a) deriving (YonedaEmbedding)"
                    )
-           :not ("\ndata Test = Test { b :: Kek }"))
+           :not ("data Test = Test { b :: Kek }"))
 
 
-;    (:type "data record field" :supports ("ag") :language "haskell"
-;           :regex "data.*{((.*)?::(.*)?,)*\\s*(JJJ)\\b\\s*::(.|\\s)*}"
-;           :tests ("data Mem = Mem { \n mda :: A \n  , test :: Kek \n , \n aoeu :: E \n }"
-;                   "data Mem = Mem { \n test :: A \n  , mda :: Kek \n , \n aoeu :: E \n }"
-;                   "data Mem = Mem { \n mda :: A \n  , aoeu :: Kek \n , \n test :: E \n }"
-;                   "data Mem = Mem { test :: Kek } deriving Mda"
-;                   "data Mem = Mem { \n test :: Kek \n } deriving Mda"
-;                   ))
-
-;    (:type "newtype record field" :supports ("ag") :language "haskell"
-;           :regex "^newtype(.|\\s)*?{(.|\\s)*JJJ\\b([^=]|\\s)*?}"
-;           :tests (
-;                   "newtype Mem = Mem { \n test :: Kek \n } deriving (Eq)"
-;                   "newtype Mem = Mem { -- | Some docs \n test :: Kek -- ^ More docs } deriving Eq"
-;                   "newtype Mem = Mem { test :: Kek } deriving (Eq,Monad)"
-;                   "newtype NewMem = OldMem { test :: [Tx] }"
-;                   "newtype BlockHeaderList ssc = BHL\n { test :: ([Aoeu a], [Ssss])\n    } deriving (Eq)"
-;                   ))
+    (:type "data/newtype record field" :supports ("ag") :language "haskell"
+           :regex "(data|newtype)([^=]*)=[^=]*?({([^=}]*?)JJJ\\s+::[^=}]+})"
+           :tests ("data Mem = Mem { \n mda :: A \n  , test :: Kek \n , \n aoeu :: E \n }"
+                   "data Mem = Mem { \n test :: A \n  , mda :: Kek \n , \n aoeu :: E \n }"
+                   "data Mem = Mem { \n mda :: A \n  , aoeu :: Kek \n , \n test :: E \n }"
+                   "data Mem = Mem { test :: Kek } deriving Mda"
+                   "data Mem = Mem { \n test :: Kek \n } deriving Mda"
+                   "newtype Mem = Mem { \n test :: Kek \n } deriving (Eq)"
+                   "newtype Mem = Mem { -- | Some docs \n test :: Kek -- ^ More docs } deriving Eq"
+                   "newtype Mem = Mem { test :: Kek } deriving (Eq,Monad)"
+                   "newtype NewMem = OldMem { test :: [Tx] }"
+                   "newtype BlockHeaderList ssc = BHL\n { test :: ([Aoeu a], [Ssss])\n    } deriving (Eq)"
+                   ))
 
     (:type "typeclass" :supports ("ag") :language "haskell"
            :regex "^class\\s+(.+=>\\s*)?JJJ\\b"
