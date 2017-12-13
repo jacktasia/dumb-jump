@@ -678,12 +678,12 @@ or most optimal searcher."
 
     ;; haskell
     (:type "module" :supports ("ag") :language "haskell"
-           :regex "^module\\s+JJJ\\b\\s+"
+           :regex "^module\\s+JJJ\\s+"
            :tests ("module Test (exportA, exportB) where"))
 
-                                        ; TODO Doesn't support any '=' in arguments. E.g. 'foo A{a = b,..} = bar'.
+    ; TODO Doesn't support any '=' in arguments. E.g. 'foo A{a = b,..} = bar'.
     (:type "top level function" :supports ("ag") :language "haskell"
-           :regex "^(JJJ\\b)(?!(\\s+::))\\s+((.|\\s)*?)=\\s+"
+           :regex "^JJJ(?!(\\s+::))\\s+((.|\\s)*?)=\\s+"
            :tests ("test n = n * 2"
                    "test X{..} (Y a b c) \n bcd \n =\n x * y"
                    "test ab cd e@Datatype {..} (Another thing, inTheRow) = \n undefined"
@@ -695,16 +695,16 @@ or most optimal searcher."
                  ))
 
     (:type "type-like" :supports ("ag") :language "haskell"
-           :regex "^\\s*((data(\\s+family)?)|(newtype)|(type(\\s+family)?))\\s+JJJ\\b"
+           :regex "^\\s*((data(\\s+family)?)|(newtype)|(type(\\s+family)?))\\s+JJJ\\s+"
            :tests ("newtype Test a = Something { b :: Kek }"
                    "data Test a b = Somecase a | Othercase b"
                    "type family Test (x :: *) (xs :: [*]) :: Nat where"
                    "data family Test"
                    "type Test = TestAlias"))
 
-    ; datatype contstuctor that doesn't match type definition
+    ; datatype contstuctor that doesn't match type definition.
     (:type "(data)type constructor 1" :supports ("ag") :language "haskell"
-           :regex "(data|newtype)\\s{1,3}(?!JJJ\\b)([^=]{1,30})=((\\s{0,3}JJJ\\b)|([^=]{0,500}?(\\|\\s{0,3}JJJ\\b)))"
+           :regex "(data|newtype)\\s{1,3}(?!JJJ\\b)([^=]{1,40})=((\\s{0,3}JJJ\\s+)|([^=]{0,500}?((?<!(-- ))\\|\\s{0,3}JJJ\\s+)))"
            :tests ("data Something a = Test { b :: Kek }"
                    "data Mem a = TrueMem { b :: Kek } | Test (Mem Int) deriving Mda"
                    "newtype SafeTest a = Test (Kek a) deriving (YonedaEmbedding)"
