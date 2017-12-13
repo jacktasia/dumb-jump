@@ -664,7 +664,7 @@ or most optimal searcher."
            :regex "macro\\s*JJJ\\("
            :tests ("macro test(a)=1" " macro test(a,b)=1*8"))
 
-    (:type "variable" :supports ("ag" "rg") :language "julia" 
+    (:type "variable" :supports ("ag" "rg") :language "julia"
            :regex "const\\s+JJJ\\b"
            :tests ("const test = "))
 
@@ -677,17 +677,60 @@ or most optimal searcher."
            :tests ("type test" "immutable test" "abstract test <:Testable" ))
 
     ;; haskell
-    (:type "function" :supports ("ag") :language "haskell"
-           :regex "^\\s*(let)?\\s*JJJ\\b\\s*(.+)?(?<==)"
-           :tests ("test n = n * 2" "let test x y = x * y")
-           :not ("nottest n = n * 2" "let testnot x y = x * y" "test $ y z"))
+    (:type "module" :supports ("ag") :language "haskell"
+           :regex "^module\\s+JJJ\\s+"
+           :tests ("module Test (exportA, exportB) where"))
 
-    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "haskell"
-           :regex "^\\s*(let)?\\s*JJJ\\b\\s*::"
-           :tests ("test :: FilePath -> HttpSession [PkgIndexIndex]"
-                   "test :: PackageId -> Tar.Entry -> PkgIndexInfo")
-           :not ("nottest :: FilePath -> HttpSession [PkgIndexIndex]"
-                 "testnot :: PackageId -> Tar.Entry -> PkgIndexInfo"))
+    ; TODO Doesn't support any '=' in arguments. E.g. 'foo A{a = b,..} = bar'.
+    (:type "top level function" :supports ("ag") :language "haskell"
+           :regex "^JJJ(?!(\\s+::))\\s+((.|\\s)*?)=\\s+"
+           :tests ("test n = n * 2"
+                   "test X{..} (Y a b c) \n bcd \n =\n x * y"
+                   "test ab cd e@Datatype {..} (Another thing, inTheRow) = \n undefined"
+                   "test = runRealBasedMode @ext @ctx identity identity"
+                   "test unwrap wrap nr@Naoeu {..} (Action action, specSpecs) = \n    undefined")
+           :not ("nottest n = n * 2"
+                 "let testnot x y = x * y" "test $ y z" "let test a o = mda"
+                 "test :: Sometype -> AnotherType aoeu kek = undefined"
+                 ))
+
+    (:type "type-like" :supports ("ag") :language "haskell"
+           :regex "^\\s*((data(\\s+family)?)|(newtype)|(type(\\s+family)?))\\s+JJJ\\s+"
+           :tests ("newtype Test a = Something { b :: Kek }"
+                   "data Test a b = Somecase a | Othercase b"
+                   "type family Test (x :: *) (xs :: [*]) :: Nat where"
+                   "data family Test "
+                   "type Test = TestAlias"))
+
+    ; datatype contstuctor that doesn't match type definition.
+    (:type "(data)type constructor 1" :supports ("ag") :language "haskell"
+           :regex "(data|newtype)\\s{1,3}(?!JJJ\\b)([^=]{1,40})=((\\s{0,3}JJJ\\s+)|([^=]{0,500}?((?<!(-- ))\\|\\s{0,3}JJJ\\s+)))"
+           :tests ("data Something a = Test { b :: Kek }"
+                   "data Mem a = TrueMem { b :: Kek } | Test (Mem Int) deriving Mda"
+                   "newtype SafeTest a = Test (Kek a) deriving (YonedaEmbedding)"
+                   )
+           :not ("data Test = Test { b :: Kek }"))
+
+
+    (:type "data/newtype record field" :supports ("ag") :language "haskell"
+           :regex "(data|newtype)([^=]*)=[^=]*?({([^=}]*?)JJJ\\s+::[^=}]+})"
+           :tests ("data Mem = Mem { \n mda :: A \n  , test :: Kek \n , \n aoeu :: E \n }"
+                   "data Mem = Mem { \n test :: A \n  , mda :: Kek \n , \n aoeu :: E \n }"
+                   "data Mem = Mem { \n mda :: A \n  , aoeu :: Kek \n , \n test :: E \n }"
+                   "data Mem = Mem { test :: Kek } deriving Mda"
+                   "data Mem = Mem { \n test :: Kek \n } deriving Mda"
+                   "newtype Mem = Mem { \n test :: Kek \n } deriving (Eq)"
+                   "newtype Mem = Mem { -- | Some docs \n test :: Kek -- ^ More docs } deriving Eq"
+                   "newtype Mem = Mem { test :: Kek } deriving (Eq,Monad)"
+                   "newtype NewMem = OldMem { test :: [Tx] }"
+                   "newtype BlockHeaderList ssc = BHL\n { test :: ([Aoeu a], [Ssss])\n    } deriving (Eq)"
+                   ))
+
+    (:type "typeclass" :supports ("ag") :language "haskell"
+           :regex "^class\\s+(.+=>\\s*)?JJJ\\b"
+           :tests (
+                   "class (Constr1 m, Constr 2) => Test (Kek a) where"
+                   "class  Test  (Veryovka a)  where "))
 
     ;; ocaml
     (:type "type" :supports ("ag" "rg") :language "ocaml"
@@ -1141,24 +1184,34 @@ If `nil` always show list of more than 1 match."
     (shell-command-on-region (point-min) (point-max) cmd nil t)
     (buffer-substring-no-properties (point-min) (point-max))))
 
+(defun dumb-jump-run-test-temp-file (test thefile realcmd)
+  "Write content to the temporary file, run cmd on it, return result"
+  (with-temp-buffer
+    (insert test)
+    (write-file thefile nil)
+    (delete-region (point-min) (point-max))
+    (shell-command realcmd t)
+    (delete-file thefile)
+    (buffer-substring-no-properties (point-min) (point-max))))
+
 (defun dumb-jump-run-git-grep-test (test cmd)
   "Use string TEST as input through a local, temporary file for CMD.
 Because git grep must be given a file as input, not just a string."
-  (let* ((thefile ".git.grep.test")
-         (realcmd (concat cmd " " thefile)))
-    (with-temp-buffer
-      (insert test)
-      (write-file thefile nil)
-      (delete-region (point-min) (point-max))
-      (shell-command realcmd t)
-      (delete-file thefile)
-      (buffer-substring-no-properties (point-min) (point-max)))))
+  (let ((thefile ".git.grep.test"))
+    (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
+
+(defun dumb-jump-run-ag-test (test cmd)
+  "Use TEST as input, but first write it into temporary file
+and then run ag on it. The difference is that ag ignores multiline
+matches when passed input from stdin, which is a crucial feature."
+  (let ((thefile ".ag.test"))
+    (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
 
 (defun dumb-jump-test-rules (&optional run-not-tests)
   "Test all the grep rules and return count of those that fail.
 Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
   (let ((fail-tmpl "grep FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'")
-	(variant (if (eq (dumb-jump-grep-installed?) 'gnu) 'gnu-grep 'grep)))
+        (variant (if (eq (dumb-jump-grep-installed?) 'gnu) 'gnu-grep 'grep)))
     (-mapcat
       (lambda (rule)
         (-mapcat
@@ -1171,7 +1224,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
                      (and run-not-tests (> (length resp) 0)))
                 (list (format fail-tmpl (if run-not-tests "not" "")
                               test (if run-not-tests "IS unexpectedly" "NOT") resp cmd (plist-get rule :regex))))))
-	  (plist-get rule (if run-not-tests :not :tests))))
+          (plist-get rule (if run-not-tests :not :tests))))
       (--filter (member "grep" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-test-ag-rules (&optional run-not-tests)
@@ -1182,14 +1235,14 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (lambda (rule)
         (-mapcat
           (lambda (test)
-            (let* ((cmd (concat "ag --nocolor --nogroup "
+            (let* ((cmd (concat "ag --nocolor --nogroup --nonumber "
                                 (shell-quote-argument (dumb-jump-populate-regex (plist-get rule :regex) "test" 'ag))))
-                   (resp (dumb-jump-run-test test cmd)))
+                   (resp (dumb-jump-run-ag-test test cmd)))
               (when (or
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
                 (list (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule)))))
-	  (plist-get rule (if run-not-tests :not :tests))))
+          (plist-get rule (if run-not-tests :not :tests))))
       (--filter (member "ag" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-test-rg-rules (&optional run-not-tests)
@@ -1207,7 +1260,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
                 (list (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule)))))
-	  (plist-get rule (if run-not-tests :not :tests))))
+          (plist-get rule (if run-not-tests :not :tests))))
       (--filter (member "rg" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-test-git-grep-rules (&optional run-not-tests)
@@ -1225,7 +1278,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
                      (and (not run-not-tests) (not (s-contains? test resp)))
                      (and run-not-tests (> (length resp) 0)))
                 (list (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule)))))
-	  (plist-get rule (if run-not-tests :not :tests))))
+          (plist-get rule (if run-not-tests :not :tests))))
       (--filter (member "grep" (plist-get it :supports)) dumb-jump-find-rules))))
 
 (defun dumb-jump-message (str &rest args)
