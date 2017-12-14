@@ -289,8 +289,8 @@
      (should (string= (buffer-file-name) js-file))
      (should (= (line-number-at-pos) 3)))))
 
-(ert-deftest dumb-jump-test-rules-test ()
-  (let ((rule-failures (dumb-jump-test-rules)))
+(ert-deftest dumb-jump-test-grep-rules-test ()
+  (let ((rule-failures (dumb-jump-test-grep-rules)))
     (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
@@ -312,8 +312,8 @@
       (dumb-jump-output-rule-test-failures rule-failures)
       (should (= (length rule-failures) 0)))))
 
-(ert-deftest dumb-jump-test-rules-not-test () ;; :not tests
-  (let ((rule-failures (dumb-jump-test-rules t)))
+(ert-deftest dumb-jump-test-grep-rules-not-test () ;; :not tests
+  (let ((rule-failures (dumb-jump-test-grep-rules t)))
     (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
@@ -329,10 +329,10 @@
       (dumb-jump-output-rule-test-failures rule-failures)
       (should (= (length rule-failures) 0)))))
 
-(ert-deftest dumb-jump-test-rules-fail-test ()
+(ert-deftest dumb-jump-test-grep-rules-fail-test ()
   (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
          (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
-         (rule-failures (dumb-jump-test-rules)))
+         (rule-failures (dumb-jump-test-grep-rules)))
     ;(message "%s" (prin1-to-string rule-failures))
     (should (= (length rule-failures) 1))))
 

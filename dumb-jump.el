@@ -1247,7 +1247,7 @@ matches when passed input from stdin, which is a crucial feature."
   (let ((thefile ".ag.test"))
     (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
 
-(defun dumb-jump-test-rules (&optional run-not-tests)
+(defun dumb-jump-test-grep-rules (&optional run-not-tests)
   "Test all the grep rules and return count of those that fail.
 Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
   (let ((fail-tmpl "grep FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'")
