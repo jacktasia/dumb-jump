@@ -237,6 +237,42 @@ or most optimal searcher."
            :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)")
            :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
+    ;; scheme
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
+           :regex "\\\(define\\s+\\(\\s*JJJ\\j"
+           :tests ("(define (test blah)" "(define (test\n")
+           :not ("(define test blah" "(define (test-asdf blah)" "(define test (lambda (blah"))
+    
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
+           :regex "\\\(define\\s+JJJ\\s*\\\(\\s*lambda"
+           :tests ("(define test (lambda (blah" "(define test (lambda\n")
+           :not ("(define test blah" "(define test-asdf (lambda (blah)" "(define (test)" "(define (test blah) (lambda (foo"))
+    
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
+           :regex "\\\(let\\s+JJJ\\s*(\\\(|\\\[)*"
+           :tests ("(let test ((blah foo) (bar bas))" "(let test\n" "(let test [(foo")
+           :not ("(let ((test blah"))
+    
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
+           :regex "\\\(define\\s+JJJ\\j"
+           :tests ("(define test " "(define test\n")
+           :not ("(define (test"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
+           :regex "(\\\(|\\\[)\\s*JJJ\\s+"
+           :tests ("(let ((test 'foo" "(let [(test 'foo" "(let [(test 'foo" "(let [[test 'foo" "(let ((blah 'foo) (test 'bar)")
+           :not ("{test foo"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
+           :regex "\\\(lambda\\s+\\\(?[^\(\)]*\\s*JJJ\\j\\s*\\\)?"
+           :tests ("(lambda (test)" "(lambda (foo test)" "(lambda test (foo)")
+           :not ("(lambda () test"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
+           :regex "\\\(define\\s+\\\([^\(\)]+\\s*JJJ\\j\\s*\\\)?"
+           :tests ("(define (foo test)" "(define (foo test bar)")
+           :not ("(define foo test" "(define (test foo" "(define (test)"))
+    
     ;; c++
     (:type "function" :supports ("ag" "rg" "git-grep") :language "c++"
            :regex "\\bJJJ(\\s|\\))*\\((\\w|[,&*.<>]|\\s)*(\\))\\s*(const|->|\\{|$)|typedef\\s+(\\w|[(*]|\\s)+JJJ(\\)|\\s)*\\("
@@ -1041,6 +1077,8 @@ or most optimal searcher."
     (:language "rust" :ext "rs" :agtype "rust" :rgtype "rust")
     (:language "scala" :ext "scala" :agtype "scala" :rgtype "scala")
     (:language "scheme" :ext "scm" :agtype "scheme" :rgtype "lisp")
+    (:language "scheme" :ext "ss" :agtype "scheme" :rgtype "lisp")
+    (:language "scheme" :ext "sld" :agtype "scheme" :rgtype "lisp")
     (:language "shell" :ext "sh" :agtype nil :rgtype nil)
     (:language "shell" :ext "bash" :agtype nil :rgtype nil)
     (:language "shell" :ext "csh" :agtype nil :rgtype nil)
@@ -1071,7 +1109,9 @@ or most optimal searcher."
     (:language "javascript" :type "variable" :right "^;" :left nil)
     (:language "perl" :type "function" :right "^(" :left nil)
     (:language "elisp" :type "function" :right nil :left "($")
-    (:language "elisp" :type "variable" :right "^)" :left nil))
+    (:language "elisp" :type "variable" :right "^)" :left nil)
+    (:language "scheme" :type "function" :right nil :left "($")
+    (:language "scheme" :type "variable" :right "^)" :left nil))
 
   "List of under points contexts for each language.
 This helps limit the number of regular expressions we use
