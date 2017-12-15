@@ -218,22 +218,21 @@ or most optimal searcher."
            ;; \\j usage see `dumb-jump-ag-word-boundary`
            :tests ("(defun test (blah)" "(defun test\n" "(cl-defun test (blah)" "(cl-defun test\n")
            :not ("(defun test-asdf (blah)" "(defun test-blah\n" "(cl-defun test-asdf (blah)"
-                 "(cl-defun test-blah\n"  "(defun tester (blah)"))
+                 "(cl-defun test-blah\n"  "(defun tester (blah)" "(defun test? (blah)" "(defun test- (blah)"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
            :regex "\\\(defvar\\b\\s*JJJ\\j"
            :tests ("(defvar test " "(defvar test\n")
-           :not ("(defvar tester"))
+           :not ("(defvar tester" "(defvar test?" "(defvar test-"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
            :regex "\\\(defcustom\\b\\s*JJJ\\j"
            :tests ("(defcustom test " "(defcustom test\n")
-           :not ("(defcustom tester"))
-
+           :not ("(defcustom tester" "(defcustom test?" "(defcustom test-"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
            :regex "\\\(setq\\b\\s*JJJ\\j" :tests ("(setq test 123)")
-           :not ("setq test-blah 123)" "(setq tester"))
+           :not ("setq test-blah 123)" "(setq tester" "(setq test?" "(setq test-"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
            :regex "\\\(JJJ\\s+" :tests ("(let ((test 123)))") :not ("(let ((test-2 123)))"))
