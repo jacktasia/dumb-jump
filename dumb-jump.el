@@ -125,25 +125,25 @@ or most optimal searcher."
   :type 'string)
 
 (defcustom dumb-jump-ag-word-boundary
-  "(?![\\w\\?\\*-])"
+  "(?![a-zA-Z0-9\\?\\*-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and ag will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-rg-word-boundary
-  "($|[^\\w\\?\\*-])"
+  "($|[^a-zA-Z0-9\\?\\*-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and rg will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-git-grep-word-boundary
-  "($|[^\\w\\?\\*-])"
+  "($|[^a-zA-Z0-9\\?\\*-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and git grep will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-grep-word-boundary
-  "($|[^\\w\\?\\*-])"
+  "($|[^a-zA-Z0-9\\?\\*-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and grep will use this value."
   :group 'dumb-jump
   :type 'string)
@@ -213,20 +213,26 @@ or most optimal searcher."
   :type 'boolean)
 
 (defcustom dumb-jump-find-rules
-  '((:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\((defun|cl-defun)\\s+JJJ\\j"
+  '((:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
+           :regex "\\\((defun|cl-defun)\\s+JJJ\\j"
            ;; \\j usage see `dumb-jump-ag-word-boundary`
            :tests ("(defun test (blah)" "(defun test\n" "(cl-defun test (blah)" "(cl-defun test\n")
-           :not ("(defun test-asdf (blah)" "(defun test-blah\n" "(cl-defun test-asdf (blah)" "(cl-defun test-blah\n"))
-
-
-    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
-           :regex "\\\(defvar\\b\\s*JJJ\\j" :tests ("(defvar test " "(defvar test\n"))
+           :not ("(defun test-asdf (blah)" "(defun test-blah\n" "(cl-defun test-asdf (blah)"
+                 "(cl-defun test-blah\n"  "(defun tester (blah)" "(defun test? (blah)" "(defun test- (blah)"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
-           :regex "\\\(defcustom\\b\\s*JJJ\\j" :tests ("(defcustom test " "(defcustom test\n"))
+           :regex "\\\(defvar\\b\\s*JJJ\\j"
+           :tests ("(defvar test " "(defvar test\n")
+           :not ("(defvar tester" "(defvar test?" "(defvar test-"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
-           :regex "\\\(setq\\b\\s*JJJ\\j" :tests ("(setq test 123)") :not ("setq test-blah 123)"))
+           :regex "\\\(defcustom\\b\\s*JJJ\\j"
+           :tests ("(defcustom test " "(defcustom test\n")
+           :not ("(defcustom tester" "(defcustom test?" "(defcustom test-"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
+           :regex "\\\(setq\\b\\s*JJJ\\j" :tests ("(setq test 123)")
+           :not ("setq test-blah 123)" "(setq tester" "(setq test?" "(setq test-"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
            :regex "\\\(JJJ\\s+" :tests ("(let ((test 123)))") :not ("(let ((test-2 123)))"))
