@@ -129,6 +129,24 @@ I personally no longer use the `dumb-jump-mode` keybindings that were inspired b
              ("M-g z" . dumb-jump-go-prefer-external-other-window))
       :config (setq dumb-jump-selector 'ivy) ;; (setq dumb-jump-selector 'helm)
       :ensure)
+
+##### Hydra for effieciency
+
+If you have [Hydra](https://github.com/abo-abo/hydra) installed, the following is an example hydra for easily using Dumb-Jump and not needing to remember the bindings or function names:
+
+```el
+(defhydra dumb-jump-hydra (:color blue :columns 3)
+    "Dumb Jump"
+    ("j" dumb-jump-go "Go")
+    ("o" dumb-jump-go-other-window "Other window")
+    ("e" dumb-jump-go-prefer-external "Go external")
+    ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
+    ("i" dumb-jump-go-prompt "Prompt")
+    ("l" dumb-jump-quick-look "Quick look")
+    ("b" dumb-jump-back "Back"))
+```
+
+It can be explicitly bound or used inside another hydra (if you already use something like [Avy](https://github.com/abo-abo/avy)/[Ace](https://github.com/winterTTr/ace-jump-mode) or similar for general "jumping").
       
 #### Debugging a jump
 
