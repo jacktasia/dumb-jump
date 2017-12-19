@@ -725,7 +725,7 @@ or most optimal searcher."
 
     ; TODO Doesn't support any '=' in arguments. E.g. 'foo A{a = b,..} = bar'.
     (:type "top level function" :supports ("ag") :language "haskell"
-           :regex "^JJJ(?!(\\s+::))\\s+((.|\\s)*?)=\\s+"
+           :regex "^\\bJJJ(?!(\\s+::))\\s+((.|\\s)*?)=\\s+"
            :tests ("test n = n * 2"
                    "test X{..} (Y a b c) \n bcd \n =\n x * y"
                    "test ab cd e@Datatype {..} (Another thing, inTheRow) = \n undefined"
@@ -742,11 +742,13 @@ or most optimal searcher."
                    "data Test a b = Somecase a | Othercase b"
                    "type family Test (x :: *) (xs :: [*]) :: Nat where"
                    "data family Test "
-                   "type Test = TestAlias"))
+                   "type Test = TestAlias")
+           :not ("newtype NotTest a = NotTest (Not a)"
+                 "data TestNot b = Aoeu"))
 
     ; datatype contstuctor that doesn't match type definition.
     (:type "(data)type constructor 1" :supports ("ag") :language "haskell"
-           :regex "(data|newtype)\\s{1,3}(?!JJJ\\b)([^=]{1,40})=((\\s{0,3}JJJ\\s+)|([^=]{0,500}?((?<!(-- ))\\|\\s{0,3}JJJ\\s+)))"
+           :regex "(data|newtype)\\s{1,3}(?!JJJ\\s+)([^=]{1,40})=((\\s{0,3}JJJ\\s+)|([^=]{0,500}?((?<!(-- ))\\|\\s{0,3}JJJ\\s+)))"
            :tests ("data Something a = Test { b :: Kek }"
                    "data Mem a = TrueMem { b :: Kek } | Test (Mem Int) deriving Mda"
                    "newtype SafeTest a = Test (Kek a) deriving (YonedaEmbedding)"
@@ -755,7 +757,7 @@ or most optimal searcher."
 
 
     (:type "data/newtype record field" :supports ("ag") :language "haskell"
-           :regex "(data|newtype)([^=]*)=[^=]*?({([^=}]*?)JJJ\\s+::[^=}]+})"
+           :regex "(data|newtype)([^=]*)=[^=]*?({([^=}]*?)(\\bJJJ)\\s+::[^=}]+})"
            :tests ("data Mem = Mem { \n mda :: A \n  , test :: Kek \n , \n aoeu :: E \n }"
                    "data Mem = Mem { \n test :: A \n  , mda :: Kek \n , \n aoeu :: E \n }"
                    "data Mem = Mem { \n mda :: A \n  , aoeu :: Kek \n , \n test :: E \n }"
@@ -766,13 +768,16 @@ or most optimal searcher."
                    "newtype Mem = Mem { test :: Kek } deriving (Eq,Monad)"
                    "newtype NewMem = OldMem { test :: [Tx] }"
                    "newtype BlockHeaderList ssc = BHL\n { test :: ([Aoeu a], [Ssss])\n    } deriving (Eq)"
-                   ))
+                   )
+           :not ("data Heh = Mda { sometest :: Kek, testsome :: Mem }"))
 
     (:type "typeclass" :supports ("ag") :language "haskell"
-           :regex "^class\\s+(.+=>\\s*)?JJJ\\b"
+           :regex "^class\\s+(.+=>\\s*)?JJJ\\s+"
            :tests (
                    "class (Constr1 m, Constr 2) => Test (Kek a) where"
-                   "class  Test  (Veryovka a)  where "))
+                   "class  Test  (Veryovka a)  where ")
+           :not ("class Test2 (Kek a) where"
+                 "class MakeTest (AoeuTest x y z) where"))
 
     ;; ocaml
     (:type "type" :supports ("ag" "rg") :language "ocaml"
