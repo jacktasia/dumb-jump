@@ -69,6 +69,15 @@
   (let* ((config (dumb-jump-read-config test-data-dir-proj1 ".dumbjump-lang")))
     (should (string= "python" (plist-get config :language)))))
 
+(ert-deftest dumb-jump-read-config-remote-test ()
+  (with-mock
+    (mock (f-read-text *) => "-exclude_path1\n+include_path1\n-exclude_path2\n+../include_path2\n+/usr/lib/include_path3")
+    (let ((result (dumb-jump-read-config "/ssh:1.2.3.4:/usr/blah" "dummy-config"))
+          (exclude-paths '("/usr/blah/exclude_path1" "/usr/blah/exclude_path2"))
+          (include-paths '("/usr/blah/include_path1" "/usr/include_path2" "/usr/lib/include_path3")))
+      (should (equal (plist-get result :exclude) exclude-paths))
+      (should (equal (plist-get result :include) include-paths)))))
+
 (ert-deftest dumb-jump-language-to-ext-test ()
   (should (-contains? (dumb-jump-get-file-exts-by-language "elisp") "el")))
 
@@ -107,11 +116,23 @@
          (expected (concat "ag --nocolor --nogroup --elisp " (shell-quote-argument expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
+(ert-deftest dumb-jump-generate-ag-command-exclude-test ()
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected (concat "ag --nocolor --nogroup --elisp --ignore-dir this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root")))
+    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded"))))))
+
 (ert-deftest dumb-jump-generate-rg-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
          (expected (concat "rg --color never --no-heading --line-number --type elisp " (shell-quote-argument expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+
+(ert-deftest dumb-jump-generate-rg-command-remote-test ()
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected (concat "rg --color never --no-heading --line-number --type elisp -g \\!this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root")))
+    (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded"))))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
@@ -753,6 +774,25 @@
    (mock (dumb-jump-goto-file-line "src/file.js" 62 4))
    (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
      (dumb-jump--result-follow result))))
+
+(ert-deftest dumb-jump-message-result-follow-remote-fullpath-test ()
+  (with-mock
+    (mock (dumb-jump-goto-file-line * * *))
+    (mock (file-remote-p *) => "/ssh:user@1.2.3.4#5678:")
+    (let ((result '(:path "/usr/src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
+      (should (string=
+               (dumb-jump--result-follow result)
+               "/ssh:user@1.2.3.4#5678:/usr/src/file.js")))))
+
+(ert-deftest dumb-jump-message-result-follow-remote-relative-test ()
+  (with-mock
+    (mock (dumb-jump-goto-file-line * * *))
+    (mock (file-remote-p *) => "/ssh:user@1.2.3.4#5678:")
+    (let ((result '(:path "here/is/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow"))
+          (default-directory "/ssh:user@1.2.3.4#5678:/path/to/default-directory/"))
+      (should (string=
+               (dumb-jump--result-follow result)
+               "/ssh:user@1.2.3.4#5678:/path/to/default-directory/here/is/file.js")))))
 
 (ert-deftest dumb-jump-message-result-follow-tooltip-test ()
   (with-mock
