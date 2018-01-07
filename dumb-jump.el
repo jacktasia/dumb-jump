@@ -1,8 +1,8 @@
 ;;; dumb-jump.el --- jump to definition for multiple languages without configuration. -*- lexical-binding: t; -*-
-;; Copyright (C) 2015-2017 jack angers
+;; Copyright (C) 2015-2018 jack angers
 ;; Author: jack angers
 ;; Version: 0.5.1
-;; Package-Requires: ((emacs "24.3") (f "0.17.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
+;; Package-Requires: ((emacs "24.3") (f "0.20.0") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
 ;; Dumb Jump is free software; you can redistribute it and/or modify it
@@ -1410,11 +1410,13 @@ for user to select.  Filters PROJ path from files for display."
 
 (defun dumb-jump-get-project-root (filepath)
   "Keep looking at the parent dir of FILEPATH until a denoter file/dir is found."
-  (f-expand
+  (s-chop-suffix
+   "/"
+   (f-expand
     (or
-      dumb-jump-project
-      (locate-dominating-file filepath #'dumb-jump-get-config)
-      dumb-jump-default-project)))
+     dumb-jump-project
+     (locate-dominating-file filepath #'dumb-jump-get-config)
+     dumb-jump-default-project))))
 
 (defun dumb-jump-get-config (dir)
   "If a project denoter is in DIR then return it, otherwise
