@@ -1990,8 +1990,7 @@ searcher symbol."
   "Run the grep command based on the needle LOOK-FOR in the directory TOSEARCH"
   (let* ((proj-root (if (file-remote-p proj)
                         (directory-file-name
-                         (tramp-file-name-localname
-                          (tramp-dissect-file-name proj)))
+                         (tramp-file-name-localname (tramp-dissect-file-name proj)))
                       proj))
          (cmd (funcall generate-fn look-for cur-file proj-root regexes lang exclude-args))
          (shell-command-switch (dumb-jump-shell-command-switch))
@@ -2000,7 +1999,6 @@ searcher symbol."
     (when dumb-jump-debug
       (dumb-jump-message
        "-----\nDUMB JUMP DEBUG `dumb-jump-run-command` START\n----- \n\ncmd: \n\t%s\n\nraw results: \n\n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-run-command` END\n-----\n" cmd rawresults))
-
     (when (and (s-blank? rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn look-for cur-file proj-root regexes lang exclude-args))
@@ -2008,7 +2006,6 @@ searcher symbol."
       (when dumb-jump-debug
         (dumb-jump-message
        "-----\nDUMB JUMP DEBUG `dumb-jump-run-command` (FALLBACK!) START\n----- \n\ncmd: \n\t%s\n\nraw results: \n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-run-command` (FALLBACK) END\n-----\n" cmd rawresults)))
-
     (unless (s-blank? cmd)
       (let ((results (funcall parse-fn rawresults cur-file line-num)))
         (--filter (s-contains? look-for (plist-get it :context)) results)))))
