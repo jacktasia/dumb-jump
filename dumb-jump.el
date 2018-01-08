@@ -1814,19 +1814,22 @@ Ffrom the ROOT project CONFIG-FILE."
          (lang (when (= (length lang-match) 2) (nth 1 lang-match)))
          (exclude-lines (--filter (s-starts-with? "-" it) lines))
          (include-lines (--filter (s-starts-with? "+" it) lines))
+         (local-root (if (file-remote-p root)
+                        (tramp-file-name-localname (tramp-dissect-file-name root))
+                      root))
          (exclude-paths (-map (lambda (f)
                                  (let* ((dir (substring f 1))
                                        (use-dir (if (s-starts-with? "/" dir)
                                                     (substring dir 1)
                                                     dir)))
-                                   (f-join root use-dir)))
+                                   (f-join local-root use-dir)))
                                exclude-lines))
          (include-paths (-map (lambda (f)
                                 (let* ((dir (substring f 1)))
                                   (if (s-starts-with? "/" dir)
                                       dir ;; absolute paths are allowed
                                     ;; TODO: warn if an include path is already a child of proj-root
-                                    (f-join root dir))))
+                                    (f-join local-root dir))))
                               include-lines)))
 
     `(:exclude ,exclude-paths :include ,include-paths :language ,lang)))
@@ -1858,7 +1861,19 @@ Ffrom the ROOT project CONFIG-FILE."
                   (car (car target-boundary))
                 (s-index-of (plist-get result :target) (plist-get result :context))))
 
-         (thef (plist-get result :path))
+         (result-path (plist-get result :path))
+
+         ;; Return value is either a string like "/ssh:user@1.2.3.4:" or nil
+         (tramp-path-prefix (file-remote-p default-directory))
+
+         ;; If result-path is an absolute path, the prefix is added to the head of it,
+         ;; or result-path is added to the end of default-directory
+         (path-for-tramp (when (and result-path tramp-path-prefix)
+                           (if (f-absolute? result-path)
+                               (concat tramp-path-prefix result-path)
+                             (concat default-directory result-path))))
+
+         (thef (or path-for-tramp result-path))
          (line (plist-get result :line)))
     (when thef
       (if use-tooltip
@@ -1973,22 +1988,24 @@ searcher symbol."
 (defun dumb-jump-run-command
     (look-for proj regexes lang exclude-args cur-file line-num parse-fn generate-fn)
   "Run the grep command based on the needle LOOK-FOR in the directory TOSEARCH"
-  (let* ((cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
+  (let* ((proj-root (if (file-remote-p proj)
+                        (directory-file-name
+                         (tramp-file-name-localname (tramp-dissect-file-name proj)))
+                      proj))
+         (cmd (funcall generate-fn look-for cur-file proj-root regexes lang exclude-args))
          (shell-command-switch (dumb-jump-shell-command-switch))
          (rawresults (shell-command-to-string cmd)))
 
     (when dumb-jump-debug
       (dumb-jump-message
        "-----\nDUMB JUMP DEBUG `dumb-jump-run-command` START\n----- \n\ncmd: \n\t%s\n\nraw results: \n\n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-run-command` END\n-----\n" cmd rawresults))
-
     (when (and (s-blank? rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
-      (setq cmd (funcall generate-fn look-for cur-file proj regexes lang exclude-args))
+      (setq cmd (funcall generate-fn look-for cur-file proj-root regexes lang exclude-args))
       (setq rawresults (shell-command-to-string cmd))
       (when dumb-jump-debug
         (dumb-jump-message
        "-----\nDUMB JUMP DEBUG `dumb-jump-run-command` (FALLBACK!) START\n----- \n\ncmd: \n\t%s\n\nraw results: \n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-run-command` (FALLBACK) END\n-----\n" cmd rawresults)))
-
     (unless (s-blank? cmd)
       (let ((results (funcall parse-fn rawresults cur-file line-num)))
         (--filter (s-contains? look-for (plist-get it :context)) results)))))
@@ -2125,6 +2142,7 @@ searcher symbol."
   "Generate the ag response based on the needle LOOK-FOR in the directory PROJ."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'ag))
          (agtypes (dumb-jump-get-ag-type-by-language lang))
+         (proj-dir (file-name-as-directory proj))
          ;; TODO: --search-zip always? in case the include is the in gz area like emacs lisp code.
          (cmd (concat dumb-jump-ag-cmd
                       " --nocolor --nogroup"
@@ -2133,7 +2151,7 @@ searcher symbol."
                         "")
                       (s-join "" (--map (format " --%s" it) agtypes))))
          (exclude-args (dumb-jump-arg-joiner
-                        "--ignore-dir" (--map (shell-quote-argument (s-replace proj "" it)) exclude-paths)))
+                        "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
     (if (= (length regexes) 0)
         ""
@@ -2143,11 +2161,12 @@ searcher symbol."
   "Generate the rg response based on the needle LOOK-FOR in the directory PROJ."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'rg))
          (rgtypes (dumb-jump-get-rg-type-by-language lang))
+         (proj-dir (file-name-as-directory proj))
          (cmd (concat dumb-jump-rg-cmd
                       " --color never --no-heading --line-number"
                       (s-join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
-                        "-g" (--map (shell-quote-argument (concat "!" (s-replace proj "" it))) exclude-paths)))
+                        "-g" (--map (shell-quote-argument (concat "!" (s-replace proj-dir "" it))) exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
     (if (= (length regexes) 0)
         ""
