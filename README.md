@@ -45,6 +45,7 @@ There is currently basic support for the following languages:
 * R
 * Ruby
 * Rust
+* SML
 * Scala
 * Scheme
 * Swift
