@@ -1011,9 +1011,12 @@ or most optimal searcher."
                    "val test : bool"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "sml"
-           :regex "\\s*fun\\s+\\bJJJ\\b\\s*(\\w+|\\((\\s*\\w\\s*,?)+\\))\\s*="
+           :regex "\\s*fun\\s+\\bJJJ\\b.*\\s*="
            :tests ("fun test list ="
-                   "fun test (STRING_NIL, a) ="))
+                   "fun test (STRING_NIL, a) ="
+                   "fun test ((s1,s2): 'a queue) : 'a * 'a queue ="
+                   "fun test (var : q) : int ="
+                   "fun test f e xs ="))
 
     (:type "module" :supports ("ag" "grep" "rg" "git-grep") :language "sml"
            :regex "\\s*(structure|signature|functor)\\s+\\bJJJ\\b"
