@@ -994,9 +994,14 @@ or most optimal searcher."
 
     ;; sml
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "sml"
-           :regex "\\s*(datatype)\\s+\\bJJJ\\b\\s*="
+           :regex "\\s*(data)?type\\s+.*\\bJJJ\\b"
            :tests ("datatype test ="
-                   "datatype test=")
+                   "datatype test="
+                   "datatype 'a test ="
+                   "type test ="
+                   "type 'a test ="
+                   "type 'a test"
+                   "type test")
            :not ("datatypetest ="))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "sml"
