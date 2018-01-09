@@ -1007,7 +1007,15 @@ or most optimal searcher."
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "sml"
            :regex "\\s*fun\\s+\\bJJJ\\b\\s*(\\w+|\\((\\s*\\w\\s*,?)+\\))\\s*="
            :tests ("fun test list ="
-                   "fun test (STRING_NIL, a) =")))
+                   "fun test (STRING_NIL, a) ="))
+
+    (:type "module" :supports ("ag" "grep" "rg" "git-grep") :language "sml"
+           :regex "\\s*(structure|signature|functor)\\s+\\bJJJ\\b"
+           :tests ("structure test ="
+                   "structure test : MYTEST ="
+                   "signature test ="
+                   "functor test (T:TEST) ="
+                   "functor test(T:TEST) =")))
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
   :group 'dumb-jump
