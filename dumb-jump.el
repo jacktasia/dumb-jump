@@ -1005,9 +1005,10 @@ or most optimal searcher."
            :not ("datatypetest ="))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "sml"
-           :regex "\\s*val\\s+\\bJJJ\\b\\s*="
+           :regex "\\s*val\\s+\\bJJJ\\b"
            :tests ("val test ="
-                   "val test="))
+                   "val test="
+                   "val test : bool"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "sml"
            :regex "\\s*fun\\s+\\bJJJ\\b\\s*(\\w+|\\((\\s*\\w\\s*,?)+\\))\\s*="
