@@ -481,22 +481,22 @@ or most optimal searcher."
            :not ("if test == 1234" "foo_test = 1234"))
 
     (:type "function" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|[^\\w.])((private|public|protected)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|[^\\w|:])"
+           :regex "(^|[^\\w.])((private|public|protected)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|[^\\w:])"
            :tests ("def test(foo)" "def test()" "def test foo" "def test; end"
                    "def self.test()" "def MODULE::test()" "private def test")
            :not ("def test_foo"))
 
     (:type "function" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|\\W)define(_singleton|_instance)?_method(\\s|[(])\\s*:JJJ($|[^\\w|:])"
+           :regex "(^|\\W)define(_singleton|_instance)?_method(\\s|[(])\\s*:JJJ($|[^\\w:])"
            :tests ("define_method(:test, &body)"
                    "mod.define_instance_method(:test) { body }"))
 
     (:type "type" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|[^\\w:])"
            :tests ("class test" "class Foo::test"))
 
     (:type "type" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|[^\\w:])"
            :tests ("module test" "module Foo::test"))
 
     ;; crystal
@@ -506,25 +506,25 @@ or most optimal searcher."
            :not ("if test == 1234" "foo_test = 1234"))
 
     (:type "function" :supports ("ag" "rg" "git-grep") :language "crystal"
-           :regex "(^|[^\\w.])((private|public|protected)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|[^\\w|:])"
+           :regex "(^|[^\\w.])((private|public|protected)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|[^\\w:])"
            :tests ("def test(foo)" "def test()" "def test foo" "def test; end"
                    "def self.test()" "def MODULE::test()" "private def test")
            :not ("def test_foo"))
 
     (:type "type" :supports ("ag" "rg" "git-grep") :language "crystal"
-           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|[^\\w:])"
            :tests ("class test" "class Foo::test"))
 
     (:type "type" :supports ("ag" "rg" "git-grep") :language "crystal"
-           :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|[^\\w:])"
            :tests ("module test" "module Foo::test"))
 
     (:type "type" :supports ("ag" "rg" "git-grep") :language "crystal"
-           :regex "(^|[^\\w.])struct\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :regex "(^|[^\\w.])struct\\s+(\\w*::)*JJJ($|[^\\w:])"
            :tests ("struct test" "struct Foo::test"))
 
     (:type "type" :supports ("ag" "rg" "git-grep") :language "crystal"
-           :regex "(^|[^\\w.])alias\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :regex "(^|[^\\w.])alias\\s+(\\w*::)*JJJ($|[^\\w:])"
            :tests ("alias test" "alias Foo::test"))
 
     ;; scala
@@ -2199,7 +2199,7 @@ searcher symbol."
                       (if dumb-jump-git-grep-search-untracked
                           " --untracked"
                         "")
-                      " -E"))
+                      " -P"))
          (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))
          (exclude-args (s-join " "
                                (--map (shell-quote-argument (concat ":(exclude)" it))
@@ -2231,7 +2231,8 @@ searcher symbol."
          (cmd (concat (if (eq system-type 'windows-nt) "" (concat dumb-jump-grep-prefix " "))
                       (if (s-ends-with? ".gz" cur-file)
                           dumb-jump-zgrep-cmd
-                        dumb-jump-grep-cmd)))
+                        dumb-jump-grep-cmd)
+                      " -P"))
          ;; TODO: GNU grep doesn't support these, so skip them
          (exclude-args "")
          (include-args "")
