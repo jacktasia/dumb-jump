@@ -425,7 +425,7 @@
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-helm-persistent-action-test ()
-  (dumb-jump-helm-persist-action "dumb-jump.el:1")
+  (dumb-jump-helm-persist-action "dumb-jump.el:1: (defn status")
   (should (get-buffer " *helm dumb jump persistent*")))
 
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-ivy-test ()
