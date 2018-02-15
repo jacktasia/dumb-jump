@@ -1875,7 +1875,7 @@ Ffrom the ROOT project CONFIG-FILE."
                (buffer-file-name it)
                (file-exists-p (buffer-file-name it)))
           (buffer-list))))
-    (member path (--map (buffer-file-name it) modified-file-buffers))))
+    (member (f-full path) (--map (buffer-file-name it) modified-file-buffers))))
 
 (defun dumb-jump-result-follow (result &optional use-tooltip proj)
   "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump.  Prompt if we should continue if destentation has been modified."
