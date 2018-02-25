@@ -1026,6 +1026,22 @@ or most optimal searcher."
                    "functor test (T:TEST) ="
                    "functor test(T:TEST) ="))
 
+    ;; vhdl
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "vhdl"
+           :regex "\\s*type\\s+\\bJJJ\\b"
+           :tests ("type test is" "type test  is")
+           :not ("type testing is" "type test2  is"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "vhdl"
+           :regex "\\s*constant\\s+\\bJJJ\\b"
+           :tests ("constant test :" "constant test:")
+           :not ("constant testing " "constant test2:"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "vhdl"
+           :regex "function\\s*\"?JJJ\"?\\s*\\\("
+           :tests ("function test(signal)" "function test (signal)" "function \"test\" (signal)")
+           :not ("function testing(signal"))
+
     ;; latex
     (:type "command" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
            :regex "\\\\.*newcommand\\\*?\\s*\\\{\\s*(\\\\)JJJ\\s*}"
@@ -1162,6 +1178,8 @@ or most optimal searcher."
     (:language "elixir" :ext "exs" :agtype "elixir" :rgtype "elixir")
     (:language "elixir" :ext "eex" :agtype "elixir" :rgtype "elixir")
     (:language "erlang" :ext "erl" :agtype "erlang" :rgtype "erlang")
+    (:language "vhdl" :ext "vhd" :agtype "vhdl" :rgtype "vhdl")
+    (:language "vhdl" :ext "vhdl" :agtype "vhdl" :rgtype "vhdl")
     (:language "scss" :ext "scss" :agtype "css" :rgtype "css"))
 
   "Mapping of programming language(s) to file extensions."
@@ -1749,6 +1767,7 @@ current file."
     (:comment "#" :language "elixir")
     (:comment "%" :language "erlang")
     (:comment "%" :language "tex")
+    (:comment "--" :language "vhdl")
     (:comment "//" :language "scss"))
   "List of one-line comments organized by language."
   :group 'dumb-jump
