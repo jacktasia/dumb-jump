@@ -499,6 +499,16 @@ or most optimal searcher."
            :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|[^\\w|:])"
            :tests ("module test" "module Foo::test"))
 
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "ruby"
+           :regex "(^|\\W)alias(_method)?\\W+JJJ(\\W|$)"
+           :tests ("alias test some_method"
+                   "alias_method :test, :some_method"
+                   "alias_method ’test’ ’some_method’"
+                   "some_class.send(:alias_method, :test, :some_method)")
+           :not ("alias some_method test"
+                 "alias_method :some_method, :test"
+                 "alias test_foo test"))
+
     ;; crystal
     (:type "variable" :supports ("ag" "rg" "git-grep") :language "crystal"
            :regex "^\\s*((\\w+[.])*\\w+,\\s*)*JJJ(,\\s*(\\w+[.])*\\w+)*\\s*=([^=>~]|$)"
