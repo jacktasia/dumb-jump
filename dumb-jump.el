@@ -559,7 +559,7 @@ or most optimal searcher."
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "r"
            :regex "\\bJJJ\\s*<-\\s*function\\b"
-           :tests ("test <- function")
+           :tests ("test <- function" "test <- function(")
            :not   ("test <- functionX"))
 
     ;; perl
