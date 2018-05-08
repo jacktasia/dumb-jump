@@ -1039,12 +1039,17 @@ or most optimal searcher."
     ;; systemverilog
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
            :regex "\\s*class\\s+\\bJJJ\\b"
-           :tests ("virtual class test;" "class test;")
+           :tests ("virtual class test;" "class test;" "class test extends some_class")
            :not ("virtual class testing;" "class test2;"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
-           :regex "\\s*assign\\s+\\bJJJ\\b"
-           :tests ("assign test =" "assign test=")
+           :regex "\\s*task\\s+\\bJJJ\\b"
+           :tests ("task test (" "task test(")
+           :not ("task testing (" "task test2("))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
+           :regex "\\s*\\bJJJ\\b\\s*="
+           :tests ("assign test =" "assign test=" "int test =" "int test=")
            :not ("assign testing =" "assign test2="))
 
     (:type "function" :supports ("ag" "rg" "git-grep") :language "systemverilog"
