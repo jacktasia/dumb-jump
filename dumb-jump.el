@@ -1044,6 +1044,25 @@ or most optimal searcher."
                    "CREATE PROCEDURE test (OUT p INT)"
                    "create definer = 'test'@'localhost' procedure test()"))
 
+    (:type "table" :supports ("ag" "grep" "rg" "git-grep") :language "sql"
+           :regex "(CREATE|create)\\s+(.+?\\s+)?(TABLE|table)(\\s+(IF NOT EXISTS|if not exists))?\\s+JJJ\\b"
+           :tests ("CREATE TABLE test ("
+                   "create temporary table if not exists test"
+                   "CREATE TABLE IF NOT EXISTS test ("
+                   "create global temporary table test"))
+
+    (:type "view" :supports ("ag" "grep" "rg" "git-grep") :language "sql"
+           :regex "(CREATE|create)\\s+(.+?\\s+)?(VIEW|view)\\s+JJJ\\b"
+           :tests ("CREATE VIEW test ("
+                   "create sql security definer view test"
+                   "CREATE OR REPLACE VIEW test AS foo"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "sql"
+           :regex "(CREATE|create)\\s+(.+?\\s+)?(TYPE|type)\\s+JJJ\\b"
+           :tests ("CREATE TYPE test"
+                   "CREATE OR REPLACE TYPE test AS foo ("
+                   "create type test as ("))
+
     ;; systemverilog
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
            :regex "\\s*class\\s+\\bJJJ\\b"
