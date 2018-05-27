@@ -1036,6 +1036,14 @@ or most optimal searcher."
                    "functor test (T:TEST) ="
                    "functor test(T:TEST) ="))
 
+    ;; sql
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "sql"
+           :regex "(CREATE|create)\\s+(.+?\\s+)?(FUNCTION|function|PROCEDURE|procedure)\\s+JJJ\\s*\\\("
+           :tests ("CREATE FUNCTION test(i INT) RETURNS INT"
+                   "create or replace function test (int)"
+                   "CREATE PROCEDURE test (OUT p INT)"
+                   "create definer = 'test'@'localhost' procedure test()"))
+
     ;; systemverilog
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
            :regex "\\s*class\\s+\\bJJJ\\b"
@@ -1212,6 +1220,7 @@ or most optimal searcher."
     (:language "shell" :ext "ksh" :agtype nil :rgtype nil)
     (:language "shell" :ext "tcsh" :agtype nil :rgtype nil)
     (:language "sml" :ext "sml" :agtype "sml" :rgtype "sml")
+    (:language "sql" :ext "sql" :agtype "sql" :rgtype "sql")
     (:language "swift" :ext "swift" :agtype nil :rgtype "swift")
     (:language "tex" :ext "tex" :agtype "tex" :rgtype "tex")
     (:language "elixir" :ext "ex" :agtype "elixir" :rgtype "elixir")
