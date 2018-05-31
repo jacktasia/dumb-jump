@@ -419,13 +419,12 @@
          (results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
                     (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
     (with-mock
-     (mock (helm-build-sync-source * :candidates * :persistent-action *))
-     (mock (helm * * :buffer "*helm dumb jump choices*") => "/test2.txt:52: var thing = function()")
-     (mock (dumb-jump-result-follow '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
+     (mock (helm-build-sync-source * :action * :candidates * :persistent-action *))
+     (mock (helm * * :buffer "*helm dumb jump choices*"))
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-helm-persistent-action-test ()
-  (dumb-jump-helm-persist-action "dumb-jump.el:1: (defn status")
+  (dumb-jump-helm-persist-action '(:path "dumb-jump.el" :line 1 :context " (defn status"))
   (should (get-buffer " *helm dumb jump persistent*")))
 
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-ivy-test ()
