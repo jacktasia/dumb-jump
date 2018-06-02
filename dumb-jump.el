@@ -1512,11 +1512,12 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
         (when result
           (dumb-jump-result-follow result))))
 
-(defun dumb-jump-helm-persist-action (match)
-  "Previews a MATCH in a temporary buffer at the matched line number when pressing \\<keymap>C-j</keymap> in helm."
-  (let* ((line-parts (dumb-jump-parse-response-line match "."))
-         (file (nth 0 line-parts))
-         (line (string-to-number (nth 1 line-parts)))
+(defun dumb-jump-helm-persist-action (candidate)
+  "Previews CANDIDATE in a temporary buffer displaying the file at the matched line.
+\\<helm-map>
+This is the persistent action (\\[helm-execute-persistent-action]) for helm."
+  (let* ((file (plist-get candidate :path))
+         (line (plist-get candidate :line))
          (default-directory-old default-directory))
     (switch-to-buffer (get-buffer-create " *helm dumb jump persistent*"))
     (setq default-directory default-directory-old)
@@ -1551,12 +1552,12 @@ for user to select.  Filters PROJ path from files for display."
      ((and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
       (funcall dumb-jump-ivy-jump-to-selected-function results choices proj))
      ((and (eq dumb-jump-selector 'helm) (fboundp 'helm))
-      (dumb-jump-to-selected results choices
-                             (helm :sources
-                                   (helm-build-sync-source "Jump to: "
-                                     :candidates choices
-                                     :persistent-action 'dumb-jump-helm-persist-action)
-                                   :buffer "*helm dumb jump choices*")))
+      (helm :sources
+            (helm-build-sync-source "Jump to: "
+              :action '(("Jump to match" . dumb-jump-result-follow))
+              :candidates (-zip choices results)
+              :persistent-action 'dumb-jump-helm-persist-action)
+            :buffer "*helm dumb jump choices*"))
      (t
       (dumb-jump-to-selected results choices (popup-menu* choices))))))
 
