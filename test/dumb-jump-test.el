@@ -8,7 +8,7 @@
 
 ;;; Code:
 
-(setq debug-on-error t)
+
 
 (defun dumb-jump-output-rule-test-failures (failures)
   (--each failures (princ (format "\t%s\n" it))))

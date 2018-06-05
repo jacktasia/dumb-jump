@@ -26,6 +26,7 @@
 ;; `ag` or ripgrep `rg` installed.  Dumb Jump requires at least GNU Emacs 24.3.
 
 ;;; Code:
+(setq debug-on-error t)
 (require 'etags)
 (require 'f)
 (require 's)
