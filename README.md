@@ -52,6 +52,7 @@ There is currently basic support for the following languages:
 * Swift
 * SystemVerilog
 * VHDL
+* Vala
 
 If you have any issues with the existing languages, or you want support for another one, then please [open an issue](https://github.com/jacktasia/dumb-jump/issues). PRs are also welcome. If you'd like to add a language these PRs for [lua](https://github.com/jacktasia/dumb-jump/pull/33) and [rust](https://github.com/jacktasia/dumb-jump/pull/57) are good examples.
 
