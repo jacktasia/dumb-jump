@@ -414,6 +414,21 @@ or most optimal searcher."
            :tests ("class test:" "public class test implements Something")
            :not ("class testnot:" "public class testnot implements Something"))
 
+    ;; vala (again just like c#, exactly the same..)
+    (:type "function" :supports ("ag" "rg") :language "vala"
+           :regex "^\\s*(?:[^=\\W]+\\s+){1,3}JJJ\\s*\\\("
+           :tests ("int test()" "int test(param)" "static int test()" "static int test(param)"
+                   "public static MyType test()" "private virtual SomeType test(param)" "static int test()")
+           :not ("test()" "testnot()" "blah = new test()"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "vala"
+           :regex "\\s*\\bJJJ\\s*=[^=\\n)]+" :tests ("int test = 1234") :not ("if test == 1234:" "int nottest = 44"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "vala"
+           :regex "(class|interface)\\s*JJJ\\b"
+           :tests ("class test:" "public class test : IReadableChannel, I")
+           :not ("class testnot:" "public class testnot : IReadableChannel, I"))
+
     ;; coq
     (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
            :regex "\\s*Variable\\s+JJJ\\b"
@@ -1175,6 +1190,8 @@ or most optimal searcher."
     (:language "objc" :ext "m" :agtype "objc" :rgtype "objc")
     (:language "csharp" :ext "cs" :agtype "csharp" :rgtype "csharp")
     (:language "java" :ext "java" :agtype "java" :rgtype "java")
+    (:language "vala" :ext "vala" :agtype "vala" :rgtype "vala")
+    (:language "vala" :ext "vapi" :agtype "vala" :rgtype "vala")
     (:language "julia" :ext "jl" :agtype "julia" :rgtype "julia")
     (:language "clojure" :ext "clj" :agtype "clojure" :rgtype "clojure")
     (:language "clojure" :ext "cljc" :agtype "clojure" :rgtype "clojure")
