@@ -771,7 +771,7 @@ or most optimal searcher."
            :regex "^module\\s+JJJ\\s+"
            :tests ("module Test (exportA, exportB) where"))
 
-                                        ; TODO Doesn't support any '=' in arguments. E.g. 'foo A{a = b,..} = bar'.
+    ; TODO Doesn't support any '=' in arguments. E.g. 'foo A{a = b,..} = bar'.
     (:type "top level function" :supports ("ag") :language "haskell"
            :regex "^\\bJJJ(?!(\\s+::))\\s+((.|\\s)*?)=\\s+"
            :tests ("test n = n * 2"
@@ -794,7 +794,7 @@ or most optimal searcher."
            :not ("newtype NotTest a = NotTest (Not a)"
                  "data TestNot b = Aoeu"))
 
-                                        ; datatype contstuctor that doesn't match type definition.
+    ; datatype contstuctor that doesn't match type definition.
     (:type "(data)type constructor 1" :supports ("ag") :language "haskell"
            :regex "(data|newtype)\\s{1,3}(?!JJJ\\s+)([^=]{1,40})=((\\s{0,3}JJJ\\s+)|([^=]{0,500}?((?<!(-- ))\\|\\s{0,3}JJJ\\s+)))"
            :tests ("data Something a = Test { b :: Kek }"
@@ -1208,8 +1208,9 @@ or most optimal searcher."
     (:language "ocaml" :ext "mli" :agtype "ocaml" :rgtype "ocaml")
     (:language "ocaml" :ext "mll" :agtype "ocaml" :rgtype "ocaml")
     (:language "ocaml" :ext "mly" :agtype "ocaml" :rgtype "ocaml")
-    (:language "groovy" :ext "groovy" :agtype "groovy" :rgtype "groovy")
-    (:language "groovy" :ext "jenkinsfile" :agtype "groovy" :rgtype "groovy")
+    (:language "groovy" :ext "gradle" :agtype nil :rgtype nil)
+    (:language "groovy" :ext "groovy" :agtype nil :rgtype nil)
+    (:language "groovy" :ext "jenkinsfile" :agtype nil :rgtype nil)
     (:language "haskell" :ext "hs" :agtype "haskell" :rgtype "haskell")
     (:language "haskell" :ext "lhs" :agtype "haskell" :rgtype "haskell")
     (:language "objc" :ext "m" :agtype "objc" :rgtype "objc")
