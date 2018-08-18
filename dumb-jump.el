@@ -625,8 +625,8 @@ or most optimal searcher."
            :tests ("$test = 1234" "$foo->test = 1234"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "php"
-           :regex "\\*\\s@property(-read|-write)?\\s+(\\S+\\s+)&?\\$JJJ$"
-           :tests ("/** @property string $test" " * @property-read bool|bool $test" " * @property-write \\ArrayObject<string,resource[]> $test"))
+           :regex "\\*\\s@property(-read|-write)?\\s+(\\S+\\s+)&?\\$JJJ(\\s+|$)"
+           :tests ("/** @property string $test" "/** @property string $test description for $test property"  " * @property-read bool|bool $test" " * @property-write \\ArrayObject<string,resource[]> $test"))
 
     (:type "trait" :supports ("ag" "grep" "rg" "git-grep") :language "php"
            :regex "trait\\s*JJJ\\s*\\\{"
