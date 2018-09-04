@@ -32,6 +32,7 @@ There is currently basic support for the following languages:
 * Faust
 * Fortran
 * Go
+* Groovy
 * Haskell
 * Java
 * JavaScript
