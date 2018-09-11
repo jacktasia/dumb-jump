@@ -1270,6 +1270,7 @@ or most optimal searcher."
     (:language "ruby" :ext "rb" :agtype "ruby" :rgtype "ruby")
     (:language "ruby" :ext "erb" :agtype "ruby" :rgtype nil)
     (:language "ruby" :ext "haml" :agtype "ruby" :rgtype nil)
+    (:language "ruby" :ext "rake" :agtype "ruby" :rgtype nil)
     (:language "ruby" :ext "slim" :agtype "ruby" :rgtype nil)
     (:language "rust" :ext "rs" :agtype "rust" :rgtype "rust")
     (:language "scala" :ext "scala" :agtype "scala" :rgtype "scala")
