@@ -477,7 +477,9 @@ or most optimal searcher."
 
     ;; python
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "python"
-           :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234:"))
+           :regex "\\s*\\bJJJ\\s*=[^=\\n]+"
+           :tests ("test = 1234")
+           :not ("if test == 1234:" "_test = 1234"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "python"
            :regex "def\\s*JJJ\\b\\s*\\\("
