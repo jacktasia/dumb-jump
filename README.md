@@ -29,6 +29,7 @@ There is currently basic support for the following languages:
 * Elixir
 * Emacs Lisp
 * Erlang
+* F#
 * Faust
 * Fortran
 * Go

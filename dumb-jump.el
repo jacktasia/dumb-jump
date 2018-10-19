@@ -1194,7 +1194,24 @@ or most optimal searcher."
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "pascal"
            :regex "\\bprocedure\\s+JJJ\\b"
-           :tests ("  procedure test ; ")))
+           :tests ("  procedure test ; "))
+
+    ;; f#
+    (:type "variable" :supports ("ag" "grep" "git-grep") :language "fsharp"
+	   :regex "let\\s+JJJ\\b.*\\\="
+	   :tests ("let test = 1234" "let test() = 1234" "let test abc def = 1234")
+	   :not ("let testnot = 1234" "let testnot() = 1234" "let testnot abc def = 1234"))
+
+    (:type "interface" :supports ("ag" "grep" "git-grep") :language "fsharp"
+	   :regex "member(\\b.+\\.|\\s+)JJJ\\b.*\\\="
+	   :tests ("member test = 1234" "member this.test = 1234")
+	   :not ("member testnot = 1234" "member this.testnot = 1234"))
+
+    (:type "type" :supports ("ag" "grep" "git-grep") :language "fsharp"
+	   :regex "type\\s+JJJ\\b.*\\\="
+	   :tests ("type test = 1234")
+	   :not ("type testnot = 1234")))
+
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
   :group 'dumb-jump
@@ -1322,7 +1339,10 @@ or most optimal searcher."
     (:language "pascal" :ext "pas" :agtype "delphi" :rgtype nil)
     (:language "pascal" :ext "dpr" :agtype "delphi" :rgtype nil)
     (:language "pascal" :ext "int" :agtype "delphi" :rgtype nil)
-    (:language "pascal" :ext "dfm" :agtype "delphi" :rgtype nil))
+    (:language "pascal" :ext "dfm" :agtype "delphi" :rgtype nil)
+    (:language "fsharp" :ext "fs" :agtype "fsharp" :rgtype nil)
+    (:language "fsharp" :ext "fsi" :agtype "fsharp" :rgtype nil)
+    (:language "fsharp" :ext "fsx" :agtype "fsharp" :rgtype nil))
 
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
