@@ -1340,9 +1340,9 @@ or most optimal searcher."
     (:language "pascal" :ext "dpr" :agtype "delphi" :rgtype nil)
     (:language "pascal" :ext "int" :agtype "delphi" :rgtype nil)
     (:language "pascal" :ext "dfm" :agtype "delphi" :rgtype nil)
-    (:language "fsharp" :ext "fs" :agtype "fsharp" :rgtype "fsharp")
-    (:language "fsharp" :ext "fsi" :agtype "fsharp" :rgtype "fsharp")
-    (:language "fsharp" :ext "fsx" :agtype "fsharp" :rgtype "fsharp"))
+    (:language "fsharp" :ext "fs" :agtype "fsharp" :rgtype nil)
+    (:language "fsharp" :ext "fsi" :agtype "fsharp" :rgtype nil)
+    (:language "fsharp" :ext "fsx" :agtype "fsharp" :rgtype nil))
 
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
