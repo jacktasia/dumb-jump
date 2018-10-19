@@ -1197,17 +1197,17 @@ or most optimal searcher."
            :tests ("  procedure test ; "))
 
     ;; f#
-    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "fsharp"
+    (:type "variable" :supports ("ag" "grep" "git-grep") :language "fsharp"
 	   :regex "let\\s+JJJ\\b.*\\\="
 	   :tests ("let test = 1234" "let test() = 1234" "let test abc def = 1234")
 	   :not ("let testnot = 1234" "let testnot() = 1234" "let testnot abc def = 1234"))
 
-    (:type "interface" :supports ("ag" "grep" "rg" "git-grep") :language "fsharp"
+    (:type "interface" :supports ("ag" "grep" "git-grep") :language "fsharp"
 	   :regex "member(\\b.+\\.|\\s+)JJJ\\b.*\\\="
 	   :tests ("member test = 1234" "member this.test = 1234")
 	   :not ("member testnot = 1234" "member this.testnot = 1234"))
 
-    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "fsharp"
+    (:type "type" :supports ("ag" "grep" "git-grep") :language "fsharp"
 	   :regex "type\\s+JJJ\\b.*\\\="
 	   :tests ("type test = 1234")
 	   :not ("type testnot = 1234")))
