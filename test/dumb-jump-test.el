@@ -354,7 +354,6 @@
   (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
          (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
          (rule-failures (dumb-jump-test-grep-rules)))
-    ;(message "%s" (prin1-to-string rule-failures))
     (should (= (length rule-failures) 1))))
 
 (when (dumb-jump-ag-installed?)
@@ -362,7 +361,6 @@
     (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
            (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
            (rule-failures (dumb-jump-test-ag-rules)))
-                                        ;(message "%s" (prin1-to-string rule-failures))
       (should (= (length rule-failures) 1)))))
 
 (when (dumb-jump-rg-installed?)
@@ -370,7 +368,6 @@
     (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
 	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
 	   (rule-failures (dumb-jump-test-rg-rules)))
-					;(message "%s" (prin1-to-string rule-failures))
       (should (= (length rule-failures) 1)))))
 
 (when (dumb-jump-git-grep-installed?)
@@ -378,8 +375,7 @@
     (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
 	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
 	   (rule-failures (dumb-jump-test-git-grep-rules)))
-					(message "%s" (prin1-to-string rule-failures))
-                                        (should (= (length rule-failures) 1)))))
+      (should (= (length rule-failures) 1)))))
 
 (when (dumb-jump-git-grep-installed?)
   (ert-deftest dumb-jump-test-git-grep-rules-not-test () ;; :not tests
