@@ -1628,7 +1628,11 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
   "Offer CHOICES as canidates through ivy-read then execute
 dumb-jump-to-selected on RESULTS CHOICES and selected choice.
 Ignore PROJ"
-  (dumb-jump-to-selected results choices (ivy-read "Jump to: " choices)))
+  (ivy-read "Jump to: " choices
+            :action
+            (lambda (selected)
+              (dumb-jump-to-selected results choices selected))
+            :caller 'dumb-jump-ivy-jump-to-selected))
 
 (defun dumb-jump-prompt-user-for-choice (proj results)
   "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy)
