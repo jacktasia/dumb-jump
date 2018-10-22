@@ -386,7 +386,7 @@ or most optimal searcher."
 
     ;; c#
     (:type "function" :supports ("ag" "rg") :language "csharp"
-           :regex "^\\s*(?:[^=\\W]+\\s+){1,3}JJJ\\s*\\\("
+           :regex "^\\s*(?:[\\w\\[\\]]+\\s+){1,3}JJJ\\s*\\\("
            :tests ("int test()" "int test(param)" "static int test()" "static int test(param)"
                    "public static MyType test()" "private virtual SomeType test(param)" "static int test()")
            :not ("test()" "testnot()" "blah = new test()"))
@@ -399,12 +399,13 @@ or most optimal searcher."
            :tests ("class test:" "public class test : IReadableChannel, I")
            :not ("class testnot:" "public class testnot : IReadableChannel, I"))
 
-    ;; java (literally the same regexes as c#, but differents tests)
+    ;; java (literally the same regexes as c#, but different tests)
     (:type "function" :supports ("ag" "rg") :language "java"
-           :regex "^\\s*(?:[^=\\W]+\\s+){1,3}JJJ\\s*\\\("
+           :regex "^\\s*(?:[\\w\\[\\]]+\\s+){1,3}JJJ\\s*\\\("
            :tests ("int test()" "int test(param)" "static int test()" "static int test(param)"
-                   "public static MyType test()" "private virtual SomeType test(param)" "static int test()")
-           :not ("test()" "testnot()" "blah = new test()"))
+                   "public static MyType test()" "private virtual SomeType test(param)" "static int test()"
+                   "private foo[] test()")
+           :not ("test()" "testnot()" "blah = new test()" "foo bar = test()"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "java"
            :regex "\\s*\\bJJJ\\s*=[^=\\n)]+" :tests ("int test = 1234") :not ("if test == 1234:" "int nottest = 44"))
@@ -416,7 +417,7 @@ or most optimal searcher."
 
     ;; vala (again just like c#, exactly the same..)
     (:type "function" :supports ("ag" "rg") :language "vala"
-           :regex "^\\s*(?:[^=\\W]+\\s+){1,3}JJJ\\s*\\\("
+           :regex "^\\s*(?:[\\w\\[\\]]+\\s+){1,3}JJJ\\s*\\\("
            :tests ("int test()" "int test(param)" "static int test()" "static int test(param)"
                    "public static MyType test()" "private virtual SomeType test(param)" "static int test()")
            :not ("test()" "testnot()" "blah = new test()"))
