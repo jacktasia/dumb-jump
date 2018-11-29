@@ -624,8 +624,8 @@ or most optimal searcher."
 
     ;; perl
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "perl"
-           :regex "sub\\s*JJJ\\s*\\\{"
-           :tests ("sub test{" "sub test {"))
+           :regex "sub\\s*JJJ\\s*(\\{|\\()"
+           :tests ("sub test{" "sub test {" "sub test(" "sub test ("))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "perl"
            :regex "JJJ\\s*=\\s*"
