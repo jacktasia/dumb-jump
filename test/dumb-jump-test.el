@@ -835,11 +835,13 @@
         (result2 (dumb-jump-process-symbol-by-lang "clojure" "myns/myfunc"))
         (result3 (dumb-jump-process-symbol-by-lang "ruby" ":myrubyfunc"))
         (result3b (dumb-jump-process-symbol-by-lang "ruby" "Health::Checks::QueueGrowth"))
+        (result3c (dumb-jump-process-symbol-by-lang "ruby" "::Health"))
         (result4 (dumb-jump-process-symbol-by-lang "systemverilog" "`myvlfunc")))
     (should (string= result "somefunc"))
     (should (string= result2 "myfunc"))
     (should (string= result3 "myrubyfunc"))
     (should (string= result3b "QueueGrowth"))
+    (should (string= result3c "Health"))
     (should (string= result4 "myvlfunc"))))
 
 (ert-deftest dumb-jump--result-follow-test ()

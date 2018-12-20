@@ -1751,7 +1751,7 @@ to keep looking for another root."
   (cond
    ((and (string= lang "clojure") (s-contains? "/" look-for))
     (nth 1 (s-split "/" look-for)))
-   ((and (or (string= lang "ruby") (string= lang "crystal")) (s-starts-with? ":" look-for))
+   ((and (or (string= lang "ruby") (string= lang "crystal")) (and (s-starts-with? ":" look-for) (and (not (s-starts-with? "::" look-for)))))
     (s-chop-prefix ":" look-for))
    ((and (string= lang "ruby") (s-contains? "::" look-for))
     (-last-item (s-split "::" look-for)))
