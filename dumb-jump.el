@@ -243,6 +243,19 @@ or most optimal searcher."
            :tests ("(defun blah (test)" "(defun blah (test blah)" "(defun (blah test)")
            :not ("(defun blah (test-1)" "(defun blah (test-2 blah)" "(defun (blah test-3)"))
 
+    ;; common lisp
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "commonlisp"
+           :regex "\\\(defun\\s+JJJ\\j"
+           ;; \\j usage see `dumb-jump-ag-word-boundary`
+           :tests ("(defun test (blah)" "(defun test\n")
+           :not ("(defun test-asdf (blah)" "(defun test-blah\n"
+                 "(defun tester (blah)" "(defun test? (blah)" "(defun test- (blah)"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "commonlisp"
+           :regex "\\\(defparameter\\b\\s*JJJ\\j"
+           :tests ("(defparameter test " "(defparameter test\n")
+           :not ("(defparameter tester" "(defparameter test?" "(defparameter test-"))
+
     ;; scheme
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
            :regex "\\\(define\\s+\\(\\s*JJJ\\j"
@@ -1235,6 +1248,8 @@ or most optimal searcher."
 (defcustom dumb-jump-language-file-exts
   '((:language "elisp" :ext "el" :agtype "elisp" :rgtype "elisp")
     (:language "elisp" :ext "el.gz" :agtype "elisp" :rgtype "elisp")
+    (:language "commonlisp" :ext "lisp" :agtype "lisp" :rgtype "lisp")
+    (:language "commonlisp" :ext "lsp" :agtype "lisp" :rgtype "lisp")
     (:language "c++" :ext "c" :agtype "cc" :rgtype "c")
     (:language "c++" :ext "h" :agtype "cc" :rgtype "c")
     (:language "c++" :ext "C" :agtype "cpp" :rgtype "cpp")
@@ -1288,8 +1303,6 @@ or most optimal searcher."
     (:language "javascript" :ext "vue" :agtype "js" :rgtype "js")
     (:language "javascript" :ext "html" :agtype "html" :rgtype "html")
     (:language "javascript" :ext "css" :agtype "css" :rgtype "css")
-    (:language "lisp" :ext "lisp" :agtype "lisp" :rgtype "lisp")
-    (:language "lisp" :ext "lsp" :agtype "lisp" :rgtype "lisp")
     (:language "lua" :ext "lua" :agtype "lua" :rgtype "lua")
     (:language "nim" :ext "nim" :agtype "nim" :rgtype "nim")
     (:language "org" :ext "org" :agtype nil :rgtype "org")
@@ -1915,6 +1928,7 @@ current file."
 (defcustom dumb-jump-language-comments
   '((:comment "//" :language "c++")
     (:comment ";" :language "elisp")
+    (:comment ";" :language "commonlisp")
     (:comment "//" :language "javascript")
     (:comment "--" :language "haskell")
     (:comment "--" :language "lua")
@@ -1928,7 +1942,6 @@ current file."
     (:comment "//" :language "faust")
     (:comment "!" :language "fortran")
     (:comment "//" :language "go")
-    (:comment ";" :language "lisp")
     (:comment "#" :language "perl")
     (:comment "//" :language "php")
     (:comment "#" :language "python")
