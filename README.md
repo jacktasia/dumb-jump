@@ -24,6 +24,7 @@ There is currently basic support for the following languages:
 * C#
 * Clojure
 * CoffeeScript
+* Common Lisp
 * Coq
 * Crystal
 * Elixir
