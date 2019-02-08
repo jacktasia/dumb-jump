@@ -79,7 +79,8 @@ If nil then the most optimal searcher will be chosen at runtime."
                  (const :tag "ag" ag)
                  (const :tag "rg" rg)
                  (const :tag "grep" gnu-grep)
-                 (const :tag "git grep" git-grep)))
+                 (const :tag "git grep" git-grep)
+                 (const :tag "git grep + ag" git-grep-plus-ag)))
 
 
 (defcustom dumb-jump-force-searcher
@@ -92,7 +93,8 @@ or most optimal searcher."
                  (const :tag "ag" ag)
                  (const :tag "rg" rg)
                  (const :tag "grep" gnu-grep)
-                 (const :tag "git grep" git-grep)))
+                 (const :tag "git grep" git-grep)
+                 (const :tag "git grep + ag" git-grep-plus-ag)))
 
 (defcustom dumb-jump-grep-prefix
   "LANG=C"
@@ -1451,6 +1453,13 @@ If `nil` always show list of more than 1 match."
             (s-contains? "ag version" (shell-command-to-string (concat dumb-jump-ag-cmd " --version"))))
     dumb-jump--ag-installed?))
 
+(defvar dumb-jump--git-grep-plus-ag-installed? 'unset)
+(defun dumb-jump-git-grep-plus-ag-installed? ()
+  "Return t if git grep and ag is installed."
+  (if (eq dumb-jump--git-grep-plus-ag-installed? 'unset)
+      (and (dumb-jump-git-grep-installed?) (dumb-jump--ag-installed?))
+    dumb-jump--git-grep-plus-ag-installed?))
+
 (defvar dumb-jump--rg-installed? 'unset)
 (defun dumb-jump-rg-installed? ()
   "Return t if rg is installed."
@@ -2194,6 +2203,11 @@ searcher symbol."
                   :generate ,'dumb-jump-generate-ag-command
                   :installed ,'dumb-jump-ag-installed?
                   :searcher ,searcher))
+        ((equal 'git-grep-plus-ag searcher)
+         `(:parse ,'dumb-jump-parse-ag-response
+                  :generate ,'dumb-jump-generate-git-grep-plus-ag-command
+                  :installed ,'dumb-jump--git-grep-plus-ag-installed?
+                  :searcher ,searcher))
         ((equal 'rg searcher)
          `(:parse ,'dumb-jump-parse-rg-response
                   :generate ,'dumb-jump-generate-rg-command
@@ -2394,6 +2408,7 @@ searcher symbol."
   "Populate IT regex template with LOOK-FOR."
   (let ((boundary (cond ((eq variant 'rg) dumb-jump-rg-word-boundary)
                         ((eq variant 'ag) dumb-jump-ag-word-boundary)
+                        ((eq variant 'git-grep-plus-ag) dumb-jump-ag-word-boundary)
                         ((eq variant 'git-grep) dumb-jump-git-grep-word-boundary)
                         (t dumb-jump-grep-word-boundary))))
     (let ((text it))
@@ -2421,6 +2436,38 @@ searcher symbol."
                           " --search-zip"
                         "")
                       (s-join "" (--map (format " --%s" it) agtypes))))
+         (exclude-args (dumb-jump-arg-joiner
+                        "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
+         (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
+    (if (= (length regexes) 0)
+        ""
+        (dumb-jump-concat-command cmd exclude-args regex-args proj))))
+
+
+(defun dumb-jump-get-git-grep-files-matching-symbol (symbol proj-root)
+  (let* ((cmd (format "git grep --full-name -F -c %s %s" symbol proj-root))
+         (result (s-trim (shell-command-to-string cmd)))
+         (matched-files (--map (first (s-split ":" it))
+                        (s-split "\n" result))))
+    matched-files))
+
+(defun dumb-jump-format-files-as-ag-arg (files proj-root)
+  (format "'(%s)'" (s-join "|" (--map (f-join proj-root it) files))))
+
+;; git-grep plus ag only recommended for huge repos like the linux kernel
+(defun dumb-jump-generate-git-grep-plus-ag-command (look-for cur-file proj regexes lang exclude-paths)
+  "Generate the ag response based on the needle LOOK-FOR in the directory PROJ."
+  (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'ag))
+         (proj-dir (file-name-as-directory proj))
+         (matching-files (dumb-jump-get-git-grep-files-matching-symbol look-for proj-dir))
+         (ag-files-arg (dumb-jump-format-files-as-ag-arg matching-files proj-dir))
+         (cmd (concat dumb-jump-ag-cmd
+                      " --nocolor --nogroup"
+                      (if (s-ends-with? ".gz" cur-file)
+                          " --search-zip"
+                        "")
+                      " -G " ag-files-arg
+                      " "))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
@@ -2532,6 +2579,7 @@ searcher symbol."
   (let* ((searcher-str (cond ((eq 'git-grep searcher) "git-grep")
                              ((eq 'rg searcher) "rg")
                              ((eq 'ag searcher) "ag")
+                             ((eq 'git-grep-plus-ag searcher) "ag")
                              (t "grep")))
          (results (--filter (and
                              (string= (plist-get it ':language) language)
