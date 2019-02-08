@@ -1253,3 +1253,15 @@
       (with-mock
        (mock (dumb-jump-goto-file-line * 5 7))
        (should (string= clj-to-file (dumb-jump-go)))))))
+
+
+(ert-deftest dumb-jump-format-files-as-ag-arg-test ()
+  (let* ((fake-files '("one" "two" "three"))
+         (result (dumb-jump-format-files-as-ag-arg fake-files "path"))
+         (expected "'(path/one|path/two|path/three)'"))
+    (should (string= result expected))))
+
+(ert-deftest dumb-jump-get-git-grep-files-matching-symbol-test ()
+  (with-mock
+   (mock (shell-command-to-string "git grep --full-name -F -c symbol path") => "fileA:1\nfileB:2\n")
+   (should (equal (dumb-jump-get-git-grep-files-matching-symbol "symbol" "path") '("fileA" "fileB")))))
