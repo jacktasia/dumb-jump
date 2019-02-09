@@ -1457,7 +1457,8 @@ If `nil` always show list of more than 1 match."
 (defun dumb-jump-git-grep-plus-ag-installed? ()
   "Return t if git grep and ag is installed."
   (if (eq dumb-jump--git-grep-plus-ag-installed? 'unset)
-      (and (dumb-jump-git-grep-installed?) (dumb-jump-ag-installed?))
+      (setq dumb-jump--git-grep-plus-ag-installed?
+            (and (dumb-jump-git-grep-installed?) (dumb-jump-ag-installed?)))
     dumb-jump--git-grep-plus-ag-installed?))
 
 (defvar dumb-jump--rg-installed? 'unset)
@@ -2206,7 +2207,7 @@ searcher symbol."
         ((equal 'git-grep-plus-ag searcher)
          `(:parse ,'dumb-jump-parse-ag-response
                   :generate ,'dumb-jump-generate-git-grep-plus-ag-command
-                  :installed ,'dumb-jump--git-grep-plus-ag-installed?
+                  :installed ,'dumb-jump-git-grep-plus-ag-installed?
                   :searcher ,searcher))
         ((equal 'rg searcher)
          `(:parse ,'dumb-jump-parse-rg-response
@@ -2445,7 +2446,7 @@ searcher symbol."
 
 (defun dumb-jump-get-git-grep-files-matching-symbol (symbol proj-root)
   "Search for the literal SYMBOL in the PROJ-ROOT via git grep for a list of file matches."
-  (let* ((cmd (format "git grep --full-name -F -c %s %s" symbol proj-root))
+  (let* ((cmd (format "git grep --full-name -F -c %s %s" (shell-quote-argument symbol) proj-root))
          (result (s-trim (shell-command-to-string cmd)))
          (matched-files (--map (first (s-split ":" it))
                         (s-split "\n" result))))

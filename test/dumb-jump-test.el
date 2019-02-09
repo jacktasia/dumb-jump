@@ -832,6 +832,11 @@
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'ag) '("testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'ag) '("\\$testvar\\s*=\\s*"))))
 
+(ert-deftest dumb-jump-populate-regexes-git-grep-plus-ag-test ()
+  ;; this is effectively the same as `ag even with 'git-grep-plus-ag since that's where the regexes are used in this mode
+  (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'git-grep-plus-ag) '("testvar\\s*=\\s*")))
+  (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'git-grep-plus-ag) '("\\$testvar\\s*=\\s*"))))
+
 (ert-deftest dumb-jump-populate-regexes-rg-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'rg) '("testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'rg) '("\\$testvar\\s*=\\s*")))
@@ -1094,6 +1099,11 @@
 
 (ert-deftest dumb-jump-generators-by-searcher-ag ()
   (let* ((searcher 'ag)
+         (gen-funcs (dumb-jump-generators-by-searcher searcher)))
+    (should (generators-valid gen-funcs searcher))))
+
+(ert-deftest dumb-jump-generators-by-searcher-git-grep-plus-ag ()
+  (let* ((searcher 'git-grep-plus-ag)
          (gen-funcs (dumb-jump-generators-by-searcher searcher)))
     (should (generators-valid gen-funcs searcher))))
 
