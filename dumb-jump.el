@@ -2443,8 +2443,8 @@ searcher symbol."
         ""
         (dumb-jump-concat-command cmd exclude-args regex-args proj))))
 
-
 (defun dumb-jump-get-git-grep-files-matching-symbol (symbol proj-root)
+  "Search for the literal SYMBOL in the PROJ-ROOT via git grep for a list of file matches."
   (let* ((cmd (format "git grep --full-name -F -c %s %s" symbol proj-root))
          (result (s-trim (shell-command-to-string cmd)))
          (matched-files (--map (first (s-split ":" it))
@@ -2452,15 +2452,22 @@ searcher symbol."
     matched-files))
 
 (defun dumb-jump-format-files-as-ag-arg (files proj-root)
+  "Take a list of FILES and their PROJ-ROOT and return a `ag -G` argument."
   (format "'(%s)'" (s-join "|" (--map (f-join proj-root it) files))))
+
+(defun dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg (symbol proj-root)
+  "Get the files matching the SYMBOL via `git grep` in the PROJ-ROOT and return them formatted for `ag -G`."
+  (dumb-jump-format-files-as-ag-arg
+   (dumb-jump-get-git-grep-files-matching-symbol symbol proj-root)
+   proj-root))
 
 ;; git-grep plus ag only recommended for huge repos like the linux kernel
 (defun dumb-jump-generate-git-grep-plus-ag-command (look-for cur-file proj regexes lang exclude-paths)
-  "Generate the ag response based on the needle LOOK-FOR in the directory PROJ."
+  "Generate the ag response based on the needle LOOK-FOR in the directory PROJ.
+Using ag to search only the files found via git-grep literal symbol search."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'ag))
          (proj-dir (file-name-as-directory proj))
-         (matching-files (dumb-jump-get-git-grep-files-matching-symbol look-for proj-dir))
-         (ag-files-arg (dumb-jump-format-files-as-ag-arg matching-files proj-dir))
+         (ag-files-arg (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg look-for proj-dir))
          (cmd (concat dumb-jump-ag-cmd
                       " --nocolor --nogroup"
                       (if (s-ends-with? ".gz" cur-file)
