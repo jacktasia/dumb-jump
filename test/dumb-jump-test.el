@@ -735,6 +735,17 @@
      ;; confirm memoization of the previous result
      (should (eq (dumb-jump-ag-installed?) t)))))
 
+(ert-deftest dumb-jump-git-grep-plus-ag-installed?-test ()
+  (let ((dumb-jump--git-grep-plus-ag-installed? 'unset)
+        (dumb-jump--ag-installed? 'unset)
+        (dumb-jump--git-grep-installed? 'unset))
+    (with-mock
+     ; this isn't ideal but combining the ag and git grep responses but this shouldn't matter in practice with :times 2
+     (mock (shell-command-to-string *) => "ag version 0.33.0\nfatal: no pattern given\n" :times 2)
+     (should (eq (dumb-jump-git-grep-plus-ag-installed?) t))
+     ;; confirm memoization of the previous result
+     (should (eq (dumb-jump-git-grep-plus-ag-installed?) t)))))
+
 (ert-deftest dumb-jump-rg-installed?-test ()
   (let ((dumb-jump--rg-installed? 'unset))
     (with-mock

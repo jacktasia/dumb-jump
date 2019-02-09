@@ -1457,7 +1457,7 @@ If `nil` always show list of more than 1 match."
 (defun dumb-jump-git-grep-plus-ag-installed? ()
   "Return t if git grep and ag is installed."
   (if (eq dumb-jump--git-grep-plus-ag-installed? 'unset)
-      (and (dumb-jump-git-grep-installed?) (dumb-jump--ag-installed?))
+      (and (dumb-jump-git-grep-installed?) (dumb-jump-ag-installed?))
     dumb-jump--git-grep-plus-ag-installed?))
 
 (defvar dumb-jump--rg-installed? 'unset)
