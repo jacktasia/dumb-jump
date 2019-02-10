@@ -123,7 +123,7 @@ If you want to stop a directory from registering as the project root (and have D
 * `(setq dumb-jump-use-visible-window nil)` if `t` (the default) when you're using multiple windows/panes and the file to jump to is already open in one of those windows then dumb jump will focus that window and jump there instead of within your current window.
 * `(setq dumb-jump-prefer-searcher 'rg)` to let Dumb Jump know your searcher preference. If set this will still use `git-grep` if it's a git project (because it's the fastest), but will you use whatever you set here in any other situation. If not set Dumb Jump will follow the same order as mentioned in the `dumb-jump-force-searcher` description. At this time setting this value is only necessary if you prefer `rg` but have `ag` installed too.
 
-**If your project has multi-line method signatures [you should use `ag`](https://github.com/jacktasia/dumb-jump/issues/129)**.
+#### If your project has multi-line method signatures [you should use `ag`](https://github.com/jacktasia/dumb-jump/issues/129) or [`rg` with a version higher than `0.10`](https://github.com/jacktasia/dumb-jump/issues/255).
 
 To learn more about how Dumb Jump picks a searcher see [this issue](https://github.com/jacktasia/dumb-jump/issues/109) and this [pull request](https://github.com/jacktasia/dumb-jump/pull/111).
 
