@@ -1466,7 +1466,14 @@ If `nil` always show list of more than 1 match."
   "Return t if rg is installed."
   (if (eq dumb-jump--rg-installed? 'unset)
       (setq dumb-jump--rg-installed?
-            (s-contains? "ripgrep" (shell-command-to-string (concat dumb-jump-rg-cmd " --version"))))
+            (let ((result (s-match "ripgrep \\([0-9]+\\)\\.\\([0-9]+\\).*"
+                                   (shell-command-to-string (concat dumb-jump-rg-cmd " --version")))))
+              (when (equal (length result) 3)
+                (let ((major (string-to-number (nth 1 result)))
+                      (minor (string-to-number (nth 2 result))))
+                  (or
+                   (and (= major 0) (>= minor 10))
+                   (>= major 1))))))
     dumb-jump--rg-installed?))
 
 (defvar dumb-jump--git-grep-installed? 'unset)
