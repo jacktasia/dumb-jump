@@ -304,7 +304,7 @@ or most optimal searcher."
     ;;        :regex "(\\b\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[([0-9]|\\s)*\\])*\\s*([=,){;]|:\\s*[0-9])|#define\\s+JJJ\\b"
     ;;        :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "unsigned int test:2;"))
 
-    (:type "variable" :supports ("ag") :language "c++"
+    (:type "variable" :supports ("ag" "rg") :language "c++"
            :regex "\\b(?!(class\\b|struct\\b|return\\b|else\\b|delete\\b))(\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[(\\d|\\s)*\\])*\\s*([=,(){;]|:\\s*\\d)|#define\\s+JJJ\\b"
            :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "typedef int test;" "unsigned int test:2")
            :not ("return test;" "#define NOT test" "else test=2;"))
@@ -801,11 +801,11 @@ or most optimal searcher."
            :regex "const\\s+JJJ\\b"
            :tests ("const test = "))
 
-    (:type "type" :supports ("ag","rg") :language "julia"
+    (:type "type" :supports ("ag" "rg") :language "julia"
            :regex "(mutable)?\\s*struct\\s*JJJ"
            :tests ("struct test"))
 
-    (:type "type" :supports ("ag","rg") :language "julia"
+    (:type "type" :supports ("ag" "rg") :language "julia"
            :regex "(type|immutable|abstract)\\s*JJJ"
            :tests ("type test" "immutable test" "abstract test <:Testable" ))
 
@@ -1577,7 +1577,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (lambda (rule)
         (-mapcat
           (lambda (test)
-            (let* ((cmd (concat "rg --color never --no-heading "
+            (let* ((cmd (concat "rg --color never --no-heading -U --pcre2 "
                                 (shell-quote-argument (dumb-jump-populate-regex (plist-get rule :regex) "test" 'rg))))
                    (resp (dumb-jump-run-test test cmd)))
               (when (or
@@ -2489,7 +2489,7 @@ Using ag to search only the files found via git-grep literal symbol search."
          (rgtypes (dumb-jump-get-rg-type-by-language lang))
          (proj-dir (file-name-as-directory proj))
          (cmd (concat dumb-jump-rg-cmd
-                      " --color never --no-heading --line-number"
+                      " --color never --no-heading --line-number -U --pcre2"
                       (s-join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g" (--map (shell-quote-argument (concat "!" (s-replace proj-dir "" it))) exclude-paths)))

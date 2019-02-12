@@ -143,13 +143,13 @@
 (ert-deftest dumb-jump-generate-rg-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "rg --color never --no-heading --line-number --type elisp " (shell-quote-argument expected-regexes) " .")))
+         (expected (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp " (shell-quote-argument expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-rg-command-remote-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "rg --color never --no-heading --line-number --type elisp -g \\!this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root")))
+         (expected (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -g \\!this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root")))
     (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded"))))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-test ()
