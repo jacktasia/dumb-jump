@@ -122,6 +122,24 @@
          (expected (concat "ag --nocolor --nogroup --elisp --ignore-dir this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root")))
     (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded"))))))
 
+(ert-deftest dumb-jump-generate-git-grep-plus-ag-command-no-ctx-test ()
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' " (shell-quote-argument expected-regexes) " /path/to/proj-root"))) ;; NOTE no "--elisp" and the `-G` arg is new
+  (with-mock
+   (mock (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
+    (should (string= expected  (dumb-jump-generate-git-grep-plus-ag-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" nil))))))
+
+
+(ert-deftest dumb-jump-generate-git-grep-plus-ag-command-exclude-test ()
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' --ignore-dir this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root"))) ;; NOTE no "--elisp" and the `-G` arg is new
+  (with-mock
+   (mock (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
+    (should (string= expected  (dumb-jump-generate-git-grep-plus-ag-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded")))))))
+
+
 (ert-deftest dumb-jump-generate-rg-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
@@ -717,6 +735,17 @@
      ;; confirm memoization of the previous result
      (should (eq (dumb-jump-ag-installed?) t)))))
 
+(ert-deftest dumb-jump-git-grep-plus-ag-installed?-test ()
+  (let ((dumb-jump--git-grep-plus-ag-installed? 'unset)
+        (dumb-jump--ag-installed? 'unset)
+        (dumb-jump--git-grep-installed? 'unset))
+    (with-mock
+     ; this isn't ideal but combining the ag and git grep responses but this shouldn't matter in practice with :times 2
+     (mock (shell-command-to-string *) => "ag version 0.33.0\nfatal: no pattern given\n" :times 2)
+     (should (eq (dumb-jump-git-grep-plus-ag-installed?) t))
+     ;; confirm memoization of the previous result
+     (should (eq (dumb-jump-git-grep-plus-ag-installed?) t)))))
+
 (ert-deftest dumb-jump-rg-installed?-test ()
   (let ((dumb-jump--rg-installed? 'unset))
     (with-mock
@@ -802,6 +831,11 @@
 (ert-deftest dumb-jump-populate-regexes-ag-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'ag) '("testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'ag) '("\\$testvar\\s*=\\s*"))))
+
+(ert-deftest dumb-jump-populate-regexes-git-grep-plus-ag-test ()
+  ;; this is effectively the same as `ag even with 'git-grep-plus-ag since that's where the regexes are used in this mode
+  (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'git-grep-plus-ag) '("testvar\\s*=\\s*")))
+  (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'git-grep-plus-ag) '("\\$testvar\\s*=\\s*"))))
 
 (ert-deftest dumb-jump-populate-regexes-rg-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'rg) '("testvar\\s*=\\s*")))
@@ -1068,6 +1102,11 @@
          (gen-funcs (dumb-jump-generators-by-searcher searcher)))
     (should (generators-valid gen-funcs searcher))))
 
+(ert-deftest dumb-jump-generators-by-searcher-git-grep-plus-ag ()
+  (let* ((searcher 'git-grep-plus-ag)
+         (gen-funcs (dumb-jump-generators-by-searcher searcher)))
+    (should (generators-valid gen-funcs searcher))))
+
 (ert-deftest dumb-jump-generators-by-searcher-rg ()
   (let* ((searcher 'rg)
          (gen-funcs (dumb-jump-generators-by-searcher searcher)))
@@ -1253,3 +1292,22 @@
       (with-mock
        (mock (dumb-jump-goto-file-line * 5 7))
        (should (string= clj-to-file (dumb-jump-go)))))))
+
+
+(ert-deftest dumb-jump-format-files-as-ag-arg-test ()
+  (let* ((fake-files '("one" "two" "three"))
+         (result (dumb-jump-format-files-as-ag-arg fake-files "path"))
+         (expected "'(path/one|path/two|path/three)'"))
+    (should (string= result expected))))
+
+(ert-deftest dumb-jump-get-git-grep-files-matching-symbol-test ()
+  (with-mock
+   (mock (shell-command-to-string "git grep --full-name -F -c symbol path") => "fileA:1\nfileB:2\n")
+   (should (equal (dumb-jump-get-git-grep-files-matching-symbol "symbol" "path") '("fileA" "fileB")))))
+
+(ert-deftest dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg-test ()
+  (with-mock
+   (mock (shell-command-to-string "git grep --full-name -F -c symbol path") => "fileA:1\nfileB:2\n")
+   (should (string= (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg "symbol" "path") "'(path/fileA|path/fileB)'"))))
+
+;;;
