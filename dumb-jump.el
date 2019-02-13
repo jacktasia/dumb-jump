@@ -1671,9 +1671,7 @@ Ignore PROJ"
 (defun dumb-jump-prompt-user-for-choice (proj results)
   "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy)
 for user to select.  Filters PROJ path from files for display."
-  (let* ((choices (-map (lambda (result)
-                          (dumb-jump--format-result proj result))
-                        results)))
+  (let ((choices (--map (dumb-jump--format-result proj it) results)))
     (cond
      ((and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
       (funcall dumb-jump-ivy-jump-to-selected-function results choices proj))
@@ -2089,9 +2087,13 @@ PREFER-EXTERNAL will sort current file last."
       (dumb-jump-message
        "-----\nDUMB JUMP DEBUG `dumb-jump-handle-results` START\n----- \n\nlook for: \n\t%s\n\ntype: \n\t%s \n\njump? \n\t%s \n\nmatches: \n\t%s \n\nresults: \n\t%s \n\nprefer external: \n\t%s\n\nmatch-cur-file-front: \n\t%s\n\nproj-root: \n\t%s\n\ncur-file: \n\t%s\n\nreal-cur-file: \n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-handle-results` END\n-----\n"
        look-for ctx-type var-to-jump (pp-to-string match-cur-file-front) (pp-to-string results) prefer-external match-cur-file-front proj-root cur-file rel-cur-file))
-    (if do-var-jump
-        (dumb-jump-result-follow var-to-jump use-tooltip proj-root)
-      (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front))))
+    (cond
+     (use-tooltip ;; quick-look mode
+      (popup-menu* (--map (dumb-jump--format-result proj-root it) results)))
+     (do-var-jump
+        (dumb-jump-result-follow var-to-jump use-tooltip proj-root))
+     (t
+      (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front)))))
 
 (defun dumb-jump-read-config (root config-file)
   "Load and return options (exclusions, inclusions, etc).
