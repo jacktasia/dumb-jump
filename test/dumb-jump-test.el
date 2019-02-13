@@ -1232,6 +1232,14 @@
      (mock (dumb-jump-prompt-user-for-choice "/code/redux" *))
      (dumb-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" nil nil))))
 
+(ert-deftest dumb-jump-handle-results-non-aggressively-quick-look-test ()
+  (let ((dumb-jump-aggressive nil)
+        (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
+                   (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
+    (with-mock
+     (mock (popup-menu* '("relfile.js:62: var isNow = true" "src/absfile.js:69: isNow = false")) :times 1)
+     (dumb-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" t nil))))
+
 ;; Make sure it jumps when there's only one possiblity in non-aggressive mode.
 (ert-deftest dumb-jump-handle-results-non-aggressive-do-jump-test ()
   (let ((dumb-jump-aggressive nil)
