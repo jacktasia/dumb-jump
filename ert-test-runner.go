@@ -6,6 +6,7 @@ import (
 	//	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -21,10 +22,11 @@ func main() {
 
 	contents := string(dat)
 
-	groups := []string{".*-git-grep-plus-ag.*", ".*-git-grep.*", ".*-rg-.*", ".*-ag-.*"}
 	//groupCompiles := []*regexp.Regexp{}
 	// TODO: then find all of the groups
-
+	groups := []string{".*-rg-.*", ".*-ag-.*"} // ".*-git-grep-plus-ag.*", ".*-git-grep.*",
+	// "dumb-jump-shell-command-switch-.*", "dumb-jump-pick-grep-variant-.*", "dumb-jump-handle-results-.*", "dumb-jump-message-.*", "dumb-jump-generate-.*", "dumb-jump-go-.*", "dumb-jump-react-.*", "dumb-jump-generators-.*", "dumb-jump-get-lang-.*", "dumb-jump-test-grep-.*", "dumb-jump-run-.*", "dumb-jump-prompt-.*"}
+	//groupCompiles := []*regexp.Regexp{}
 	r, err := regexp.Compile("ert-deftest\\s([^\\s]+)\\s")
 
 	matches := r.FindAllStringSubmatch(contents, -1)
@@ -34,14 +36,73 @@ func main() {
 		defs = append(defs, match[1])
 	}
 
-	// for _, ertTest := range defs {
-	// 	fmt.Println("Running " + ertTest)
+	// TODO:
+	remainders := []string{}
+	remainders = append(remainders, defs...)
+	testGroups := [][]string{}
+	var testGroup []string
+	for _, group := range groups {
+		//regexp.MatchString(group,
+		remainders, testGroup = takeMatches(remainders, group)
+
+		testGroups = append(testGroups, testGroup)
+	}
+
+	// for _, ertTest := range remainders {
+	// 	//fmt.Println("Running " + ertTest)
 	// 	runErtTest(ertTest)
 	// }
-	//
 
-	//fmt.Println(defs)
-	runErtTestsConcurrently(defs)
+	fmt.Println("defs len", len(defs))
+	fmt.Println("remainders len", len(remainders))
+	fmt.Println("test groups len", len(testGroups))
+
+	fmt.Println("------------")
+	fmt.Println(remainders)
+	fmt.Println("Running....")
+
+	//runErtTestsConcurrently(remainders)
+
+	toRun := []string{}
+	toRun = append(toRun, groups...)
+	//toRun = append(toRun, remainders...)
+
+	chunked := chunk(remainders, 30)
+
+	for _, c := range chunked {
+		toRun = append(toRun, makePattern(c))
+	}
+
+	//chunkSize := (len(logs) + numCPU - 1) / numCPU
+
+	start := time.Now()
+	runErtTestsConcurrently(toRun)
+	end := time.Now()
+	fmt.Println("------------")
+	fmt.Println("Done. took", end.Sub(start))
+}
+
+func makePattern(items []string) string {
+	return ("'\\(" + strings.Join(items, "\\|") + "\\)'")
+}
+
+func takeMatches(items []string, regex string) ([]string, []string) {
+	r, err := regexp.Compile(regex)
+	if err != nil {
+		panic(err)
+	}
+
+	result := []string{}
+	matches := []string{}
+	for _, m := range items {
+		if !r.MatchString(m) {
+			result = append(result, m)
+		} else {
+			matches = append(matches, m)
+		}
+	}
+
+	return result, matches
 }
 
 func worker(id int, jobs <-chan string, results chan<- string) {
@@ -57,16 +118,30 @@ func worker(id int, jobs <-chan string, results chan<- string) {
 	}
 }
 
-func runErtTestsConcurrently(ertTests []string) {
+func chunk(logs []string, chunkSize int) [][]string {
+	var divided [][]string
 
+	for i := 0; i < len(logs); i += chunkSize {
+		end := i + chunkSize
+
+		if end > len(logs) {
+			end = len(logs)
+		}
+
+		divided = append(divided, logs[i:end])
+	}
+
+	return divided
+}
+
+func runErtTestsConcurrently(ertTests []string) {
 	testCount := len(ertTests)
 
 	jobs := make(chan string, testCount)
 	results := make(chan string, testCount)
 
-	// This starts up 3 workers, initially blocked
-	// because there are no jobs yet.
-	for w := 1; w <= 1; w++ {
+	workerCount := 6
+	for w := 1; w <= workerCount; w++ {
 		go worker(w, jobs, results)
 	}
 
@@ -79,7 +154,9 @@ func runErtTestsConcurrently(ertTests []string) {
 
 	// Finally we collect all the results of the work.
 	// for a := 1; a <= 5; a++ {
-	for a := 0; a <= testCount; a++ {
+	fmt.Println("Waiting....")
+	for a := 1; a <= testCount; a++ {
+		fmt.Println("Done with")
 		<-results
 	}
 }
