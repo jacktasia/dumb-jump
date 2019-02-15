@@ -11,6 +11,8 @@ import (
 )
 
 // TODO: this should run inside of a docker container with all the dependencies set!
+// TODO: take file argument and list of `--slow` patterns
+// TODO: make helper that will download from this repo as raw and and run `go run ert-test-runner.go my-tests.el --slow '.*-ag-.*'
 func main() {
 
 	fmt.Println("ert-test-runner!")
@@ -24,7 +26,12 @@ func main() {
 
 	//groupCompiles := []*regexp.Regexp{}
 	// TODO: then find all of the groups
-	groups := []string{".*-rg-.*", ".*-ag-.*"} // ".*-git-grep-plus-ag.*", ".*-git-grep.*",
+	//groups := []string{}
+	//groups := []string{".*-rg-.*", ".*-ag-.*"}
+	//standalones := []string{"dumb-jump-test-ag-rules-test"}
+	standalones := []string{}
+
+	groups := []string{".*-ag-.*", ".*-rg-.*", "dumb.*-git-grep.*"} // ".*-git-grep-plus-ag.*", ".*-git-grep.*",
 	// "dumb-jump-shell-command-switch-.*", "dumb-jump-pick-grep-variant-.*", "dumb-jump-handle-results-.*", "dumb-jump-message-.*", "dumb-jump-generate-.*", "dumb-jump-go-.*", "dumb-jump-react-.*", "dumb-jump-generators-.*", "dumb-jump-get-lang-.*", "dumb-jump-test-grep-.*", "dumb-jump-run-.*", "dumb-jump-prompt-.*"}
 	//groupCompiles := []*regexp.Regexp{}
 	r, err := regexp.Compile("ert-deftest\\s([^\\s]+)\\s")
@@ -39,6 +46,9 @@ func main() {
 	// TODO:
 	remainders := []string{}
 	remainders = append(remainders, defs...)
+	for _, standalone := range standalones {
+		remainders, _ = takeMatches(remainders, standalone)
+	}
 	testGroups := [][]string{}
 	var testGroup []string
 	for _, group := range groups {
@@ -76,6 +86,11 @@ func main() {
 	//chunkSize := (len(logs) + numCPU - 1) / numCPU
 
 	start := time.Now()
+
+	for _, standalone := range standalones {
+		runErtTest(standalone)
+	}
+
 	runErtTestsConcurrently(toRun)
 	end := time.Now()
 	fmt.Println("------------")
@@ -83,7 +98,7 @@ func main() {
 }
 
 func makePattern(items []string) string {
-	return ("'\\(" + strings.Join(items, "\\|") + "\\)'")
+	return ("\\(" + strings.Join(items, "\\|") + "\\)")
 }
 
 func takeMatches(items []string, regex string) ([]string, []string) {
@@ -111,7 +126,7 @@ func worker(id int, jobs <-chan string, results chan<- string) {
 		start := time.Now()
 		result := runErtTest(string(j))
 		end := time.Now()
-		fmt.Println(j, "took", end.Sub(start))
+		fmt.Println(j[0:5], "size", len(j), "took", end.Sub(start))
 		//result := "2"
 		// fmt.Println("worker", id, "finished job", j)
 		results <- result
@@ -163,7 +178,7 @@ func runErtTestsConcurrently(ertTests []string) {
 
 func runErtTest(testName string) string {
 	// cmdPrefix := "cask exec ert-runner -p "
-	fmt.Println("Running " + testName)
+	//fmt.Println("Running " + testName)
 	cmd := "cask"
 	args := []string{"exec", "ert-runner", "-p", testName}
 	out, err := exec.Command(cmd, args...).Output()
@@ -172,6 +187,8 @@ func runErtTest(testName string) string {
 		fmt.Println("~~~~ ERRROR", testName, err, "--", string(out))
 
 	}
+
+	// fmt.Println(string(out))
 
 	return string(out)
 }

@@ -5,7 +5,6 @@
 (require 'noflet)
 (require 'el-mock)
 (require 'popup)
-
 ;;; Code:
 
 (defun dumb-jump-output-rule-test-failures (failures)
