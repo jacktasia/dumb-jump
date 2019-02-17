@@ -22,4 +22,4 @@ script:
   - grep --version
   - emacs --version
   - git --version
-  - make test
+  - make test-concurrent
