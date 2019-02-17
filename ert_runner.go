@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -17,23 +18,18 @@ var (
 // TODO: this should run inside of a docker container with all the dependencies set!
 // TODO: take file argument and list of `--serialize` and `--slow` patterns
 // TODO: make helper that will download from this repo as raw and and run `go run ert-test-runner.go my-tests.el --slow '.*-ag-.*'
-// TODO: add tests for the test runner
-
-func maintest() {
-	s := "Ran 19 tests, 19 results as expected"
-	fmt.Println(extractRunCount(s))
-}
-
-func main3() {
-	s := " passed   1/18  dumb-jump-get-git-grep-files-matching-symbol-test\npassed   2/18  dumb-jump-go-clojure-asterisk-test\npassed   3/18  dumb-jump-go-clojure-no-asterisk-test\npassed   4/18  dumb-jump-go-clojure-no-question-mark-test\npassed   5/18  dumb-jump-go-clojure-question-mark-test\npassed   6/18  dumb-jump-handle-results-aggressively-test\npassed   7/18  dumb-jump-handle-results-non-aggressive-do-jump-test\npassed   8/18  dumb-jump-handle-results-non-aggressively-quick-look-test"
-	fmt.Println(parseTestNames(s))
-}
 
 func main() {
-
 	fmt.Println("ert-test-runner!")
+	fmt.Println("----------------")
+	if len(os.Args) < 2 {
+		fmt.Println("Expects one postional argument of ert test file!")
+		os.Exit(1)
+	}
 
-	dat, err := ioutil.ReadFile("/home/jack/code/dumb-jump/test/dumb-jump-test.el")
+	//dat, err := ioutil.ReadFile("/home/jack/code/dumb-jump/test/dumb-jump-test.el")
+	fmt.Println("Parsing", os.Args[1], "for tests...")
+	dat, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
@@ -149,7 +145,9 @@ func worker(id int, jobs <-chan string, results chan<- string) {
 		start := time.Now()
 		result := runErtTest(string(j))
 		end := time.Now()
-		fmt.Println("id", id, "chunk finished", "size", len(j), "took", end.Sub(start))
+		ranTests := parseTestNames(result)
+		fmt.Println("Worker", id, "ran", len(ranTests), "tests in", end.Sub(start))
+		//fmt.Println("id", id, "chunk finished", "size", len(j), "took", end.Sub(start))
 		// fmt.Println("worker", id, "finished job", j)
 		results <- result
 	}
@@ -191,15 +189,11 @@ func runErtTestsConcurrently(ertTests []string) []string {
 	fmt.Println("Waiting for jobs to complete....")
 
 	// collect results
-	// TODO: gather list of tests
-	//totalRan := 0
 	ranTests := []string{}
 	for a := 1; a <= testCount; a++ {
-		//totalRan += extractRunCount(<-results)
 		ranTests = append(ranTests, parseTestNames(<-results)...)
 	}
 
-	//return totalRan
 	return ranTests
 }
 
@@ -213,7 +207,6 @@ func extractRunCount(output string) int {
 	}
 
 	matches := rawMatches[0]
-	fmt.Println(matches)
 	if matches[1] != matches[2] {
 		return -1
 	}

@@ -10,3 +10,9 @@ unit:
 
 install:
 	${CASK} install
+
+test-concurrent:
+	@go run ert_runner.go test/dumb-jump-test.el
+
+test-go:
+	@go test -v
