@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+var (
+	RegexParsePassedName = regexp.MustCompile("passed\\s+[0-9]+/[0-9]+\\s+(.+)\\b")
+)
+
 // TODO: this should run inside of a docker container with all the dependencies set!
 // TODO: take file argument and list of `--serialize` and `--slow` patterns
 // TODO: make helper that will download from this repo as raw and and run `go run ert-test-runner.go my-tests.el --slow '.*-ag-.*'
@@ -19,6 +23,12 @@ func maintest() {
 	s := "Ran 19 tests, 19 results as expected"
 	fmt.Println(extractRunCount(s))
 }
+
+func main3() {
+	s := " passed   1/18  dumb-jump-get-git-grep-files-matching-symbol-test\npassed   2/18  dumb-jump-go-clojure-asterisk-test\npassed   3/18  dumb-jump-go-clojure-no-asterisk-test\npassed   4/18  dumb-jump-go-clojure-no-question-mark-test\npassed   5/18  dumb-jump-go-clojure-question-mark-test\npassed   6/18  dumb-jump-handle-results-aggressively-test\npassed   7/18  dumb-jump-handle-results-non-aggressive-do-jump-test\npassed   8/18  dumb-jump-handle-results-non-aggressively-quick-look-test"
+	fmt.Println(parseTestNames(s))
+}
+
 func main() {
 
 	fmt.Println("ert-test-runner!")
@@ -30,25 +40,24 @@ func main() {
 
 	contents := string(dat)
 
-	//groupCompiles := []*regexp.Regexp{}
-	// TODO: then find all of the groups
-	//groups := []string{}
-	//groups := []string{".*-rg-.*", ".*-ag-.*"}
 	//standalones := []string{"dumb-jump-test-ag-rules-test"}
 	standalones := []string{}
-
 	groups := []string{".*-ag-.*", ".*-rg-.*"}
-	r, err := regexp.Compile("ert-deftest\\s([^\\s]+)\\s")
 
+	r, err := regexp.Compile("[ ;]*\\(ert-deftest\\s([^\\s]+)\\s")
 	matches := r.FindAllStringSubmatch(contents, -1)
 
 	defs := []string{}
 	for _, match := range matches {
-		defs = append(defs, match[1])
+		wholeMatch := strings.TrimSpace(match[0])
+		testName := strings.TrimSpace(match[1])
+		if wholeMatch[0:1] != ";" {
+			defs = append(defs, testName)
+		}
 	}
-
 	totalTests := len(defs)
 
+	// split out passsed `standalones` and `groups` from `remainders` (which are chunked)
 	remainders := []string{}
 	remainders = append(remainders, defs...)
 	for _, standalone := range standalones {
@@ -58,21 +67,14 @@ func main() {
 	var testGroup []string
 	for _, group := range groups {
 		remainders, testGroup = takeMatches(remainders, group)
-		fmt.Println("Removed", testGroup)
+		//fmt.Println("Removed from remainders based on X: ", testGroup)
 		testGroups = append(testGroups, testGroup)
 	}
 
-	fmt.Println("defs len", len(defs))
-	fmt.Println("remainders len", len(remainders))
-	fmt.Println("test groups len", len(testGroups))
-
 	fmt.Println("------------")
-	//fmt.Println(remainders)
-	fmt.Println("Running....")
-
+	// go through and chunk the remainders into groups
 	toRun := []string{}
 	toRun = append(toRun, groups...)
-
 	chunked := chunk(remainders, 30)
 	for _, c := range chunked {
 		toRun = append(toRun, makePattern(c))
@@ -80,24 +82,51 @@ func main() {
 
 	// start running
 	start := time.Now()
-	totalRan := 0
+	ranTests := []string{}
 	for _, standalone := range standalones {
-		totalRan += extractRunCount(runErtTest(standalone))
+		ranTests = append(ranTests, parseTestNames(runErtTest(standalone))...)
 	}
 
-	totalRan += runErtTestsConcurrently(toRun)
+	ranTests = append(ranTests, runErtTestsConcurrently(toRun)...)
+	missing := findMissing(ranTests, defs)
 	end := time.Now()
+
+	// DONE, report
 	fmt.Println("------------")
-	fmt.Println("Done. Ran", totalRan, "tests of", totalTests, " and took", end.Sub(start))
+	totalRanTests := totalTests - len(missing)
+	if len(missing) > 0 {
+		fmt.Println("Did not run!", missing)
+	}
+	fmt.Println("Done. Ran", totalRanTests, "tests of", totalTests, " and took", end.Sub(start))
+}
+
+func findMissing(ranTests []string, defs []string) []string {
+	missing := []string{}
+	for _, testName := range defs {
+		if !contains(ranTests, testName) {
+			missing = append(missing, testName)
+		}
+	}
+	return missing
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func makePattern(items []string) string {
-	return ("\\(" + strings.Join(items, "\\|") + "\\)")
+	return strings.Replace(("\\(" + strings.Join(items, "\\|") + "\\)"), "?", ".", -1)
 }
 
 func takeMatches(items []string, regex string) ([]string, []string) {
 	r, err := regexp.Compile(regex)
 	if err != nil {
+		// TODO: friendly error message that input is bad
 		panic(err)
 	}
 
@@ -120,7 +149,7 @@ func worker(id int, jobs <-chan string, results chan<- string) {
 		start := time.Now()
 		result := runErtTest(string(j))
 		end := time.Now()
-		fmt.Println(j[0:5], "size", len(j), "took", end.Sub(start))
+		fmt.Println("id", id, "chunk finished", "size", len(j), "took", end.Sub(start))
 		// fmt.Println("worker", id, "finished job", j)
 		results <- result
 	}
@@ -128,29 +157,26 @@ func worker(id int, jobs <-chan string, results chan<- string) {
 
 func chunk(logs []string, chunkSize int) [][]string {
 	var divided [][]string
-
 	for i := 0; i < len(logs); i += chunkSize {
 		end := i + chunkSize
-
 		if end > len(logs) {
 			end = len(logs)
 		}
-
 		divided = append(divided, logs[i:end])
 	}
 
 	return divided
 }
 
-func runErtTestsConcurrently(ertTests []string) int {
+func runErtTestsConcurrently(ertTests []string) []string {
 	testCount := len(ertTests)
 
 	jobs := make(chan string, testCount)
 	results := make(chan string, testCount)
 
 	// TODO: base off cpu count?
-	// spin up 6 workers
-	workerCount := 6
+	// spin up workers
+	workerCount := 4
 	for w := 1; w <= workerCount; w++ {
 		go worker(w, jobs, results)
 	}
@@ -162,52 +188,61 @@ func runErtTestsConcurrently(ertTests []string) int {
 	}
 	close(jobs)
 
-	fmt.Println("Waiting....")
+	fmt.Println("Waiting for jobs to complete....")
 
 	// collect results
 	// TODO: gather list of tests
-	totalRan := 0
+	//totalRan := 0
+	ranTests := []string{}
 	for a := 1; a <= testCount; a++ {
-		totalRan += extractRunCount(<-results)
+		//totalRan += extractRunCount(<-results)
+		ranTests = append(ranTests, parseTestNames(<-results)...)
 	}
 
-	return totalRan
+	//return totalRan
+	return ranTests
 }
 
-// TODO: also extract the list of tests themselves so we can figure out exactly which ones were dropped
+// TODO: unused
 func extractRunCount(output string) int {
-	r, err := regexp.Compile("Ran ([0-9]+) tests, ([0-9]+) results as expected")
-	if err != nil {
-		panic(err)
-	}
-	// "Ran 19 tests, 19 results as expected"
-
+	r := regexp.MustCompile("Ran ([0-9]+) tests, ([0-9]+) results as expected")
 	rawMatches := r.FindAllStringSubmatch(output, -1)
 
 	if len(rawMatches) != 1 {
-		panic("no len match")
+		return -1
 	}
 
 	matches := rawMatches[0]
 	fmt.Println(matches)
 	if matches[1] != matches[2] {
-		panic(matches[1] + "does not equal" + matches[2])
+		return -1
 	}
 
 	i, _ := strconv.Atoi(string(matches[1]))
 	return i
 }
 
+func parseTestNames(output string) []string {
+	rawMatches := RegexParsePassedName.FindAllStringSubmatch(output, -1)
+
+	results := []string{}
+	for _, rm := range rawMatches {
+		results = append(results, strings.Replace(rm[1], "\\?", "?", -1))
+	}
+
+	return results
+}
+
 func runErtTest(testName string) string {
 	// cmdPrefix := "cask exec ert-runner -p "
-	//fmt.Println("Running " + testName)
+	// fmt.Println("Running " + testName)
+	// TODO: remove dependency on cask/ert-runner
 	cmd := "cask"
 	args := []string{"exec", "ert-runner", "-p", testName}
 	out, err := exec.Command(cmd, args...).Output()
 
 	if err != nil {
 		fmt.Println("~~~~ ERRROR", testName, err, "--", string(out))
-
 	}
 
 	return string(out)
