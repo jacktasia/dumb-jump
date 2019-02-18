@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,30 +16,51 @@ var (
 	RegexParsePassedName = regexp.MustCompile("passed\\s+[0-9]+/[0-9]+\\s+(.+)\\b")
 )
 
+type arrayFlags []string
+
+func (i *arrayFlags) String() string {
+	return "my string representation"
+}
+
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+var argPatterns arrayFlags
+var serialPatterns arrayFlags
+
 // TODO: this should run inside of a docker container with all the dependencies set!
-// TODO: take file argument and list of `--serialize` and `--slow` patterns
 // TODO: make helper that will download from this repo as raw and and run `go run ert-test-runner.go my-tests.el --slow '.*-ag-.*'
+// TODO: mode where it tries to find the fastest test groups and then saves to a dot file
 
 func main() {
 	fmt.Println("ert-test-runner!")
 	fmt.Println("----------------")
-	if len(os.Args) < 2 {
+
+	flag.Var(&argPatterns, "p", "Custom patterns to send the ert-runner as their own concurrent job")
+	flag.Var(&serialPatterns, "s", "Custom patterns to send to the ert-runner to serially before the concurrent jobs run.")
+	flag.Parse()
+
+	args := flag.Args()
+	if len(args) < 1 {
 		fmt.Println("Expects one postional argument of ert test file!")
 		os.Exit(1)
 	}
 
-	//dat, err := ioutil.ReadFile("/home/jack/code/dumb-jump/test/dumb-jump-test.el")
-	fmt.Println("Parsing", os.Args[1], "for tests...")
-	dat, err := ioutil.ReadFile(os.Args[1])
+	fileName := args[0]
+	fmt.Println("Parsing", fileName, "for tests...")
+	dat, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		panic(err)
+		fmt.Println("Could not open", fileName)
+		os.Exit(1)
 	}
 
 	contents := string(dat)
 
 	//standalones := []string{"dumb-jump-test-ag-rules-test"}
-	standalones := []string{}
-	groups := []string{".*-ag-.*", ".*-rg-.*"}
+	standalones := serialPatterns //[]string{}
+	groups := argPatterns         //[]string{".*-ag-.*", ".*-rg-.*"}
 
 	r, err := regexp.Compile("[ ;]*\\(ert-deftest\\s([^\\s]+)\\s")
 	matches := r.FindAllStringSubmatch(contents, -1)
