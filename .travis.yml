@@ -15,4 +15,4 @@ script:
   # - emacs --version
   # - git --version
   # - make test-concurrent
-  - docker run -it -e EVM_EMACS=$EVM_EMACS -v /home/travis/dumb-jump:/home/travis/dumb-jump dumb-jump-test-runner ls
+  - docker run -i -e EVM_EMACS=$EVM_EMACS -v /tmp/dumb-jump:/home/travis/dumb-jump jacktasia/dumb-jump-test-runner:latest
