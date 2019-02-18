@@ -1,25 +1,18 @@
 language: generic
 before_install:
-  - sudo add-apt-repository ppa:gekkio/ag -y
-  - sudo add-apt-repository ppa:git-core/ppa -y
-  - sudo apt-get -qq update
-  - sudo apt-get install -y silversearcher-ag git
-  - curl -LO https://github.com/BurntSushi/ripgrep/releases/download/0.10.0/ripgrep_0.10.0_amd64.deb
-  - sudo dpkg -i ripgrep_0.10.0_amd64.deb
-  - curl -fsSkL https://gist.github.com/rejeep/ebcd57c3af83b049833b/raw > x.sh && source ./x.sh
-  - evm install $EVM_EMACS --use --skip
-  - cask
+  - docker pull jacktasia/dumb-jump-test-runner:latest
 env:
   - EVM_EMACS=emacs-24.3-travis
   - EVM_EMACS=emacs-24.4-travis
-  - EVM_EMACS=emacs-24.5-travis
-  - EVM_EMACS=emacs-25.1-travis
-  - EVM_EMACS=emacs-25.2-travis
-  - EVM_EMACS=emacs-26.1-travis
+  # - EVM_EMACS=emacs-24.5-travis
+  # - EVM_EMACS=emacs-25.1-travis
+  # - EVM_EMACS=emacs-25.2-travis
+  # - EVM_EMACS=emacs-26.1-travis
 script:
-  - rg --version
-  - ag --version
-  - grep --version
-  - emacs --version
-  - git --version
-  - make test-concurrent
+  # - rg --version
+  # - ag --version
+  # - grep --version
+  # - emacs --version
+  # - git --version
+  # - make test-concurrent
+  - docker run -it -e EVM_EMACS=$EVM_EMACS -v /home/travis/dumb-jump:/home/travis/dumb-jump dumb-jump-test-runner ls
