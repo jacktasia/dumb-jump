@@ -1,4 +1,5 @@
-language: generic
+services:
+  - docker
 before_install:
   - docker pull jacktasia/dumb-jump-test-runner:latest
 env:
@@ -15,4 +16,4 @@ script:
   # - emacs --version
   # - git --version
   # - make test-concurrent
-  - docker run -i -e EVM_EMACS=$EVM_EMACS -v /tmp/dumb-jump:/home/travis/dumb-jump jacktasia/dumb-jump-test-runner:latest
+  - docker run -i -e EVM_EMACS=$EVM_EMACS -v /home/travis/jacktasia/dumb-jump:/home/travis/dumb-jump jacktasia/dumb-jump-test-runner:latest
