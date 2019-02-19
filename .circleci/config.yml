@@ -5,7 +5,7 @@ jobs:
       - image: jacktasia/dumb-jump-test-runner:latest
         environment:
 
-    working_directory: /app/dumb-jump
+    working_directory: /home/travis/dumb-jump
 
     environment:
       EVM_EMACS: emacs-25.2-travis
