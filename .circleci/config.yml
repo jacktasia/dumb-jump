@@ -2,7 +2,6 @@ version: 2
 jobs:
   build:
     docker:
-      # using custom image, see .circleci/images/primary/Dockerfile
       - image: jacktasia/dumb-jump-test-runner:latest
         environment:
 
@@ -15,5 +14,5 @@ jobs:
       - checkout
 
       - run:
-          name: ls and pwd
+          name: ls and pwd!
           command: ls && pwd
