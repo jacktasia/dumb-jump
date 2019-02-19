@@ -14,5 +14,5 @@ jobs:
       - checkout
 
       - run:
-          name: ls and pwd!
-          command: ls && pwd
+          name: Run Tests
+          command: make test-concurrent
