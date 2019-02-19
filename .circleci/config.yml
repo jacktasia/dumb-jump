@@ -15,4 +15,4 @@ jobs:
 
       - run:
           name: Run Tests
-          command: make test-concurrent
+          command: bash circle-runner.sh
