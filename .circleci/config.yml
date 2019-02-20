@@ -13,19 +13,26 @@ jobs:
     steps:
       - checkout
 
-      - run:
-          name: Run Test Setup
-          command: bash circle-runner.sh
 
       - restore_cache:
           keys:
+            - v1-dj-cache-evm-{{ .Environment.EVM_EMACS }}
+      - run: evm install {{ .Environment.EVM_EMACS }} --use --skip
+      - save_cache:
+          key: v1-dj-cache-evm-{{ .Environment.EVM_EMACS }}
+          paths:
+            - /home/travis/.evm/
+
+      # cask
+      - restore_cache:
+          keys:
             - v1-dj-cache-{{ .Environment.EVM_EMACS }}
-
       - run: cask
-
       - save_cache:
           key: v1-dj-cache-{{ .Environment.EVM_EMACS }}
           paths:
             - .cask/
 
-      - run: make test
+      - run:
+          name: Run Tests
+          command: bash circle-runner.sh
