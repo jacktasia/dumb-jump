@@ -524,10 +524,10 @@ or most optimal searcher."
            :not ("type testnot = object"))
 
     ;; nix
-    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "nix"
-           :regex "^\\s*JJJ\\s=[^=;]+"
+    (:type "variable" :supports ("ag" "rg") :language "nix"
+           :regex "\\b\\s*JJJ\\s*=[^=;]+"
            :tests ("test = 1234;" "test =\n123;")
-           :not ("testNot = 1234;"))
+           :not ("testNot = 1234;" "Nottest = 1234;" "AtestNot = 1234;"))
 
     ;; ruby
     (:type "variable" :supports ("ag" "rg" "git-grep") :language "ruby"
