@@ -5,7 +5,7 @@ WORKDIR /home/travis
 RUN sudo add-apt-repository ppa:gekkio/ag -y
 RUN sudo add-apt-repository ppa:git-core/ppa -y
 RUN sudo apt-get -qq update || ls
-RUN sudo apt-get install -y --no-install-recommends silversearcher-ag git
+RUN sudo apt-get install -y --no-install-recommends silversearcher-ag git && rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb /var/cache/apt/*.bin || true
 RUN curl -LO https://github.com/BurntSushi/ripgrep/releases/download/0.10.0/ripgrep_0.10.0_amd64.deb && sudo dpkg -i ripgrep_0.10.0_amd64.deb && rm ripgrep_0.10.0_amd64.deb
 ENV PATH="/home/travis/.evm/bin:$PATH"
 ENV PATH="/home/travis/.cask/bin:$PATH"

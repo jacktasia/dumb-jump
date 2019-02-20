@@ -17,7 +17,7 @@ jobs:
       - restore_cache:
           keys:
             - v1-dj-cache-evm-{{ .Environment.EVM_EMACS }}
-      - run: evm install {{ .Environment.EVM_EMACS }} --use --skip
+      - run: evm install $EVM_EMACS --use --skip
       - save_cache:
           key: v1-dj-cache-evm-{{ .Environment.EVM_EMACS }}
           paths:
