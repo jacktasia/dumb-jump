@@ -8,6 +8,7 @@ echo "installing $EVM_EMACS"
 evm install $EVM_EMACS --use --skip
 emacs --version
 ls
-cask
-make test
-make test-concurrent
+
+# cask
+# make test
+# make test-concurrent

@@ -14,5 +14,18 @@ jobs:
       - checkout
 
       - run:
-          name: Run Tests
+          name: Run Test Setup
           command: bash circle-runner.sh
+
+      - restore_cache:
+          keys:
+            - v1-dj-cache-{{ .Environment.EVM_EMACS }}
+
+      - run: cask
+
+      - save_cache:
+          key: v1-dj-cache-{{ .Environment.EVM_EMACS }}
+          paths:
+            - .cask/
+
+      - run: make test
