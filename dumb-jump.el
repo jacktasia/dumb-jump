@@ -524,9 +524,9 @@ or most optimal searcher."
            :not ("type testnot = object"))
 
     ;; nix
-    (:type "variable" :supports ("ag" "rg") :language "nix"
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "nix"
            :regex "\\b\\s*JJJ\\s*=[^=;]+"
-           :tests ("test = 1234;" "test =\n123;")
+           :tests ("test = 1234;" "test = 123;" "test=123")
            :not ("testNot = 1234;" "Nottest = 1234;" "AtestNot = 1234;"))
 
     ;; ruby
