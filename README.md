@@ -42,6 +42,7 @@ There is currently basic support for the following languages:
 * LaTeX
 * Lua
 * Nim
+* Nix
 * Objective-C
 * OCaml
 * Pascal

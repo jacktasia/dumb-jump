@@ -523,6 +523,12 @@ or most optimal searcher."
            :tests ("type test = object" "type test {.pure.} = enum")
            :not ("type testnot = object"))
 
+    ;; nix
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "nix"
+           :regex "\\b\\s*JJJ\\s*=[^=;]+"
+           :tests ("test = 1234;" "test = 123;" "test=123")
+           :not ("testNot = 1234;" "Nottest = 1234;" "AtestNot = 1234;"))
+
     ;; ruby
     (:type "variable" :supports ("ag" "rg" "git-grep") :language "ruby"
            :regex "^\\s*((\\w+[.])*\\w+,\\s*)*JJJ(,\\s*(\\w+[.])*\\w+)*\\s*=([^=>~]|$)"
@@ -1307,6 +1313,7 @@ or most optimal searcher."
     (:language "javascript" :ext "css" :agtype "css" :rgtype "css")
     (:language "lua" :ext "lua" :agtype "lua" :rgtype "lua")
     (:language "nim" :ext "nim" :agtype "nim" :rgtype "nim")
+    (:language "nix" :ext "nix" :agtype "nix" :rgtype "nix")
     (:language "org" :ext "org" :agtype nil :rgtype "org")
     (:language "perl" :ext "pl" :agtype "perl" :rgtype "perl")
     (:language "perl" :ext "pm" :agtype "perl" :rgtype "perl")
@@ -1964,6 +1971,7 @@ current file."
     (:comment "#" :language "ruby")
     (:comment "#" :language "crystal")
     (:comment "#" :language "nim")
+    (:comment "#" :language "nix")
     (:comment "//" :language "scala")
     (:comment ";" :language "scheme")
     (:comment "#" :language "shell")
