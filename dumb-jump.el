@@ -2522,7 +2522,7 @@ Using ag to search only the files found via git-grep literal symbol search."
          (cmd (concat dumb-jump-git-grep-cmd
                       " --color=never --line-number"
                       (if dumb-jump-git-grep-search-untracked
-                          " --untracked"
+                          " --untracked --no-recurse-submodules"
                         "")
                       " -E"))
          (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))

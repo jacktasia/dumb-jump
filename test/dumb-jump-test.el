@@ -156,7 +156,7 @@
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
          (excludes '("one" "two" "three"))
-         (expected (concat "git grep --color=never --line-number --untracked -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
+         (expected (concat "git grep --color=never --line-number --untracked --no-recurse-submodules -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
     (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-not-search-untracked-test ()
