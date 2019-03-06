@@ -1178,6 +1178,11 @@ or most optimal searcher."
            :tests ("function Matrix test ;" "function Matrix test;")
            :not ("function test blah"))
 
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "systemverilog"
+           :regex "[^\\s]+\\s+\\bJJJ\\b"
+           :tests ("some_class_name test" "another_class_name  test ;")
+           :not ("test some_class_name"))
+
     ;; vhdl
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "vhdl"
            :regex "\\s*type\\s+\\bJJJ\\b"
