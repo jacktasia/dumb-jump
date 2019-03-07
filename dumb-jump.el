@@ -2479,11 +2479,13 @@ searcher symbol."
          (proj-dir (file-name-as-directory proj))
          ;; TODO: --search-zip always? in case the include is the in gz area like emacs lisp code.
          (cmd (concat dumb-jump-ag-cmd
-                      " --nocolor --nogroup "
+                      " --nocolor --nogroup"
                       (if (s-ends-with? ".gz" cur-file)
-                          "--search-zip "
+                          " --search-zip"
                         "")
-                      dumb-jump-ag-search-args
+                      (if (= (length dumb-jump-ag-search-args) 0)
+                          ""
+                        " " dumb-jump-git-ag-args)
                       (s-join "" (--map (format " --%s" it) agtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
@@ -2537,8 +2539,10 @@ Using ag to search only the files found via git-grep literal symbol search."
          (rgtypes (dumb-jump-get-rg-type-by-language lang))
          (proj-dir (file-name-as-directory proj))
          (cmd (concat dumb-jump-rg-cmd
-                      " --color never --no-heading --line-number -U "
-                      dumb-jump-rg-search-args
+                      " --color never --no-heading --line-number -U"
+                      (if (= (length dumb-jump-rg-search-args) 0)
+                          ""
+                        " " dumb-jump-rg-search-args)
                       (s-join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g" (--map (shell-quote-argument (concat "!" (s-replace proj-dir "" it))) exclude-paths)))
@@ -2552,14 +2556,14 @@ Using ag to search only the files found via git-grep literal symbol search."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'git-grep))
          (ggtypes (when (f-ext cur-file) (dumb-jump-get-git-grep-type-by-language lang)))
          (cmd (concat dumb-jump-git-grep-cmd
-                      " --color=never --line-number "
+                      " --color=never --line-number"
                       ;; (if dumb-jump-git-grep-search-untracked
                       ;;     dumb-jump-git-grep-search-untracked-args " "
                       ;;   "")
                       (if (= (length dumb-jump-git-grep-search-args) 0)
                           ""
-                        dumb-jump-git-grep-search-args " ")
-                      "-E"))
+                        " " dumb-jump-git-grep-search-args)
+                      " -E"))
          (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))
          (exclude-args (s-join " "
                                (--map (shell-quote-argument (concat ":(exclude)" it))
