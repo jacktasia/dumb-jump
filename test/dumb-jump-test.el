@@ -159,14 +159,39 @@
          (expected (concat "git grep --color=never --line-number --untracked -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
     (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
 
-(ert-deftest dumb-jump-generate-git-grep-command-no-ctx-untracked-override ()
-  ;; --recurse-submodules
+;; (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-untracked-override ()
+;;   ;; --recurse-submodules
+;;   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
+;;          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+;;          (excludes '("one" "two" "three"))
+;;          (dumb-jump-git-grep-search-untracked-args " --untracked --recurse-submodules")
+;;          (expected (concat "git grep --color=never --line-number --untracked --recurse-submodules -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
+;;     (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
+
+(ert-deftest dumb-jump-generate-git-grep-command-no-ctx-extra-args ()
+  ;; git-grep args
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
          (excludes '("one" "two" "three"))
-         (dumb-jump-git-grep-search-untracked-args " --untracked --recurse-submodules")
+         (dumb-jump-git-grep-search-args "--untracked --recurse-submodules")
          (expected (concat "git grep --color=never --line-number --untracked --recurse-submodules -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
     (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
+
+(ert-deftest dumb-jump-generate-ag-command-no-ctx-extra-args ()
+  ;; ag args
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (dumb-jump-ag-search-args "--follow")
+         (expected (concat "ag --nocolor --nogroup --follow --ignore-dir this/is/excluded " (shell-quote-argument expected-regexes) " .")))
+    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp")))))
+
+(ert-deftest dumb-jump-generate-rg-command-no-ctx-extra-args ()
+  ;; rg-args
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
+         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (dumb-jump-rg-search-args "--no-pcre2 --follow")
+         (expected (concat "rg --color never --no-heading --line-number -U --no-pcre2 --follow --type elisp " (shell-quote-argument expected-regexes) " .")))
+    (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-not-search-untracked-test ()
   (let* ((dumb-jump-git-grep-search-untracked nil)
