@@ -2485,7 +2485,7 @@ searcher symbol."
                         "")
                       (if (= (length dumb-jump-ag-search-args) 0)
                           ""
-                        (concat " " dumb-jump-git-ag-args))
+                        (concat " " dumb-jump-ag-search-args))
                       (s-join "" (--map (format " --%s" it) agtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
