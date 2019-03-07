@@ -183,7 +183,7 @@
          (expected-regexes "\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
          (dumb-jump-ag-search-args "--follow")
          (expected (concat "ag --nocolor --nogroup --follow --ignore-dir this/is/excluded " (shell-quote-argument expected-regexes) " .")))
-    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp")))))
+    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-rg-command-no-ctx-extra-args ()
   ;; rg-args
