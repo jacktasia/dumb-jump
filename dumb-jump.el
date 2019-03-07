@@ -2483,7 +2483,7 @@ searcher symbol."
                       (if (s-ends-with? ".gz" cur-file)
                           "--search-zip "
                         "")
-                      dumb-jump-search-args
+                      dumb-jump-ag-search-args
                       (s-join "" (--map (format " --%s" it) agtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
