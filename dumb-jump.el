@@ -2485,7 +2485,7 @@ searcher symbol."
                         "")
                       (if (= (length dumb-jump-ag-search-args) 0)
                           ""
-                        " " dumb-jump-git-ag-args)
+                        (concat " " dumb-jump-git-ag-args))
                       (s-join "" (--map (format " --%s" it) agtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
@@ -2542,7 +2542,7 @@ Using ag to search only the files found via git-grep literal symbol search."
                       " --color never --no-heading --line-number -U"
                       (if (= (length dumb-jump-rg-search-args) 0)
                           ""
-                        " " dumb-jump-rg-search-args)
+                        (concat " " dumb-jump-rg-search-args))
                       (s-join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g" (--map (shell-quote-argument (concat "!" (s-replace proj-dir "" it))) exclude-paths)))
@@ -2562,7 +2562,7 @@ Using ag to search only the files found via git-grep literal symbol search."
                       ;;   "")
                       (if (= (length dumb-jump-git-grep-search-args) 0)
                           ""
-                        " " dumb-jump-git-grep-search-args)
+                        (concat " " dumb-jump-git-grep-search-args))
                       " -E"))
          (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))
          (exclude-args (s-join " "
