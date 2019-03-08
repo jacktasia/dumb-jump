@@ -208,20 +208,14 @@ or most optimal searcher."
   :group 'dumb-jump
   :type 'boolean)
 
-;; (defcustom dumb-jump-git-grep-search-untracked
-;;   t
-;;   "If non-nil Dumb Jump will also search untracked files when using searcher git-grep."
-;;   :group 'dumb-jump
-;;   :type 'boolean)
-
-;; (defcustom dumb-jump-git-grep-search-untracked-args
-;;   "--untracked"
-;;   "If non-nil Dumb Jump will also search untracked files when using searcher git-grep."
-;;   :group 'dumb-jump
-;;   :type 'boolean)
+(defcustom dumb-jump-git-grep-search-untracked
+  t
+  "If non-nil Dumb Jump will also search untracked files when using searcher git-grep."
+  :group 'dumb-jump
+  :type 'boolean)
 
 (defcustom dumb-jump-git-grep-search-args
-  "--untracked"
+  ""
   "Appends the passed arguments to the git-grep search function. Default: \"--untracked\""
   :group 'dumb-jump
   :type 'string)
@@ -2540,8 +2534,7 @@ Using ag to search only the files found via git-grep literal symbol search."
          (proj-dir (file-name-as-directory proj))
          (cmd (concat dumb-jump-rg-cmd
                       " --color never --no-heading --line-number -U"
-                      (if (= (length dumb-jump-rg-search-args) 0)
-                          ""
+                      (when (not (s-blank? dumb-jump-rg-search-args))
                         (concat " " dumb-jump-rg-search-args))
                       (s-join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
@@ -2557,11 +2550,9 @@ Using ag to search only the files found via git-grep literal symbol search."
          (ggtypes (when (f-ext cur-file) (dumb-jump-get-git-grep-type-by-language lang)))
          (cmd (concat dumb-jump-git-grep-cmd
                       " --color=never --line-number"
-                      ;; (if dumb-jump-git-grep-search-untracked
-                      ;;     dumb-jump-git-grep-search-untracked-args " "
-                      ;;   "")
-                      (if (= (length dumb-jump-git-grep-search-args) 0)
-                          ""
+                      (when dumb-jump-git-grep-search-untracked
+                        " --untracked")
+                      (when (not (s-blank? dumb-jump-git-grep-search-args))
                         (concat " " dumb-jump-git-grep-search-args))
                       " -E"))
          (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))
