@@ -214,9 +214,21 @@ or most optimal searcher."
   :group 'dumb-jump
   :type 'boolean)
 
-(defcustom dumb-jump-git-grep-search-untracked-args
-  " --untracked"
-  "If dumb-jump-git-grep-search-untracked is non-nil Dumb Jump will add these arguments."
+(defcustom dumb-jump-git-grep-search-args
+  ""
+  "Appends the passed arguments to the git-grep search function. Default: \"\""
+  :group 'dumb-jump
+  :type 'string)
+
+(defcustom dumb-jump-ag-search-args
+  ""
+  "Appends the passed arguments to the ag search function. Default: \"\""
+  :group 'dumb-jump
+  :type 'string)
+
+(defcustom dumb-jump-rg-search-args
+  "--pcre2"
+  "Appends the passed arguments to the rg search function. Default: \"--pcre2\""
   :group 'dumb-jump
   :type 'string)
 
@@ -2465,6 +2477,8 @@ searcher symbol."
                       (if (s-ends-with? ".gz" cur-file)
                           " --search-zip"
                         "")
+                      (when (not (s-blank? dumb-jump-ag-search-args))
+                        (concat " " dumb-jump-ag-search-args))
                       (s-join "" (--map (format " --%s" it) agtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
@@ -2518,7 +2532,9 @@ Using ag to search only the files found via git-grep literal symbol search."
          (rgtypes (dumb-jump-get-rg-type-by-language lang))
          (proj-dir (file-name-as-directory proj))
          (cmd (concat dumb-jump-rg-cmd
-                      " --color never --no-heading --line-number -U --pcre2"
+                      " --color never --no-heading --line-number -U"
+                      (when (not (s-blank? dumb-jump-rg-search-args))
+                        (concat " " dumb-jump-rg-search-args))
                       (s-join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g" (--map (shell-quote-argument (concat "!" (s-replace proj-dir "" it))) exclude-paths)))
@@ -2533,9 +2549,10 @@ Using ag to search only the files found via git-grep literal symbol search."
          (ggtypes (when (f-ext cur-file) (dumb-jump-get-git-grep-type-by-language lang)))
          (cmd (concat dumb-jump-git-grep-cmd
                       " --color=never --line-number"
-                      (if dumb-jump-git-grep-search-untracked
-                          dumb-jump-git-grep-search-untracked-args
-                        "")
+                      (when dumb-jump-git-grep-search-untracked
+                        " --untracked")
+                      (when (not (s-blank? dumb-jump-git-grep-search-args))
+                        (concat " " dumb-jump-git-grep-search-args))
                       " -E"))
          (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))
          (exclude-args (s-join " "
