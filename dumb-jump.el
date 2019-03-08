@@ -216,7 +216,7 @@ or most optimal searcher."
 
 (defcustom dumb-jump-git-grep-search-args
   ""
-  "Appends the passed arguments to the git-grep search function. Default: \"--untracked\""
+  "Appends the passed arguments to the git-grep search function. Default: \"\""
   :group 'dumb-jump
   :type 'string)
 
@@ -2477,8 +2477,7 @@ searcher symbol."
                       (if (s-ends-with? ".gz" cur-file)
                           " --search-zip"
                         "")
-                      (if (= (length dumb-jump-ag-search-args) 0)
-                          ""
+                      (when (not (s-blank? dumb-jump-ag-search-args))
                         (concat " " dumb-jump-ag-search-args))
                       (s-join "" (--map (format " --%s" it) agtypes))))
          (exclude-args (dumb-jump-arg-joiner
