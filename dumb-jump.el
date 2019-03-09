@@ -1173,7 +1173,7 @@ or most optimal searcher."
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
            :regex "\\s*class\\s+\\bJJJ\\b"
            :tests ("virtual class test;" "class test;" "class test extends some_class")
-           :not ("virtual class testing;" "class test2;"))
+           :not ("virtual class testing;" "class test2;" "class some_test" "class some_class extends test"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
            :regex "\\s*task\\s+\\bJJJ\\b"
@@ -1190,10 +1190,11 @@ or most optimal searcher."
            :tests ("function Matrix test ;" "function Matrix test;")
            :not ("function test blah"))
 
+        ;; matches SV class handle declarations
     (:type "function" :supports ("ag" "rg" "git-grep") :language "systemverilog"
-           :regex "[^\\s]+\\s+\\bJJJ\\b"
-           :tests ("some_class_name test" "another_class_name  test ;")
-           :not ("test some_class_name"))
+           :regex "^\\s*[^\\s]*\\s*[^\\s]+\\s+\\bJJJ\\b"
+           :tests ("some_class_name test" "  another_class_name  test ;" "some_class test[];" "some_class #(1) test")
+           :not ("test some_class_name" "class some_class extends test"))
 
     ;; vhdl
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "vhdl"
