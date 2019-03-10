@@ -37,12 +37,12 @@ jobs:
   "emacs-24.3-travis":
     environment:
       EVM_EMACS: "emacs-24.3-travis"
-    <<: *container_config
+    <<: *job_config
 
   "emacs-24.4-travis":
     environment:
       EVM_EMACS: "emacs-24.4-travis"
-    <<: *container_config
+    <<: *job_config
 
 workflows:
   version: 2
