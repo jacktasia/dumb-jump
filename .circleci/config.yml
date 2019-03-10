@@ -1,38 +1,54 @@
 version: 2
-jobs:
-  build:
+aliases:
+  - &job_config
     docker:
       - image: jacktasia/dumb-jump-test-runner:latest
         environment:
+          EVM_EMACS: *emacs_version
 
     working_directory: /home/travis/dumb-jump
 
-    environment:
-      EVM_EMACS: emacs-25.2-travis
-
     steps:
       - checkout
-
-
+      - command: echo "$EVM_EMACS" > ~/EVM_EMACS.txt
       - restore_cache:
           keys:
-            - v1-dj-cache-evm-{{ .Environment.EVM_EMACS }}
+            - v1-dj-cache-evm-{{ checksum "~/EVM_EMACS.txt" }}
       - run: evm install $EVM_EMACS --use --skip
       - save_cache:
-          key: v1-dj-cache-evm-{{ .Environment.EVM_EMACS }}
+          key: v1-dj-cache-evm-{{ checksum "~/EVM_EMACS.txt" }}
           paths:
             - /home/travis/.evm/
-
       # cask
       - restore_cache:
           keys:
-            - v1-dj-cache-{{ .Environment.EVM_EMACS }}
+            - v1-dj-cache-{{ checksum "~/EVM_EMACS.txt" }}
       - run: cask
       - save_cache:
-          key: v1-dj-cache-{{ .Environment.EVM_EMACS }}
+          key: v1-dj-cache-{{ checksum "~/EVM_EMACS.txt" }}
           paths:
             - .cask/
 
       - run:
           name: Run Tests
           command: bash circle-runner.sh
+
+jobs:
+  "emacs-24.3-travis":
+    - &emacs_version "emacs-24.3-travis"
+    <<: *container_config
+
+  "emacs-24.4-travis":
+    - &emacs_version "emacs-24.4-travis"
+    <<: *container_config
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - "emacs-24.3-travis"
+      - "emacs-24.4-travis"
+      # - "emacs-24.5-travis"
+      # - "emacs-25.1-travis"
+      # - "emacs-25.2-travis"
+      # - "emacs-26.1-travis"
