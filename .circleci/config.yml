@@ -4,7 +4,7 @@ aliases:
     docker:
       - image: jacktasia/dumb-jump-test-runner:latest
         environment:
-          EVM_EMACS: *emacs_version
+          EVM_EMACS: $EVM_EMACS
 
     working_directory: /home/travis/dumb-jump
 
@@ -35,11 +35,13 @@ aliases:
 
 jobs:
   "emacs-24.3-travis":
-    - &emacs_version "emacs-24.3-travis"
+    environment:
+      EVM_EMACS: "emacs-24.3-travis"
     <<: *container_config
 
   "emacs-24.4-travis":
-    - &emacs_version "emacs-24.4-travis"
+    environment:
+      EVM_EMACS: "emacs-24.4-travis"
     <<: *container_config
 
 workflows:
