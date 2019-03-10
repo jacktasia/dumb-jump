@@ -10,7 +10,7 @@ aliases:
 
     steps:
       - checkout
-      - command: echo "$EVM_EMACS" > ~/EVM_EMACS.txt
+      - run: echo "$EVM_EMACS" > ~/EVM_EMACS.txt
       - restore_cache:
           keys:
             - v1-dj-cache-evm-{{ checksum "~/EVM_EMACS.txt" }}
