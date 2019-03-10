@@ -44,13 +44,33 @@ jobs:
       EVM_EMACS: "emacs-24.4-travis"
     <<: *job_config
 
+  "emacs-24.5-travis":
+    environment:
+      EVM_EMACS: "emacs-24.5-travis"
+    <<: *job_config
+
+  "emacs-25.1-travis":
+    environment:
+      EVM_EMACS: "emacs-25.1-travis"
+    <<: *job_config
+
+  "emacs-25.2-travis":
+    environment:
+      EVM_EMACS: "emacs-25.2-travis"
+    <<: *job_config
+
+  "emacs-26.1-travis":
+    environment:
+      EVM_EMACS: "emacs-26.1-travis"
+    <<: *job_config
+
 workflows:
   version: 2
   build:
     jobs:
       - "emacs-24.3-travis"
       - "emacs-24.4-travis"
-      # - "emacs-24.5-travis"
-      # - "emacs-25.1-travis"
-      # - "emacs-25.2-travis"
-      # - "emacs-26.1-travis"
+      - "emacs-24.5-travis"
+      - "emacs-25.1-travis"
+      - "emacs-25.2-travis"
+      - "emacs-26.1-travis"
