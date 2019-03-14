@@ -1,7 +1,8 @@
 #!/bin/bash
 
 source /root/.bashrc
-source /root/.bash_profile
+
+evm install $EVM_EMACS --use --skip # should be a noop when cache
 
 PATH="/root/.evm/bin:$PATH"
 export PATH="/root/.cask/bin:$PATH"
@@ -11,4 +12,6 @@ grep --version
 emacs --version
 git --version
 pwd
+cd /home/travis/dumb-jump
+cask install
 make test

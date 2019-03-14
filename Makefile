@@ -18,7 +18,10 @@ test-go:
 	@go test -v
 
 docker-build-test-runner:
-	docker build . -t jacktasia/dumb-jump-test-runner:v3 -f Dockerfile.travis.bk
+	docker build . -t jacktasia/dumb-jump-test-runner:v3
 
 docker-push-test-runner:
 	docker push jacktasia/dumb-jump-test-runner:v3
+
+test-all-local-in-docker:
+	@bash run-all-in-docker-local.sh
