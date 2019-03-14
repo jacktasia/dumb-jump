@@ -31,7 +31,7 @@ aliases:
 
       - run:
           name: Run Tests
-          command: bash circleci-runner.sh
+          command: bash test/circleci-runner.sh
 
 jobs:
   "emacs-24.3-travis":
