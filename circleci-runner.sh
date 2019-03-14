@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# source /home/travis/.bashrc
-# source /home/travis/.bash_profile
+source /root/.bashrc
+source /root/.bash_profile
 
 PATH="/root/.evm/bin:$PATH"
 export PATH="/root/.cask/bin:$PATH"
