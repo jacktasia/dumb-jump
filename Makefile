@@ -12,16 +12,17 @@ install:
 	${CASK} install
 
 test-concurrent:
-	@go run ert_runner.go -p ".*-ag-.*" -p ".*-rg-.*" test/dumb-jump-test.el
+	cask
+	@go run test/ert_runner.go -p ".*-ag-.*" -p ".*-rg-.*" test/dumb-jump-test.el
 
 test-go:
-	@go test -v
+	@go test ./... -v
 
 docker-build-test-runner:
-	docker build . -t jacktasia/dumb-jump-test-runner:v3
+	docker build . -t jacktasia/dumb-jump-test-runner:v3 -f test/Dockerfile
 
 docker-push-test-runner:
 	docker push jacktasia/dumb-jump-test-runner:v3
 
 test-all-local-in-docker:
-	@bash run-all-in-docker-local.sh
+	@bash test/run-all-in-docker-local.sh

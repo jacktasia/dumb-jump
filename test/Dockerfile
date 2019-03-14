@@ -20,5 +20,5 @@ RUN evm install $EVM_EMACS --use --skip
 
 RUN apt-get install -y --no-install-recommends make libgtk2.0-0 libsm-dev && rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb /var/cache/apt/*.bin || true
 
-ADD circleci-runner.sh circleci-runner.sh
+ADD test/circleci-runner.sh circleci-runner.sh
 ENTRYPOINT ["bash", "circleci-runner.sh"]

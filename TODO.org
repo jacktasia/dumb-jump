@@ -1,7 +1,0 @@
-* Tasks
-** TODO limit length of lines to 100 len
-** TODO "sets" which need to be enabled
-** TODO ignore #files#
-** TODO split up searches by context type?
-** TODO built-in :tests for contexts like rules
-** TODO make dumb-jump-test-rules run on boot? or interactive
