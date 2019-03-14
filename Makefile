@@ -16,3 +16,9 @@ test-concurrent:
 
 test-go:
 	@go test -v
+
+docker-build-test-runner:
+	docker build . -t jacktasia/dumb-jump-test-runner:v3 -f Dockerfile.travis.bk
+
+docker-push-test-runner:
+	docker push jacktasia/dumb-jump-test-runner:v3
