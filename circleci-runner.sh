@@ -1,7 +1,7 @@
 #!/bin/bash
 
-source /home/travis/.bashrc
-source /home/travis/.bash_profile
+# source /home/travis/.bashrc
+# source /home/travis/.bash_profile
 rg --version
 ag --version
 grep --version
