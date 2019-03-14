@@ -2,7 +2,7 @@ version: 2
 aliases:
   - &job_config
     docker:
-      - image: jacktasia/dumb-jump-test-runner:latest
+      - image: jacktasia/dumb-jump-test-runner:v3
         environment:
           EVM_EMACS: $EVM_EMACS
 
