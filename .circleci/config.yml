@@ -5,6 +5,7 @@ aliases:
       - image: jacktasia/dumb-jump-test-runner:v3
         environment:
           EVM_EMACS: $EVM_EMACS
+          COVERALLS_REPO_TOKEN: $COVERALLS_REPO_TOKEN
 
     working_directory: /home/travis/dumb-jump
 
