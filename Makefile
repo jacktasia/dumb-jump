@@ -24,5 +24,8 @@ docker-build-test-runner:
 docker-push-test-runner:
 	docker push jacktasia/dumb-jump-test-runner:v3
 
-test-all-local-in-docker:
-	@bash test/run-all-in-docker-local.sh
+test-all-in-docker:
+	@bash test/run-local-in-docker.sh all
+
+test-in-docker:
+	@bash test/run-local-in-docker.sh current
