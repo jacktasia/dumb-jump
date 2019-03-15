@@ -577,7 +577,7 @@ or most optimal searcher."
            :regex "(^|\\W)alias(_method)?\\W+JJJ(\\W|$)"
            :tests ("alias test some_method"
                    "alias_method :test, :some_method"
-                   "alias_method ’test’ ’some_method’"
+                   "alias_method 'test' 'some_method'"
                    "some_class.send(:alias_method, :test, :some_method)")
            :not ("alias some_method test"
                  "alias_method :some_method, :test"
