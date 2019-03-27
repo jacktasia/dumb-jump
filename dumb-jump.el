@@ -714,6 +714,15 @@ or most optimal searcher."
            :regex "class\\s*JJJ\\s*(extends|implements|\\\{)"
            :tests ("class test{" "class test {" "class test extends foo" "class test implements foo"))
 
+    ;; dart
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "dart"
+           :regex "\\bJJJ\\s*\\([^()]*\\)\\s*[{]"
+           :tests ("test(foo) {" "test (foo){" "test(foo){"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "dart"
+           :regex "class\\s*JJJ\\s*[\\\(\\\{]"
+           :tests ("class test(object) {" "class test{"))
+
     ;; faust
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "faust"
            :regex "\\bJJJ\(\\\(.+\\\)\)*\\s*="
@@ -1336,6 +1345,7 @@ or most optimal searcher."
     (:language "javascript" :ext "vue" :agtype "js" :rgtype "js")
     (:language "javascript" :ext "html" :agtype "html" :rgtype "html")
     (:language "javascript" :ext "css" :agtype "css" :rgtype "css")
+    (:language "dart" :ext "dart" :agtype nil :rgtype "dart")
     (:language "lua" :ext "lua" :agtype "lua" :rgtype "lua")
     (:language "nim" :ext "nim" :agtype "nim" :rgtype "nim")
     (:language "nix" :ext "nix" :agtype "nix" :rgtype "nix")
@@ -1977,6 +1987,7 @@ current file."
     (:comment ";" :language "elisp")
     (:comment ";" :language "commonlisp")
     (:comment "//" :language "javascript")
+    (:comment "//" :language "dart")
     (:comment "--" :language "haskell")
     (:comment "--" :language "lua")
     (:comment "//" :language "rust")
