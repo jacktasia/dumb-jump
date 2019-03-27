@@ -2599,5 +2599,6 @@ Using ag to search only the files found via git-grep literal symbol search."
   :global t
   :keymap dumb-jump-mode-map)
 
+
 (provide 'dumb-jump)
 ;;; dumb-jump.el ends here
