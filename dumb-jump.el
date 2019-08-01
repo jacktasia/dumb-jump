@@ -1893,7 +1893,10 @@ of project configuraiton."
                                               cur-line-num parse-fn generate-fn)
                        search-paths))
 
-         (results (--map (plist-put it :target look-for) raw-results)))
+         (results
+          (remove-duplicates
+           (--map (plist-put it :target look-for) raw-results)
+           :test (lambda (x y) (or (null y) (equal x y))))))
 
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
