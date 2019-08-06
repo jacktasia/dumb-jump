@@ -41,11 +41,6 @@
     (should (string= lang1b "php"))
     (should (string= lang2 "javascript"))))
 
-(ert-deftest dumb-jump-current-files-results-test ()
-  (let ((results '((:path "blah") (:path "rarr")))
-        (expected '((:path "blah"))))
-    (should (equal (dumb-jump-current-file-results "blah" results) expected))))
-
 (ert-deftest dumb-jump-exclude-path-test ()
   (let* ((expected (list (f-join test-data-dir-proj1 "ignored")
                          (f-join test-data-dir-proj1 "ignored2")))
