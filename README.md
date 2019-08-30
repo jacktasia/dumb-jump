@@ -115,6 +115,7 @@ If you want to stop a directory from registering as the project root (and have D
 
 * `(setq dumb-jump-default-project "~/code")` to change default project if one is not found (defaults to `~`)
 * `(setq dumb-jump-quiet t)` if Dumb Jump is too chatty.
+* `(setq dumb-jump-confirm-jump-to-modified-file nil)` to avoid being prompted for confirmation if you attempt to jump to a file that has been modified and not saved.  This defaults to `t` because jumping to modified files results in you jumping to a location that may no longer be current.
 * To support more languages and/or definition types customize `dumb-jump-find-rules` variable.
 * `(add-hook 'dumb-jump-after-jump-hook 'some-function)` to execute code after you jump
 * `(setq dumb-jump-selector 'ivy)` to use [ivy](https://github.com/abo-abo/swiper#ivy) instead of the default popup for multiple options.

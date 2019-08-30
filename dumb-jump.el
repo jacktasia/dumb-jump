@@ -1481,7 +1481,13 @@ If `nil` always show list of more than 1 match."
   "If `t` will print helpful debug information."
   :group 'dumb-jump
   :type 'boolean)
-
+           
+(defcustom dumb-jump-confirm-jump-to-modified-file
+  t
+  "If t, confirm before jumping to a modified file (which may lead to an
+inaccurate jump).  If nil, jump without confirmation but print a warning."
+  :group 'dumb-jump
+  :type 'boolean)
 
 (defun dumb-jump-message-prin1 (str &rest args)
   "Helper function when debugging apply STR 'prin1-to-string' to all ARGS."
@@ -2179,10 +2185,16 @@ Ffrom the ROOT project CONFIG-FILE."
     (member (f-full path) (--map (buffer-file-name it) modified-file-buffers))))
 
 (defun dumb-jump-result-follow (result &optional use-tooltip proj)
-  "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump.  Prompt if we should continue if destentation has been modified."
+  "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump.  If dumb-jump-confirm-jump-to-modified-file is t, prompt if we should continue if destination has been modified.  If it is nil, display a warning."
   (if (dumb-jump-file-modified-p (plist-get result :path))
-      (when (y-or-n-p (concat (plist-get result :path) " has been modified so we may have the wrong location. Continue?"))
-        (dumb-jump--result-follow result use-tooltip proj))
+      (let ((target-file (plist-get result :path)))
+        (if dumb-jump-confirm-jump-to-modified-file
+            (when (y-or-n-p (concat target-file " has been modified so we may have the wrong location. Continue?"))
+              (dumb-jump--result-follow result use-tooltip proj))
+          (progn (message
+                  "Warning: %s has been modified so we may have the wrong location."
+                  target-file)
+                 (dumb-jump--result-follow result use-tooltip proj))))
     (dumb-jump--result-follow result use-tooltip proj)))
 
 (defun dumb-jump--result-follow (result &optional use-tooltip proj)
