@@ -41,6 +41,7 @@ There is currently basic support for the following languages:
 * Julia
 * LaTeX
 * Lua
+* Matlab
 * Nim
 * Nix
 * Objective-C
