@@ -1362,6 +1362,8 @@ or most optimal searcher."
     (:language "javascript" :ext "css" :agtype "css" :rgtype "css")
     (:language "dart" :ext "dart" :agtype nil :rgtype "dart")
     (:language "lua" :ext "lua" :agtype "lua" :rgtype "lua")
+    ;; the extension "m" is also used by obj-c so must use matlab-mode
+    ;; since obj-c will win by file extension, but here for searcher types
     (:language "matlab" :ext "m" :agtype "matlab" :rgtype "matlab")
     (:language "nim" :ext "nim" :agtype "nim" :rgtype "nim")
     (:language "nix" :ext "nix" :agtype "nix" :rgtype "nix")
