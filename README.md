@@ -5,7 +5,7 @@
 ![Dumb Jump GIF](media/dumb-jump-example-v2.gif?raw=true)
 
 ## About
-**Dumb Jump** is an Emacs "jump to definition" package with support for multiple programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes. Dumb Jump requires at least GNU Emacs `24.3`.
+**Dumb Jump** is an Emacs "jump to definition" package with support for 40+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes. Dumb Jump requires at least GNU Emacs `24.3`.
 
 
 #### How  it works
