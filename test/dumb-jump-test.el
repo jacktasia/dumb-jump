@@ -35,7 +35,7 @@
 (ert-deftest dumb-jump-get-lang-major-mode-test ()
   (let* ((major-mode 'php)
          (lang1 (dumb-jump-get-language "blah/file.install"))
-         (lang1b (dumb-jump-get-language-from-mode))
+         (lang1b (dumb-jump-get-mode-base-name))
          (lang2 (dumb-jump-get-language-by-filename "/askdfjkl/somefile.js")))
     (should (string= lang1 "php"))
     (should (string= lang1b "php"))

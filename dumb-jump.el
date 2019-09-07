@@ -1,6 +1,6 @@
 ;;; dumb-jump.el --- jump to definition for multiple languages without configuration. -*- lexical-binding: t; -*-
-;; Copyright (C) 2015-2018 jack angers
-;; Author: jack angers
+;; Copyright (C) 2015-2019 jack angers
+;; Author: jack angers and contributors
 ;; Version: 0.5.2
 ;; Package-Requires: ((emacs "24.3") (f "0.20.0") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
@@ -68,7 +68,7 @@
 
 (defcustom dumb-jump-ivy-jump-to-selected-function
   #'dumb-jump-ivy-jump-to-selected
-  "Prompts user for a choice using ivy then dumb-jump to that choice")
+  "Prompts user for a choice using ivy then dumb-jump to that choice.")
 
 (defcustom dumb-jump-prefer-searcher
   nil
@@ -81,7 +81,6 @@ If nil then the most optimal searcher will be chosen at runtime."
                  (const :tag "grep" gnu-grep)
                  (const :tag "git grep" git-grep)
                  (const :tag "git grep + ag" git-grep-plus-ag)))
-
 
 (defcustom dumb-jump-force-searcher
   nil
@@ -525,6 +524,22 @@ or most optimal searcher."
            :regex "class\\s*JJJ\\b\\s*\\\(?"
            :tests ("class test(object):" "class test:")
            :not ("class testnot:" "class testnot(object):"))
+
+    ;; matlab
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "matlab"
+           :regex "^\\s*\\bJJJ\\s*=[^=\\n]+"
+           :tests ("test = 1234")
+           :not ("for test = 1:2:" "_test = 1234"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "matlab"
+             :regex "^\\s*function\\s*[^=]+\\s*=\\s*JJJ\\b"
+           :tests ("\tfunction y = test(asdf)" "function x = test()" "function [x, losses] = test(A, y, lambda, method, qtile)")
+           :not ("\tfunction testnot(asdf)" "function testnot()"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "matlab"
+           :regex "^\\s*classdef\\s*JJJ\\b\\s*"
+           :tests ("classdef test")
+           :not ("classdef testnot"))
 
     ;; nim
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "nim"
@@ -1347,6 +1362,7 @@ or most optimal searcher."
     (:language "javascript" :ext "css" :agtype "css" :rgtype "css")
     (:language "dart" :ext "dart" :agtype nil :rgtype "dart")
     (:language "lua" :ext "lua" :agtype "lua" :rgtype "lua")
+    (:language "matlab" :ext "m" :agtype "matlab" :rgtype "matlab")
     (:language "nim" :ext "nim" :agtype "nim" :rgtype "nim")
     (:language "nix" :ext "nix" :agtype "nix" :rgtype "nix")
     (:language "org" :ext "org" :agtype nil :rgtype "org")
@@ -1758,17 +1774,23 @@ to keep looking for another root."
   (let* ((languages (-distinct
                      (--map (plist-get it :language)
                             dumb-jump-find-rules)))
-         (language (or (dumb-jump-get-language-by-filename file)
-                       (dumb-jump-get-language-from-mode))))
+         (language (or (dumb-jump-get-language-from-mode)
+                       (dumb-jump-get-language-by-filename file)
+                       (dumb-jump-get-mode-base-name))))
     (if (member language languages)
       language
       (format ".%s file" (or (f-ext file) "")))))
 
+(defun dumb-jump-get-mode-base-name ()
+  "Get the base name of the mode."
+  (s-replace "-mode" "" (symbol-name major-mode)))
+
 (defun dumb-jump-get-language-from-mode ()
   "Extract the language from the 'major-mode' name.  Currently just everything before '-mode'."
-  (let ((lookup '(sh "shell" cperl "perl"))
-        (m (s-replace "-mode" "" (symbol-name major-mode))))
-        (or (plist-get lookup (intern m)) m)))
+  (let* ((lookup '(sh "shell" cperl "perl" matlab "matlab"))
+        (m (dumb-jump-get-mode-base-name))
+        (result (plist-get lookup (intern m))))
+    result))
 
 
 (defun dumb-jump-get-language-by-filename (file)
@@ -2009,6 +2031,7 @@ current file."
     (:comment "#" :language "perl")
     (:comment "//" :language "php")
     (:comment "#" :language "python")
+    (:comment "%" :language "matlab")
     (:comment "#" :language "r")
     (:comment "#" :language "ruby")
     (:comment "#" :language "crystal")
