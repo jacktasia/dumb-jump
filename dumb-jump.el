@@ -1728,22 +1728,26 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
           (plist-get result :line)
           (s-trim (plist-get result :context))))
 
+(declare-function ivy-read "ext:ivy")
+
 (defun dumb-jump-ivy-jump-to-selected (results choices proj)
   "Offer CHOICES as canidates through ivy-read then execute
 dumb-jump-to-selected on RESULTS CHOICES and selected choice.
 Ignore PROJ"
   (dumb-jump-to-selected results choices (ivy-read "Jump to: " choices)))
 
+(declare-function helm-make-source "ext:helm-source")
+
 (defun dumb-jump-prompt-user-for-choice (proj results)
   "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy)
 for user to select.  Filters PROJ path from files for display."
   (let ((choices (--map (dumb-jump--format-result proj it) results)))
     (cond
-     ((and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
+     ((and (eq dumb-jump-selector 'ivy) (require 'ivy nil t))
       (funcall dumb-jump-ivy-jump-to-selected-function results choices proj))
-     ((and (eq dumb-jump-selector 'helm) (fboundp 'helm))
+     ((and (eq dumb-jump-selector 'helm) (require 'helm nil t))
       (helm :sources
-            (helm-build-sync-source "Jump to: "
+            (helm-make-source "Jump to: " 'helm-source-sync
               :action '(("Jump to match" . dumb-jump-result-follow))
               :candidates (-zip choices results)
               :persistent-action 'dumb-jump-helm-persist-action)
@@ -2169,6 +2173,9 @@ PREFER-EXTERNAL will sort current file last."
         (dumb-jump-result-follow var-to-jump use-tooltip proj-root))
      (t
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front)))))
+
+(declare-function tramp-dissect-file-name "tramp")
+(declare-function tramp-file-name-localname "tramp")
 
 (defun dumb-jump-read-config (root config-file)
   "Load and return options (exclusions, inclusions, etc).
