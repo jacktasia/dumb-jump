@@ -1285,7 +1285,18 @@ or most optimal searcher."
     (:type "type" :supports ("ag" "grep" "git-grep") :language "fsharp"
 	   :regex "type\\s+JJJ\\b.*\\\="
 	   :tests ("type test = 1234")
-	   :not ("type testnot = 1234")))
+	   :not ("type testnot = 1234"))
+
+    ;; kotlin
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "kotlin"
+           :regex "fun\\s*(?:<[^>]*>)?\\s*JJJ\\s*\\("
+           :tests ("fun test()" "fun <T> test()"))
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "kotlin"
+           :regex "(val|var)\\s*JJJ\b"
+           :tests ("val testval" "var testvar"))
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "kotlin"
+           :regex "(class|interface)\\s*JJJ\b"
+           :tests ("class Test" "class Test : SomeInterface" "interface Test")))
 
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
@@ -1425,7 +1436,9 @@ or most optimal searcher."
     (:language "pascal" :ext "dfm" :agtype "delphi" :rgtype nil)
     (:language "fsharp" :ext "fs" :agtype "fsharp" :rgtype nil)
     (:language "fsharp" :ext "fsi" :agtype "fsharp" :rgtype nil)
-    (:language "fsharp" :ext "fsx" :agtype "fsharp" :rgtype nil))
+    (:language "fsharp" :ext "fsx" :agtype "fsharp" :rgtype nil)
+    (:language "kotlin" :ext "kt" :agtype "kotlin" :rgtype "kotlin")
+    (:language "kotlin" :ext "kts" :agtype "kotlin" :rgtype "kotlin"))
 
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
