@@ -56,6 +56,7 @@ There is currently basic support for the following languages:
 * SML
 * Scala
 * Scheme
+* SQL
 * Swift
 * SystemVerilog
 * Vala
