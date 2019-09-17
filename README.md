@@ -39,6 +39,7 @@ There is currently basic support for the following languages:
 * Java
 * JavaScript
 * Julia
+* Kotlin
 * LaTeX
 * Lua
 * Matlab

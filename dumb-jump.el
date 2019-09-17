@@ -1289,14 +1289,15 @@ or most optimal searcher."
 
     ;; kotlin
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "kotlin"
-           :regex "fun\\s*(?:<[^>]*>)?\\s*JJJ\\s*\\("
+           :regex "fun\\s*(<[^>]*>)?\\s*JJJ\\s*\\("
            :tests ("fun test()" "fun <T> test()"))
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "kotlin"
-           :regex "(val|var)\\s*JJJ\b"
-           :tests ("val testval" "var testvar"))
+           :regex "(val|var)\\s*JJJ\\b"
+           :not ("val testval" "var testvar")
+           :tests ("val test " "var test"))
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "kotlin"
-           :regex "(class|interface)\\s*JJJ\b"
-           :tests ("class Test" "class Test : SomeInterface" "interface Test")))
+           :regex "(class|interface)\\s*JJJ\\b"
+           :tests ("class test" "class test : SomeInterface" "interface test")))
 
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
