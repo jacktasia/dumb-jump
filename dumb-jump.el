@@ -642,6 +642,18 @@ or most optimal searcher."
            :regex "(^|[^\\w.])alias\\s+(\\w*::)*JJJ($|[^\\w|:])"
            :tests ("alias test" "alias Foo::test"))
 
+    ;; scad
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "scad"
+           :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234 {"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scad"
+           :regex "function\\s*JJJ\\s*\\\("
+           :tests ("function test()" "function test ()"))
+
+    (:type "module" :supports ("ag" "grep" "rg" "git-grep") :language "scad"
+           :regex "module\\s*JJJ\\s*\\\("
+           :tests ("module test()" "module test ()"))
+
     ;; scala
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "scala"
            :regex "\\bval\\s*JJJ\\s*=[^=\\n]+" :tests ("val test = 1234") :not ("case test => 1234"))
@@ -1397,6 +1409,7 @@ or most optimal searcher."
     (:language "ruby" :ext "rake" :agtype "ruby" :rgtype nil)
     (:language "ruby" :ext "slim" :agtype "ruby" :rgtype nil)
     (:language "rust" :ext "rs" :agtype "rust" :rgtype "rust")
+    (:language "scad" :ext "scad" :agtype nil :rgtype nil)
     (:language "scala" :ext "scala" :agtype "scala" :rgtype "scala")
     (:language "scheme" :ext "scm" :agtype "scheme" :rgtype "lisp")
     (:language "scheme" :ext "ss" :agtype "scheme" :rgtype "lisp")
