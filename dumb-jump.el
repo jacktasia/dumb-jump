@@ -402,6 +402,17 @@ or most optimal searcher."
            :tests ("NSString *test = @\"asdf\"")
            :not ("NSString *testnot = @\"asdf\"" "NSString *nottest = @\"asdf\""))
 
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "objc"
+           :regex "(@interface|@protocol|@implementation)\\b\\s*JJJ\\b\\s*"
+           :tests ("@interface test: UIWindow")
+           :not ("@interface testnon: UIWindow"))
+
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "objc"
+           :regex "typedef\\b\\s+(NS_OPTIONS|NS_ENUM)\\b\\([^,]+?,\\s*JJJ\\b\\s*"
+           :tests ("typedef NS_ENUM(NSUInteger, test)")
+           :not ("typedef NS_ENUMD(NSUInteger, test)"))
+
     ;; swift
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
            :regex "(let|var)\\s*JJJ\\s*(=|:)[^=:\\n]+"
