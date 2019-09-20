@@ -51,6 +51,7 @@ There is currently basic support for the following languages:
 * Pascal
 * Perl
 * PHP
+* Protocol Buffers
 * Python
 * R
 * Ruby
