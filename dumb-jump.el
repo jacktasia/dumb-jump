@@ -1325,7 +1325,11 @@ or most optimal searcher."
     ;; protobuf
     (:type "message" :supports ("ag" "grep" "rg" "git-grep") :language "protobuf"
            :regex "message\\s+JJJ\\s*\\\{"
-           :tests ("message test{" "message test {")))
+           :tests ("message test{" "message test {"))
+
+    (:type "enum" :supports ("ag" "grep" "rg" "git-grep") :language "protobuf"
+           :regex "enum\\s+JJJ\\s*\\\{"
+           :tests ("enum test{" "enum test {")))
 
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
