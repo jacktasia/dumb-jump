@@ -2564,6 +2564,7 @@ searcher symbol."
   "Generate the ag response based on the needle LOOK-FOR in the directory PROJ."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'ag))
          (agtypes (dumb-jump-get-ag-type-by-language lang))
+         (lang-exts (dumb-jump-get-file-exts-by-language lang))
          (proj-dir (file-name-as-directory proj))
          ;; TODO: --search-zip always? in case the include is the in gz area like emacs lisp code.
          (cmd (concat dumb-jump-ag-cmd
@@ -2573,7 +2574,9 @@ searcher symbol."
                         "")
                       (when (not (s-blank? dumb-jump-ag-search-args))
                         (concat " " dumb-jump-ag-search-args))
-                      (s-join "" (--map (format " --%s" it) agtypes))))
+                      (if agtypes
+                          (s-join "" (--map (format " --%s" it) agtypes))
+                        (s-join "" (--map (format " -G '\\.%s$'" it) lang-exts)))))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
