@@ -854,6 +854,49 @@ or most optimal searcher."
            :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
            :tests ("test = function()"))
 
+    ;; typescript
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
+           :regex "(service|factory)\\\(['\"]JJJ['\"]" :tags ("angular")
+           :tests ("module.factory('test', [\"$rootScope\", function($rootScope) {"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
+           :regex "\\bJJJ\\s*[=:]\\s*\\\([^\\\)]*\\\)\\s+=>"
+           :tests ("const test = (foo) => " "test: (foo) => {" "  test: (foo) => {"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
+           :regex "\\bJJJ\\s*\\([^()]*\\)\\s*[{]"
+           :tests ("test(foo) {" "test (foo){" "test(foo){")
+           :not ("test = blah.then(function(){"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
+           :regex "class\\s*JJJ\\s*[\\\(\\\{]"
+           :tests ("class test{"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
+           :regex "class\\s*JJJ\\s+extends"
+           :tests ("class test extends Component{"))
+    
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
+           :regex "function\\s*JJJ\\s*\\\("
+           :tests ("function test()" "function test ()"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
+           :regex "\\bJJJ\\s*:\\s*function\\s*\\\("
+           :tests ("test: function()"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
+           :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
+           :tests ("test = function()"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
+           :regex "\\s*\\bJJJ\\s*=[^=\\n]+" :tests ("test = 1234" "const test = props =>") :not ("if (test === 1234)"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
+           :regex "\\bfunction\\b[^\\(]*\\\(\\s*[^\\)]*\\bJJJ\\b\\s*,?\\s*\\\)?"
+           :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah) {" "function(blah, test)")
+           :not ("function (testLen)" "function (test1, blah)" "function somefunc(testFirst, blah) {" "function(blah, testLast)"
+                 "function (Lentest)" "function (blahtest, blah)" "function somefunc(Firsttest, blah) {" "function(blah, Lasttest)"))
+    
     ;; julia
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
            :regex "(@noinline|@inline)?\\s*function\\s*JJJ(\\{[^\\}]*\\})?\\("
@@ -1404,6 +1447,9 @@ or most optimal searcher."
     (:language "javascript" :ext "vue" :agtype "js" :rgtype "js")
     (:language "javascript" :ext "html" :agtype "html" :rgtype "html")
     (:language "javascript" :ext "css" :agtype "css" :rgtype "css")
+    (:language "typescript" :ext "ts" :agtype "ts" :rgtype "ts")
+    (:language "typescript" :ext "tsx" :agtype "ts" :rgtype "ts")
+    (:language "typescript" :ext "vue" :agtype "ts" :rgtype "ts")
     (:language "dart" :ext "dart" :agtype nil :rgtype "dart")
     (:language "lua" :ext "lua" :agtype "lua" :rgtype "lua")
     ;; the extension "m" is also used by obj-c so must use matlab-mode
@@ -1491,6 +1537,7 @@ or most optimal searcher."
     (:language "javascript" :type "variable" :right "^)" :left "($")
     (:language "javascript" :type "variable" :right "^\\." :left nil)
     (:language "javascript" :type "variable" :right "^;" :left nil)
+    (:language "typescript" :type "function" :right "^(" :left nil)
     (:language "perl" :type "function" :right "^(" :left nil)
     (:language "elisp" :type "function" :right nil :left "($")
     (:language "elisp" :type "variable" :right "^)" :left nil)
@@ -2065,6 +2112,7 @@ current file."
     (:comment ";" :language "elisp")
     (:comment ";" :language "commonlisp")
     (:comment "//" :language "javascript")
+    (:comment "//" :language "typescript")
     (:comment "//" :language "dart")
     (:comment "--" :language "haskell")
     (:comment "--" :language "lua")
