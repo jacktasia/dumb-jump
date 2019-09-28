@@ -59,6 +59,7 @@ There is currently basic support for the following languages:
 * SQL
 * Swift
 * SystemVerilog
+* TypeScript
 * Vala
 * VHDL
 
