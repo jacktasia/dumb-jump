@@ -141,12 +141,13 @@ To learn more about how Dumb Jump picks a searcher see [this issue](https://gith
 
 ##### `use-package` example configuration.
 
-I personally no longer use the `dumb-jump-mode` keybindings that were inspired by IntelliJ's emacs bindings. I use `use-package` like so:
+I personally no longer use the `dumb-jump-mode` keybindings that were inspired by IntelliJ's emacs bindings. I use [use-package](https://github.com/jwiegley/use-package) like so:
 
 ```el
 (use-package dumb-jump
   :bind (("M-g o" . dumb-jump-go-other-window)
          ("M-g j" . dumb-jump-go)
+         ("M-g b" . dumb-jump-back)
          ("M-g i" . dumb-jump-go-prompt)
          ("M-g x" . dumb-jump-go-prefer-external)
          ("M-g z" . dumb-jump-go-prefer-external-other-window))
