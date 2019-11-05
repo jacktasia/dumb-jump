@@ -1481,6 +1481,7 @@ or most optimal searcher."
     (:language "r" :ext "Rrst" :agtype "r" :rgtype nil)
     (:language "crystal" :ext "cr" :agtype "crystal" :rgtype "crystal")
     (:language "crystal" :ext "ecr" :agtype "crystal" :rgtype nil)
+    (:language "racket" :ext "rkt" :agtype "scheme" :rgtype "lisp")
     (:language "ruby" :ext "rb" :agtype "ruby" :rgtype "ruby")
     (:language "ruby" :ext "erb" :agtype "ruby" :rgtype nil)
     (:language "ruby" :ext "haml" :agtype "ruby" :rgtype nil)
