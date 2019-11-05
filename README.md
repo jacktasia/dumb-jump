@@ -54,6 +54,7 @@ There is currently basic support for the following languages:
 * Protocol Buffers
 * Python
 * R
+* Racket
 * Ruby
 * Rust
 * SML
@@ -172,14 +173,14 @@ If you have [Hydra](https://github.com/abo-abo/hydra) installed, the following i
 ```
 
 It can be explicitly bound or used inside another hydra (if you already use something like [Avy](https://github.com/abo-abo/avy)/[Ace](https://github.com/winterTTr/ace-jump-mode) or similar for general "jumping").
-      
+
 #### Debugging a jump
 
 1. <kbd>M-x</kbd> `set-variable dumb-jump-debug t`
 1. try to jump
 1. go to buffer `*Messages*`
 
-More details [here](http://p.cweiske.de/506). Thanks to @cweiske and @Glumanda99 
+More details [here](http://p.cweiske.de/506). Thanks to @cweiske and @Glumanda99
 
 ## Why?
 
