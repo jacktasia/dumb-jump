@@ -257,7 +257,7 @@ func runErtTest(testName string) string {
 	out, err := exec.Command(cmd, args...).Output()
 
 	if err != nil {
-		fmt.Println("~~~~ ERRROR", testName, err, "--", string(out))
+		fmt.Println("~~~~ ERROR", testName, err, "--", string(out))
 	}
 
 	return string(out)

@@ -1625,7 +1625,7 @@ a symbol then it's probably a function call"
 
 (defcustom dumb-jump-aggressive
   nil
-  "If `t` jump aggressively with the possiblity of a false positive.
+  "If `t` jump aggressively with the possibility of a false positive.
 If `nil` always show list of more than 1 match."
   :group 'dumb-jump
   :type 'boolean)
@@ -2025,8 +2025,8 @@ to keep looking for another root."
   "Return a list of results based on current file context and calling grep/ag.
 CUR-FILE is the path of the current buffer.
 PROJ-ROOT is that file's root project directory.
-LANG is a string programming langage with CONFIG a property list
-of project configuraiton."
+LANG is a string programming language with CONFIG a property list
+of project configuration."
   (let* ((cur-line (if prompt 0 (dumb-jump-get-point-line)))
          (look-for-start (when (not prompt)
                            (- (car (bounds-of-thing-at-point 'symbol))
