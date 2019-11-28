@@ -1,6 +1,7 @@
-;;; dumb-jump.el --- jump to definition for 40+ languages without configuration. -*- lexical-binding: t; -*-
+;;; dumb-jump.el --- Jump to definition for 40+ languages without configuration -*- lexical-binding: t; -*-
 ;; Copyright (C) 2015-2019 jack angers
 ;; Author: jack angers and contributors
+;; Url: https://github.com/jacktasia/dumb-jump
 ;; Version: 0.5.3
 ;; Package-Requires: ((emacs "24.3") (f "0.20.0") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
@@ -979,8 +980,7 @@ or most optimal searcher."
                    "test unwrap wrap nr@Naoeu {..} (Action action, specSpecs) = \n    undefined")
            :not ("nottest n = n * 2"
                  "let testnot x y = x * y" "test $ y z" "let test a o = mda"
-                 "test :: Sometype -> AnotherType aoeu kek = undefined"
-                 ))
+                 "test :: Sometype -> AnotherType aoeu kek = undefined"))
 
     (:type "type-like" :supports ("ag") :language "haskell"
            :regex "^\\s*((data(\\s+family)?)|(newtype)|(type(\\s+family)?))\\s+JJJ\\s+"
@@ -997,8 +997,7 @@ or most optimal searcher."
            :regex "(data|newtype)\\s{1,3}(?!JJJ\\s+)([^=]{1,40})=((\\s{0,3}JJJ\\s+)|([^=]{0,500}?((?<!(-- ))\\|\\s{0,3}JJJ\\s+)))"
            :tests ("data Something a = Test { b :: Kek }"
                    "data Mem a = TrueMem { b :: Kek } | Test (Mem Int) deriving Mda"
-                   "newtype SafeTest a = Test (Kek a) deriving (YonedaEmbedding)"
-                   )
+                   "newtype SafeTest a = Test (Kek a) deriving (YonedaEmbedding)")
            :not ("data Test = Test { b :: Kek }"))
 
 
@@ -1013,8 +1012,7 @@ or most optimal searcher."
                    "newtype Mem = Mem { -- | Some docs \n test :: Kek -- ^ More docs } deriving Eq"
                    "newtype Mem = Mem { test :: Kek } deriving (Eq,Monad)"
                    "newtype NewMem = OldMem { test :: [Tx] }"
-                   "newtype BlockHeaderList ssc = BHL\n { test :: ([Aoeu a], [Ssss])\n    } deriving (Eq)"
-                   )
+                   "newtype BlockHeaderList ssc = BHL\n { test :: ([Aoeu a], [Ssss])\n    } deriving (Eq)")
            :not ("data Heh = Mda { sometest :: Kek, testsome :: Mem }"))
 
     (:type "typeclass" :supports ("ag") :language "haskell"
