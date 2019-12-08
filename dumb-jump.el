@@ -1985,10 +1985,10 @@ for user to select.  Filters PROJ path from files for display."
       (funcall dumb-jump-ivy-jump-to-selected-function results choices proj))
      ((and (eq dumb-jump-selector 'helm) (fboundp 'helm))
       (helm :sources
-            (helm-build-sync-source "Jump to: "
-                                    :action '(("Jump to match" . dumb-jump-result-follow))
-                                    :candidates (-zip choices results)
-                                    :persistent-action 'dumb-jump-helm-persist-action)
+            (helm-make-source "Jump to: " 'helm-source-sync
+                :action '(("Jump to match" . dumb-jump-result-follow))
+                :candidates (-zip choices results)
+                :persistent-action 'dumb-jump-helm-persist-action)
             :buffer "*helm dumb jump choices*"))
      (t
       (dumb-jump-to-selected results choices (popup-menu* choices))))))
