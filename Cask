@@ -6,5 +6,6 @@
 (development
  (depends-on "el-mock")
  (depends-on "noflet")
+ (depends-on "helm")
  (depends-on "ert-runner")
  (depends-on "undercover"))
