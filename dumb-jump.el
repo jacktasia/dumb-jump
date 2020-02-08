@@ -1450,6 +1450,7 @@ or most optimal searcher."
     (:language "ocaml" :ext "mli" :agtype "ocaml" :rgtype "ocaml")
     (:language "ocaml" :ext "mll" :agtype "ocaml" :rgtype "ocaml")
     (:language "ocaml" :ext "mly" :agtype "ocaml" :rgtype "ocaml")
+    ;; groovy is nil type because jenkinsfile is not in searcher type lists
     (:language "groovy" :ext "gradle" :agtype nil :rgtype nil)
     (:language "groovy" :ext "groovy" :agtype nil :rgtype nil)
     (:language "groovy" :ext "jenkinsfile" :agtype nil :rgtype nil)
@@ -2671,7 +2672,10 @@ searcher symbol."
                         (concat " " dumb-jump-ag-search-args))
                       (if agtypes
                           (s-join "" (--map (format " --%s" it) agtypes))
-                        (s-join "" (--map (format " -G '\\.%s$'" it) lang-exts)))))
+                        ;; there can only be one `-G` arg
+                        (concat " -G '("
+                                (s-join "|" (--map (format "\\.%s" it) lang-exts))
+                                ")$'"))))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
