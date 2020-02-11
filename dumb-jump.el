@@ -1580,6 +1580,8 @@ or most optimal searcher."
     (:language "javascript" :type "variable" :right "^;" :left nil)
     (:language "typescript" :type "function" :right "^(" :left nil)
     (:language "perl" :type "function" :right "^(" :left nil)
+    (:language "php" :type "function" :right "^(" :left nil)
+    (:language "php" :type "class" :right nil :left "new\s+")
     (:language "elisp" :type "function" :right nil :left "($")
     (:language "elisp" :type "variable" :right "^)" :left nil)
     (:language "scheme" :type "function" :right nil :left "($")
