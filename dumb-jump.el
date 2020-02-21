@@ -2131,11 +2131,11 @@ current file."
          (issue (plist-get info :issue))
          (lang (plist-get info :lang))
          (result-count (length results)))
-    (cond
-     ((> fetch-time dumb-jump-max-find-time)
+    (when (> fetch-time dumb-jump-max-find-time)
       (dumb-jump-message
        "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
        (number-to-string dumb-jump-max-find-time) look-for proj-root))
+    (cond
      ((eq issue 'nogrep)
       (dumb-jump-message "Please install ag, rg, git grep or grep!"))
      ((eq issue 'nosymbol)
