@@ -715,9 +715,10 @@
       (goto-char (point-min))
       (noflet ((dumb-jump-fetch-file-results (&optional prompt)
                  (sleep-for 0 300)
-                 '()))
+                 '(:results (:result))))
         (with-mock
           (mock (dumb-jump-message "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions" * * *))
+          (mock (dumb-jump-result-follow * * *))
           (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-message-handle-results-test ()
