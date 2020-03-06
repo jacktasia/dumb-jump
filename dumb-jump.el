@@ -1929,7 +1929,7 @@ to keep looking for another root."
 
 (defun dumb-jump-get-language-from-mode ()
   "Extract the language from the 'major-mode' name.  Currently just everything before '-mode'."
-  (let* ((lookup '(sh "shell" cperl "perl" matlab "matlab"))
+  (let* ((lookup '(sh "shell" cperl "perl" matlab "matlab" octave "matlab"))
         (m (dumb-jump-get-mode-base-name))
         (result (plist-get lookup (intern m))))
     result))
