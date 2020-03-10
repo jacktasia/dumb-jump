@@ -896,6 +896,18 @@ or most optimal searcher."
            :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
            :tests ("test = function()"))
 
+    ;; hcl terraform
+    (:type "block" :supports ("ag" "grep" "rg" "git-grep") :language "hcl"
+           :regex "(variable|output|module)\\s*\"JJJ\"\\s*\\\{"
+           :tests ("variable \"image_id\" {"
+                   "output \"instance_id\" {"
+                   "module \"servicehost_group\" {"))
+
+    (:type "block" :supports ("ag" "grep" "rg" "git-grep") :language "hcl"
+           :regex "(data|resource)\\s*\"\\w+\"\\s*\"JJJ\"\\s*\\\{"
+           :tests ("data \"openstack_images_image_v2\" \"my_image\" {"
+                   "resource \"google_compute_instance\" \"project_2_vm\" {"))
+
     ;; typescript
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
            :regex "(service|factory)\\\(['\"]JJJ['\"]" :tags ("angular")
@@ -1561,7 +1573,9 @@ or most optimal searcher."
     (:language "fsharp" :ext "fsx" :agtype "fsharp" :rgtype nil)
     (:language "kotlin" :ext "kt" :agtype "kotlin" :rgtype "kotlin")
     (:language "kotlin" :ext "kts" :agtype "kotlin" :rgtype "kotlin")
-    (:language "protobuf" :ext "proto" :agtype "proto" :rgtype "protobuf"))
+    (:language "protobuf" :ext "proto" :agtype "proto" :rgtype "protobuf")
+    (:language "hcl" :ext "tf" :agtype "terraform" :rgtype "tf")
+    (:language "hcl" :ext "tfvars" :agtype "terraform" :rgtype nil))
 
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
@@ -2195,7 +2209,8 @@ current file."
     (:comment "--" :language "vhdl")
     (:comment "//" :language "scss")
     (:comment "//" :language "pascal")
-    (:comment "//" :language "protobuf"))
+    (:comment "//" :language "protobuf")
+    (:comment "#" :language "hcl"))
   "List of one-line comments organized by language."
   :group 'dumb-jump
   :type
