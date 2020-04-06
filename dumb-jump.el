@@ -899,14 +899,14 @@ or most optimal searcher."
     ;; hcl terraform
     (:type "block" :supports ("ag" "grep" "rg" "git-grep") :language "hcl"
            :regex "(variable|output|module)\\s*\"JJJ\"\\s*\\\{"
-           :tests ("variable \"image_id\" {"
-                   "output \"instance_id\" {"
-                   "module \"servicehost_group\" {"))
+           :tests ("variable \"test\" {"
+                   "output \"test\" {"
+                   "module \"test\" {"))
 
     (:type "block" :supports ("ag" "grep" "rg" "git-grep") :language "hcl"
            :regex "(data|resource)\\s*\"\\w+\"\\s*\"JJJ\"\\s*\\\{"
-           :tests ("data \"openstack_images_image_v2\" \"my_image\" {"
-                   "resource \"google_compute_instance\" \"project_2_vm\" {"))
+           :tests ("data \"openstack_images_image_v2\" \"test\" {"
+                   "resource \"google_compute_instance\" \"test\" {"))
 
     ;; typescript
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
