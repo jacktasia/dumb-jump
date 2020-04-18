@@ -2648,7 +2648,7 @@ filtering the raw data, and then passing it on to
                 (and (file-equal-p (dumb-jump-target-path left)
                                    (oref searcher current-file))
                      (not (file-equal-p (dumb-jump-target-path right)
-                                        (oref searcher current-line)))))
+                                        (oref searcher current-file)))))
               (prefer-local (right left)
                 (prefer-external left right)))
     ;; by default, all matches within a file should be sorted by their
