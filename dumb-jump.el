@@ -466,7 +466,7 @@ or most optimal searcher."
            :not ("func testnot(asdf)" "func testnot()"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
-           :regex "(class|struct)\\s*JJJ\\b\\s*?"
+           :regex "(class|struct|protocol)\\s*JJJ\\b\\s*?"
            :tests ("class test:" "class test: UIWindow")
            :not ("class testnot:" "class testnot(object):"))
 
