@@ -1994,7 +1994,7 @@ binary name.")
                  (when (and (not (delq (setq type (car res)) res))
                             type)
                    (push (list :type type) query)))))
-        (oset searcher regexps
+        (setf (oref searcher regexps)
               (or (dumb-jump-table-query-1 dumb-jump-find-rules
                                            query :regex)
                   (and dumb-jump-fallback-search
@@ -2027,7 +2027,8 @@ and then concatenated into a single string."
   "Check if ag is installed."
   (with-temp-buffer
     (shell-command (concat dumb-jump-ag-cmd " --version") t)
-    (oset searcher found-ag-p (and (search-forward "ag version" nil t) t))))
+    (setf (oref searcher found-ag-p)
+          (and (search-forward "ag version" nil t) t))))
 
 (cl-defmethod dumb-jump-check-usable ((searcher dumb-jump-ag))
   "Check if ag is installed."
@@ -2132,7 +2133,7 @@ and then concatenated into a single string."
   "Check if git grep is installed."
   (with-temp-buffer
     (shell-command (concat dumb-jump-git-cmd " grep") t)
-    (oset searcher found-git-grep-p
+    (setf (oref searcher found-git-grep-p)
           (and (search-forward "fatal: no pattern given" nil t) t))))
 
 (cl-defmethod dumb-jump-check-usable ((searcher dumb-jump-git-grep))
@@ -2193,9 +2194,8 @@ and then concatenated into a single string."
                                    (oref searcher root))
                  (oref searcher root))
                 files)))
-      (oset searcher ag-query (mapconcat #'identity
-                                         `("(" ,@files ")")
-                                         "|")))))
+      (setf (oref searcher ag-query)
+            (mapconcat #'identity `("(" ,@files ")") "|")))))
 
 
 ;;; General Grep Implementation
@@ -2209,9 +2209,9 @@ and then concatenated into a single string."
   (with-temp-buffer
     (shell-command (concat dumb-jump-grep-cmd " --version") t)
     (cond ((search-forward "GNU grep" nil t)
-           (oset searcher version 'gnu))
+           (setf (oref searcher version) 'gnu))
           ((search-forward-regexp "[0-9]+\\.[0-9]+" nil t)
-           (oset searcher version 'bsd))
+           (setf (oref searcher version) 'bsd))
           (t nil))))
 
 (cl-defmethod dumb-jump-parse-response ((searcher dumb-jump-grep))
@@ -2451,16 +2451,18 @@ project directory."
                    (push (expand-file-name (match-string 1) local-root)
                          exclude)))
             (forward-line)))))
-    (oset searcher language lang)
-    (oset searcher excludes (delete-dups exclude))
-    (oset searcher includes (delete-dups (cons (oref searcher root)
-                                               include)))
+    (setf (oref searcher language) lang
+          (oref searcher excludes) (delete-dups exclude)
+          (oref searcher includes)
+          (delete-dups (cons (oref searcher root)
+                             include)) )
     (let ((syntax (assq lang dumb-jump-comments-alist)))
       (when syntax
-        (oset searcher comment-syntax (regexp-quote (cdr syntax)))))
+        (setf (oref searcher comment-syntax)
+              (regexp-quote (cdr syntax)))))
     (let* ((symbol (oref searcher search))
            (search (dumb-jump-process-symbol symbol lang)))
-      (oset searcher search search))))
+      (setf (oref searcher search) search))))
 
 
 ;;; Query Constructor
@@ -2474,9 +2476,9 @@ project directory."
                                 (regexp-quote search)
                                 "\\(.*?\\)$"))
         (unless (string= (match-string 1) "")
-          (oset searcher left-context (match-string 1)))
+          (setf (oref searcher left-context) (match-string 1)))
         (unless (string= (match-string 2) "")
-          (oset searcher right-context (match-string 2)))))))
+          (setf (oref searcher right-context) (match-string 2)))))))
 
 (defun dumb-jump-pick-searcher (prompt)
   "Initialise and return a searcher.
@@ -2519,7 +2521,8 @@ Any value besides \"finished\" for EVENT is an error."
                        (= (point-min) (point-max)))
                      (not (equal (list dumb-jump-fallback-regex)
                                  (oref searcher regexps))))
-                (oset searcher regexps (list dumb-jump-fallback-regex))
+                (setf (oref searcher regexps)
+                      (list dumb-jump-fallback-regex))
                 (dumb-jump-query searcher))
                ((string= event "finished\n")
                 (with-current-buffer (process-buffer proc)
