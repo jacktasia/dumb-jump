@@ -12,6 +12,7 @@
 
 (setq test-data-dir (f-expand "./test/data"))
 (setq test-data-dir-elisp (f-join test-data-dir "proj2-elisp"))
+(setq test-data-dir-php (f-join test-data-dir "proj4-php"))
 (setq test-data-dir-proj1 (f-join test-data-dir "proj1"))
 (setq test-data-dir-proj3 (f-join test-data-dir "proj3-clj"))
 (setq test-data-dir-multiproj (f-join test-data-dir "multiproj"))
@@ -1359,5 +1360,27 @@
   (with-mock
    (mock (shell-command-to-string "git grep --full-name -F -c symbol path") => "fileA:1\nfileB:2\n")
    (should (string= (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg "symbol" "path") "'(path/fileA|path/fileB)'"))))
+
+(ert-deftest dumb-jump-php-method-static ()
+  (let ((buffer-file (f-join test-data-dir-php "buffer.php"))
+        (target-file (f-join test-data-dir-php "User.php")))
+    (with-current-buffer (find-file-noselect buffer-file t)
+      (goto-char (point-min))
+      (forward-line 5)
+      (forward-char 8);;User::cr_eate()
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 19 27))
+       (should (string= target-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-php-method-normal ()
+  (let ((buffer-file (f-join test-data-dir-php "buffer.php"))
+        (target-file (f-join test-data-dir-php "User.php")))
+    (with-current-buffer (find-file-noselect buffer-file t)
+      (goto-char (point-min))
+      (forward-line 8)
+      (forward-char 10);;$user->get_Self()
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 29 20))
+       (should (string= target-file (dumb-jump-go)))))))
 
 ;;;
