@@ -68,15 +68,6 @@
   (let* ((config (dumb-jump-read-config test-data-dir-proj1 ".dumbjump-lang")))
     (should (string= "python" (plist-get config :language)))))
 
-(ert-deftest dumb-jump-read-config-remote-test ()
-  (with-mock
-    (mock (f-read-text *) => "-exclude_path1\n+include_path1\n-exclude_path2\n+../include_path2\n+/usr/lib/include_path3")
-    (let ((result (dumb-jump-read-config "/ssh:1.2.3.4:/usr/blah" "dummy-config"))
-          (exclude-paths '("/usr/blah/exclude_path1" "/usr/blah/exclude_path2"))
-          (include-paths '("/usr/blah/include_path1" "/usr/include_path2" "/usr/lib/include_path3")))
-      (should (equal (plist-get result :exclude) exclude-paths))
-      (should (equal (plist-get result :include) include-paths)))))
-
 (ert-deftest dumb-jump-language-to-ext-test ()
   (should (-contains? (dumb-jump-get-file-exts-by-language "elisp") "el")))
 

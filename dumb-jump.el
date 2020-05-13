@@ -3,7 +3,7 @@
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/jacktasia/dumb-jump
 ;; Version: 0.5.3
-;; Package-Requires: ((emacs "24.3") (f "0.20.0") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
+;; Package-Requires: ((emacs "24.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
 ;; Dumb Jump is free software; you can redistribute it and/or modify it
@@ -28,7 +28,6 @@
 
 ;;; Code:
 (require 'etags)
-(require 'f)
 (require 's)
 (require 'dash)
 (require 'popup)
@@ -1912,7 +1911,7 @@ for user to select.  Filters PROJ path from files for display."
   "Keep looking at the parent dir of FILEPATH until a denoter file/dir is found."
   (s-chop-suffix
    "/"
-   (f-expand
+   (expand-file-name
     (or
      dumb-jump-project
      (locate-dominating-file filepath #'dumb-jump-get-config)
@@ -1922,10 +1921,10 @@ for user to select.  Filters PROJ path from files for display."
   "If a project denoter is in DIR then return it, otherwise
 nil. However, if DIR contains a `.dumbjumpignore' it returns nil
 to keep looking for another root."
-  (if (f-exists? (f-join dir ".dumbjumpignore"))
+  (if (file-exists-p (expand-file-name ".dumbjumpignore" dir))
       nil
     (car (--filter
-          (f-exists? (f-join dir it))
+          (file-exists-p (expand-file-name it dir))
           dumb-jump-project-denoters))))
 
 (defun dumb-jump-get-language (file)
@@ -1938,7 +1937,7 @@ to keep looking for another root."
                        (dumb-jump-get-mode-base-name))))
     (if (member language languages)
       language
-      (format ".%s file" (or (f-ext file) "")))))
+      (format ".%s file" (or (file-name-extension file) "")))))
 
 (defun dumb-jump-get-mode-base-name ()
   "Get the base name of the mode."
@@ -1955,7 +1954,7 @@ to keep looking for another root."
 (defun dumb-jump-get-language-by-filename (file)
   "Get the programming language from the FILE."
   (let* ((filename (if (s-ends-with? ".gz" file)
-                       (f-no-ext file)
+                       (file-name-sans-extension file)
                      file))
          (result (--filter
                   (s-ends-with? (concat "." (plist-get it :ext)) filename)
@@ -2334,31 +2333,26 @@ PREFER-EXTERNAL will sort current file last."
 (defun dumb-jump-read-config (root config-file)
   "Load and return options (exclusions, inclusions, etc).
 Ffrom the ROOT project CONFIG-FILE."
-  (let* ((contents (f-read-text (f-join root config-file)))
-         (lines (s-split "\n" contents))
-         (lang-match (s-match "^language \\\(.+\\\)$" contents))
-         (lang (when (= (length lang-match) 2) (nth 1 lang-match)))
-         (exclude-lines (--filter (s-starts-with? "-" it) lines))
-         (include-lines (--filter (s-starts-with? "+" it) lines))
-         (local-root (if (file-remote-p root)
-                        (tramp-file-name-localname (tramp-dissect-file-name root))
-                      root))
-         (exclude-paths (-map (lambda (f)
-                                 (let* ((dir (substring f 1))
-                                       (use-dir (if (s-starts-with? "/" dir)
-                                                    (substring dir 1)
-                                                    dir)))
-                                   (f-join local-root use-dir)))
-                               exclude-lines))
-         (include-paths (-map (lambda (f)
-                                (let* ((dir (substring f 1)))
-                                  (if (s-starts-with? "/" dir)
-                                      dir ;; absolute paths are allowed
-                                    ;; TODO: warn if an include path is already a child of proj-root
-                                    (f-join local-root dir))))
-                              include-lines)))
-
-    `(:exclude ,exclude-paths :include ,include-paths :language ,lang)))
+  (with-temp-buffer
+    (insert-file-contents (expand-file-name config-file root))
+    (let ((local-root (if (file-remote-p root)
+                          (tramp-file-name-localname
+                           (tramp-dissect-file-name root))
+                        root))
+          include exclude lang)
+      (while (not (eobp))
+        (cond ((looking-at "^language \\\(.+\\\)")
+               (setq lang (match-string 1)))
+              ((looking-at "^\\+\\(.+\\)")
+               (push (expand-file-name (match-string 1) local-root)
+                     include))
+              ((looking-at "^-/?\\(.+\\)")
+               (push (expand-file-name (match-string 1) local-root)
+                     exclude)))
+        (forward-line))
+      (list :exclude (nreverse exclude)
+            :include (nreverse include)
+            :language lang))))
 
 (defun dumb-jump-file-modified-p (path)
   "Check if PATH is currently open in Emacs and has a modified buffer."
@@ -2366,9 +2360,9 @@ Ffrom the ROOT project CONFIG-FILE."
          (--filter
           (and (buffer-modified-p it)
                (buffer-file-name it)
-               (file-exists-p (buffer-file-name it)))
-          (buffer-list))))
-    (member (f-full path) (--map (buffer-file-name it) modified-file-buffers))))
+               (file-exists-p (buffer-file-name it))
+               (file-equal-p (buffer-file-name it) path))
+          (buffer-list))))))
 
 (defun dumb-jump-result-follow (result &optional use-tooltip proj)
   "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump.  If dumb-jump-confirm-jump-to-modified-file is t, prompt if we should continue if destination has been modified.  If it is nil, display a warning."
@@ -2401,7 +2395,7 @@ Ffrom the ROOT project CONFIG-FILE."
          ;; If result-path is an absolute path, the prefix is added to the head of it,
          ;; or result-path is added to the end of default-directory
          (path-for-tramp (when (and result-path tramp-path-prefix)
-                           (if (f-absolute? result-path)
+                           (if (file-name-absolute-p result-path)
                                (concat tramp-path-prefix result-path)
                              (concat default-directory result-path))))
 
@@ -2485,7 +2479,7 @@ searcher symbol."
    ;; If project root has a .git then use git-grep if installed.
    ((and proj-root
          (dumb-jump-git-grep-installed?)
-         (f-exists? (f-join proj-root ".git")))
+         (file-exists-p (expand-file-name ".git" proj-root)))
     (dumb-jump-generators-by-searcher 'git-grep))
 
    ;; If `dumb-jump-prefer-searcher' is not nil then use if installed.
@@ -2555,22 +2549,30 @@ searcher symbol."
 
     (cond
      ;; fixes rare bug where context is blank  but file is defined "/somepath/file.txt:14:"
-     ;; OR: (and (= (length parts) 1) (f-exists? (f-join (nth 0 parts))))
+     ;; OR: (and (= (length parts) 1) (file-name-exists (nth 0 parts)))
      ((s-match ":[0-9]+:$" resp-line)
       nil)
      ((and parts line-num-raw)
       (if (= (length parts) 2)
-          (list (f-join (nth 0 parts)) (nth 1 line-num-raw) (nth 1 parts))
+          (list (let ((path (expand-file-name (nth 0 parts))))
+		  (if (file-name-absolute-p (nth 0 parts))
+		      path
+		    (file-relative-name path)))
+		(nth 1 line-num-raw) (nth 1 parts))
                                         ; this case is when they are searching a particular file...
-        (list (f-join cur-file) (nth 1 line-num-raw) (nth 0 parts)))))))
+        (list (let ((path (expand-file-name cur-file)))
+		  (if (file-name-absolute-p cur-file)
+		      path
+		    (file-relative-name path)))
+	      (nth 1 line-num-raw) (nth 0 parts)))))))
 
 (defun dumb-jump-parse-response-lines (parsed cur-file cur-line-num)
   "Turn PARSED response lines into a list of property lists.  Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
   (let* ((records (--mapcat (when it
-                             (let* ((line-num (string-to-number (nth 1 it)))
-                                    (diff (- cur-line-num line-num)))
-                               (list `(:path ,(nth 0 it) :line ,line-num :context ,(nth 2 it) :diff ,diff))))
-                   parsed))
+                              (let* ((line-num (string-to-number (nth 1 it)))
+                                     (diff (- cur-line-num line-num)))
+                                (list `(:path ,(nth 0 it) :line ,line-num :context ,(nth 2 it) :diff ,diff))))
+                            parsed))
          (results (-non-nil records)))
     (--filter
      (not (and
@@ -2713,7 +2715,9 @@ searcher symbol."
 
 (defun dumb-jump-format-files-as-ag-arg (files proj-root)
   "Take a list of FILES and their PROJ-ROOT and return a `ag -G` argument."
-  (format "'(%s)'" (s-join "|" (--map (f-join proj-root it) files))))
+  (format "'(%s)'" (s-join "|" (--map (file-relative-name
+				       (expand-file-name it proj-root))
+				      files))))
 
 (defun dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg (symbol proj-root)
   "Get the files matching the SYMBOL via `git grep` in the PROJ-ROOT and return them formatted for `ag -G`."
@@ -2762,7 +2766,7 @@ Using ag to search only the files found via git-grep literal symbol search."
 (defun dumb-jump-generate-git-grep-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the git grep response based on the needle LOOK-FOR in the directory PROJ."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'git-grep))
-         (ggtypes (when (f-ext cur-file) (dumb-jump-get-git-grep-type-by-language lang)))
+         (ggtypes (when (file-name-extension cur-file) (dumb-jump-get-git-grep-type-by-language lang)))
          (cmd (concat dumb-jump-git-grep-cmd
                       " --color=never --line-number"
                       (when dumb-jump-git-grep-search-untracked
