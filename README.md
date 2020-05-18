@@ -125,6 +125,7 @@ If you want to stop a directory from registering as the project root (and have D
 * `(setq dumb-jump-confirm-jump-to-modified-file nil)` to avoid being prompted for confirmation if you attempt to jump to a file that has been modified and not saved.  This defaults to `t` because jumping to modified files results in you jumping to a location that may no longer be current.
 * To support more languages and/or definition types customize `dumb-jump-find-rules` variable.
 * `(add-hook 'dumb-jump-after-jump-hook 'some-function)` to execute code after you jump
+* `(add-hook 'dumb-jump-before-jump-hook 'some-function)` to execute code before you jump
 * `(setq dumb-jump-selector 'ivy)` to use [ivy](https://github.com/abo-abo/swiper#ivy) instead of the default popup for multiple options.
 * `(setq dumb-jump-selector 'helm)` to use [helm](https://github.com/emacs-helm/helm) instead of the default popup for multiple options.
 * `(setq dumb-jump-force-searcher 'rg)` to force the search program Dumb Jump should use. It will _always_ use this searcher. If not set (`nil`) Dumb Jump will use `git-grep` if it's a git project and if not will try searchers in the following order `ag`, `rg`, `grep` (first installed wins). This is necessary if you want full control over the searcher Dumb Jump uses.

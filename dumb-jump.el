@@ -1633,6 +1633,12 @@ a symbol then it's probably a function call"
   :group 'dumb-jump
   :type 'string)
 
+(defcustom dumb-jump-before-jump-hook nil
+  "Hooks called before jumping."
+  :type 'hook
+  :group 'dumb-jump
+  :type 'hook)
+
 (defcustom dumb-jump-after-jump-hook nil
   "Hooks called after jumping."
   :type 'hook
@@ -2087,6 +2093,8 @@ of project configuration."
 (defun dumb-jump-back ()
   "Jump back to where the last jump was done."
   (interactive)
+  (with-demoted-errors "Error running `dumb-jump-before-jump-hook': %S"
+    (run-hooks 'dumb-jump-before-jump-hook))
   (pop-tag-mark)
   (with-demoted-errors "Error running `dumb-jump-after-jump-hook': %S"
     (run-hooks 'dumb-jump-after-jump-hook)))
@@ -2414,6 +2422,9 @@ Ffrom the ROOT project CONFIG-FILE."
   (if (fboundp 'xref-push-marker-stack)
       (xref-push-marker-stack)
    (ring-insert find-tag-marker-ring (point-marker)))
+
+  (with-demoted-errors "Error running `dumb-jump-before-jump-hook': %S"
+    (run-hooks 'dumb-jump-before-jump-hook))
 
   (let* ((visible-buffer (find-buffer-visiting thefile))
          (visible-window (when visible-buffer (get-buffer-window visible-buffer))))
