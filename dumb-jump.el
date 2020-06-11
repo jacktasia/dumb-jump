@@ -27,11 +27,12 @@
 ;; `ag` or ripgrep `rg` installed.  Dumb Jump requires at least GNU Emacs 24.3.
 
 ;;; Code:
-(require 'xref)
+(unless (require 'xref nil :noerror)
+  (require 'etags))
 (require 's)
 (require 'dash)
 (require 'popup)
-(require 'cl-generic)
+(require 'cl-generic nil :noerror)
 
 (defgroup dumb-jump nil
   "Easily jump to project function and variable definitions"
@@ -2884,29 +2885,30 @@ Using ag to search only the files found via git-grep literal symbol search."
 
 
 ;;; Xref Backend
-(cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump)) prompt)
-  (let* ((info (dumb-jump-get-results prompt))
-         (results (plist-get info :results))
-         (look-for (or prompt (plist-get info :symbol)))
-         (proj-root (plist-get info :root))
-         (issue (plist-get info :issue))
-         (lang (plist-get info :lang)))
-    (cond ((eq issue 'nogrep)
-           (dumb-jump-message "Please install ag, rg, git grep or grep!"))
-          ((eq issue 'nosymbol)
-           (dumb-jump-message "No symbol under point."))
-          ((s-ends-with? " file" lang)
-           (dumb-jump-message "Could not find rules for '%s'." lang))
-          ((= (length results) 0)
-           (dumb-jump-message "'%s' %s %s declaration not found." look-for (if (s-blank? lang) "with unknown language so" lang) (plist-get info :ctx-type)))
-          (t (mapcar (lambda (res)
-                       (xref-make
-                        (plist-get res :context)
-                        (xref-make-file-location
-                         (plist-get res :path)
-                         (plist-get res :line)
-                         0)))
-                     results)))))
+(when (featurep 'xref)
+  (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump)) prompt)
+    (let* ((info (dumb-jump-get-results prompt))
+           (results (plist-get info :results))
+           (look-for (or prompt (plist-get info :symbol)))
+           (proj-root (plist-get info :root))
+           (issue (plist-get info :issue))
+           (lang (plist-get info :lang)))
+      (cond ((eq issue 'nogrep)
+             (dumb-jump-message "Please install ag, rg, git grep or grep!"))
+            ((eq issue 'nosymbol)
+             (dumb-jump-message "No symbol under point."))
+            ((s-ends-with? " file" lang)
+             (dumb-jump-message "Could not find rules for '%s'." lang))
+            ((= (length results) 0)
+             (dumb-jump-message "'%s' %s %s declaration not found." look-for (if (s-blank? lang) "with unknown language so" lang) (plist-get info :ctx-type)))
+            (t (mapcar (lambda (res)
+			 (xref-make
+                          (plist-get res :context)
+                          (xref-make-file-location
+                           (plist-get res :path)
+                           (plist-get res :line)
+                           0)))
+                       results))))))
 
 ;;;###autoload
 (defun dumb-jump-xref-activate ()
