@@ -2064,9 +2064,10 @@ of project configuration."
                    (dumb-jump-read-config proj-root proj-config)))
          (found-symbol (or prompt (dumb-jump-get-point-symbol)))
          (look-for (or prompt (dumb-jump-process-symbol-by-lang lang found-symbol)))
-         (pt-ctx (if (and (not prompt) (not (string= cur-line look-for)))
-                     (dumb-jump-get-point-context cur-line look-for look-for-start)
-                   nil))
+         (pt-ctx (or (and prompt (get-text-property 0 :dumb-jump-ctx prompt))
+		     (if (and (not prompt) (not (string= cur-line look-for)))
+			 (dumb-jump-get-point-context cur-line look-for look-for-start)
+                       nil)))
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
 
@@ -2256,6 +2257,32 @@ CTX-TYPE is a string of the current context.
 LOOK-FOR is the symbol we're jumping for.
 USE-TOOLTIP shows a preview instead of jumping.
 PREFER-EXTERNAL will sort current file last."
+  (let* ((processed (dumb-jump-process-results results cur-file proj-root ctx-type look-for use-tooltip prefer-external))
+	 (results (plist-get processed :results))
+	 (do-var-jump (plist-get processed :do-var-jump))
+	 (var-to-jump (plist-get processed :var-to-jump))
+	 (match-cur-file-front (plist-get processed :match-cur-file-front)))
+    (when dumb-jump-debug
+      (dumb-jump-message
+       "-----\nDUMB JUMP DEBUG `dumb-jump-handle-results` START\n----- \n\nlook for: \n\t%s\n\ntype: \n\t%s \n\njump? \n\t%s \n\nmatches: \n\t%s \n\nresults: \n\t%s \n\nprefer external: \n\t%s\n\nmatch-cur-file-front: \n\t%s\n\nproj-root: \n\t%s\n\ncur-file: \n\t%s\n\nreal-cur-file: \n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-handle-results` END\n-----\n"
+       look-for ctx-type var-to-jump (pp-to-string match-cur-file-front) (pp-to-string results) prefer-external match-cur-file-front proj-root cur-file rel-cur-file))
+    (cond
+     (use-tooltip ;; quick-look mode
+      (popup-menu* (--map (dumb-jump--format-result proj-root it) results)))
+     (do-var-jump
+      (dumb-jump-result-follow var-to-jump use-tooltip proj-root))
+     (t
+      (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front)))))
+
+(defun dumb-jump-process-results
+    (results cur-file proj-root ctx-type look-for use-tooltip prefer-external)
+  "Process (filter, sort, ...) the searchers results.
+RESULTS is a list of property lists with the searcher's results.
+CUR-FILE is the current file within PROJ-ROOT.
+CTX-TYPE is a string of the current context.
+LOOK-FOR is the symbol we're jumping for.
+USE-TOOLTIP shows a preview instead of jumping.
+PREFER-EXTERNAL will sort current file last."
   "Figure which of the RESULTS to jump to. Favoring the CUR-FILE"
   (let* ((lang (dumb-jump-get-language-by-filename cur-file))
          (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
@@ -2329,17 +2356,10 @@ PREFER-EXTERNAL will sort current file last."
                    (string= ctx-type ""))
                var-to-jump)))
 
-    (when dumb-jump-debug
-      (dumb-jump-message
-       "-----\nDUMB JUMP DEBUG `dumb-jump-handle-results` START\n----- \n\nlook for: \n\t%s\n\ntype: \n\t%s \n\njump? \n\t%s \n\nmatches: \n\t%s \n\nresults: \n\t%s \n\nprefer external: \n\t%s\n\nmatch-cur-file-front: \n\t%s\n\nproj-root: \n\t%s\n\ncur-file: \n\t%s\n\nreal-cur-file: \n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-handle-results` END\n-----\n"
-       look-for ctx-type var-to-jump (pp-to-string match-cur-file-front) (pp-to-string results) prefer-external match-cur-file-front proj-root cur-file rel-cur-file))
-    (cond
-     (use-tooltip ;; quick-look mode
-      (popup-menu* (--map (dumb-jump--format-result proj-root it) results)))
-     (do-var-jump
-        (dumb-jump-result-follow var-to-jump use-tooltip proj-root))
-     (t
-      (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front)))))
+    (list :results results
+	  :do-var-jump do-var-jump
+	  :var-to-jump var-to-jump
+	  :match-cur-file-front match-cur-file-front)))
 
 (defun dumb-jump-read-config (root config-file)
   "Load and return options (exclusions, inclusions, etc).
@@ -2886,29 +2906,56 @@ Using ag to search only the files found via git-grep literal symbol search."
 
 ;;; Xref Backend
 (when (featurep 'xref)
+  (cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumb-jump)))
+    (let* ((ident (dumb-jump-get-point-symbol))
+	   (start (car (bounds-of-thing-at-point 'symbol)))
+	   (col (- start (point-at-bol)))
+	   (line (dumb-jump-get-point-line))
+	   (ctx (dumb-jump-get-point-context line ident col)))
+      (propertize ident :dumb-jump-ctx ctx)))
+
   (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump)) prompt)
     (let* ((info (dumb-jump-get-results prompt))
-           (results (plist-get info :results))
-           (look-for (or prompt (plist-get info :symbol)))
-           (proj-root (plist-get info :root))
-           (issue (plist-get info :issue))
-           (lang (plist-get info :lang)))
+	   (results (plist-get info :results))
+	   (look-for (or prompt (plist-get info :symbol)))
+	   (proj-root (plist-get info :root))
+	   (issue (plist-get info :issue))
+	   (lang (plist-get info :lang))
+	   (processed (dumb-jump-process-results
+		       results
+		       (plist-get info :file)
+		       proj-root
+		       (plist-get info :ctx-type)
+		       look-for
+		       nil
+		       nil))
+	   (results (plist-get processed :results))
+	   (do-var-jump (plist-get processed :do-var-jump))
+	   (var-to-jump (plist-get processed :var-to-jump))
+	   (match-cur-file-front (plist-get processed :match-cur-file-front)))
+
+      (when dumb-jump-debug
+	(dumb-jump-message
+	 "-----\nDUMB JUMP DEBUG `dumb-jump-handle-results` START\n----- \n\nlook for: \n\t%s\n\ntype: \n\t%s \n\njump? \n\t%s \n\nmatches: \n\t%s \n\nresults: \n\t%s \n\nprefer external: \n\t%s\n\nmatch-cur-file-front: \n\t%s\n\nproj-root: \n\t%s\n\ncur-file: \n\t%s\n\nreal-cur-file: \n\t%s \n\n-----\nDUMB JUMP DEBUG `dumb-jump-handle-results` END\n-----\n"
+	 look-for ctx-type var-to-jump (pp-to-string match-cur-file-front) (pp-to-string results) prefer-external match-cur-file-front proj-root cur-file rel-cur-file))
       (cond ((eq issue 'nogrep)
-             (dumb-jump-message "Please install ag, rg, git grep or grep!"))
-            ((eq issue 'nosymbol)
-             (dumb-jump-message "No symbol under point."))
-            ((s-ends-with? " file" lang)
-             (dumb-jump-message "Could not find rules for '%s'." lang))
-            ((= (length results) 0)
-             (dumb-jump-message "'%s' %s %s declaration not found." look-for (if (s-blank? lang) "with unknown language so" lang) (plist-get info :ctx-type)))
-            (t (mapcar (lambda (res)
+	     (dumb-jump-message "Please install ag, rg, git grep or grep!"))
+	    ((eq issue 'nosymbol)
+	     (dumb-jump-message "No symbol under point."))
+	    ((s-ends-with? " file" lang)
+	     (dumb-jump-message "Could not find rules for '%s'." lang))
+	    ((= (length results) 0)
+	     (dumb-jump-message "'%s' %s %s declaration not found." look-for (if (s-blank? lang) "with unknown language so" lang) (plist-get info :ctx-type)))
+	    (t (mapcar (lambda (res)
 			 (xref-make
-                          (plist-get res :context)
-                          (xref-make-file-location
-                           (plist-get res :path)
-                           (plist-get res :line)
-                           0)))
-                       results))))))
+			  (plist-get res :context)
+			  (xref-make-file-location
+			   (plist-get res :path)
+			   (plist-get res :line)
+			   0)))
+		       (if do-var-jump
+			   (list var-to-jump)
+			 match-cur-file-front)))))))
 
 ;;;###autoload
 (defun dumb-jump-xref-activate ()
