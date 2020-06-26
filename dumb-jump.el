@@ -2906,6 +2906,25 @@ Using ag to search only the files found via git-grep literal symbol search."
 
 ;;; Xref Backend
 (when (featurep 'xref)
+  (dolist (obsolete
+	   '(dumb-jump-mode
+	     dumb-jump-go
+	     dumb-jump-go-prefer-external-other-window
+	     dumb-jump-go-prompt
+	     dumb-jump-quick-look
+	     dumb-jump-go-other-window
+	     dumb-jump-go-current-window
+	     dumb-jump-go-prefer-external
+	     dumb-jump-go-current-window))
+    (make-obsolete
+     obsolete
+     (format "`%s' has been obsoleted by the xref interface."
+	     obsolete)
+     "2020-06-26"))
+  (make-obsolete 'dumb-jump-back
+		 "`dumb-jump-back' has been obsoleted by `xref-pop-marker-stack'."
+		 "2020-06-26")
+
   (cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumb-jump)))
     (let* ((ident (dumb-jump-get-point-symbol))
 	   (start (car (bounds-of-thing-at-point 'symbol)))
