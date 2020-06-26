@@ -87,15 +87,16 @@ Dumb Jump performs best with The Silver Searcher `ag` ([ag install instructions]
 
 #### Basic
 
-Adding `(dumb-jump-mode)` to your `.emacs` will enable the key bindings for two interactive Dumb Jump functions:
+To enable the [xref][] backend, evaluate
 
-* `dumb-jump-go` <kbd>C-M-g</kbd> core functionality. Attempts to jump to the definition for the thing under point
-* `dumb-jump-back` <kbd>C-M-p</kbd> jumps back to where you were when you jumped. These are chained so if you go down a rabbit hole you can get back out or where you want to be.
-* `dumb-jump-quick-look` <kbd>C-M-q</kbd> like `dumb-jump-go` but **only** shows tooltip with `file`, `line`, and `context` it does not jump.
-* `dumb-jump-go-other-window` exactly like `dumb-jump-go` but uses `find-file-other-window` instead of `find-file`
-* `dumb-jump-go-prefer-external` like `dumb-jump-go` but will prefer definitions not in the current buffer
-* `dumb-jump-go-prefer-external-other-window` expected combination of `dumb-jump-go-prefer-external` and `dumb-jump-go-other-window`
-* `dumb-jump-go-prompt` exactly like `dumb-jump-go` but prompts user for function to jump to instead of using symbol at point
+~~~lisp
+(add-to-list 'xref-backend-functions #'dumb-jump-xref-activate)
+~~~
+
+or add it to your initialisation file. Using this, you can now use
+<kbd>M-.</kbd> (or <kbd>gd</kbd> when using Evil).
+
+[xref]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html
 
 ## Configuration
 
@@ -122,15 +123,8 @@ If you want to stop a directory from registering as the project root (and have D
 
 * `(setq dumb-jump-default-project "~/code")` to change default project if one is not found (defaults to `~`)
 * `(setq dumb-jump-quiet t)` if Dumb Jump is too chatty.
-* `(setq dumb-jump-confirm-jump-to-modified-file nil)` to avoid being prompted for confirmation if you attempt to jump to a file that has been modified and not saved.  This defaults to `t` because jumping to modified files results in you jumping to a location that may no longer be current.
 * To support more languages and/or definition types customize `dumb-jump-find-rules` variable.
-* `(add-hook 'dumb-jump-after-jump-hook 'some-function)` to execute code after you jump
-* `(add-hook 'dumb-jump-before-jump-hook 'some-function)` to execute code before you jump
-* `(setq dumb-jump-selector 'ivy)` to use [ivy](https://github.com/abo-abo/swiper#ivy) instead of the default popup for multiple options.
-* `(setq dumb-jump-selector 'helm)` to use [helm](https://github.com/emacs-helm/helm) instead of the default popup for multiple options.
 * `(setq dumb-jump-force-searcher 'rg)` to force the search program Dumb Jump should use. It will _always_ use this searcher. If not set (`nil`) Dumb Jump will use `git-grep` if it's a git project and if not will try searchers in the following order `ag`, `rg`, `grep` (first installed wins). This is necessary if you want full control over the searcher Dumb Jump uses.
-* `(setq dumb-jump-aggressive nil)` to only automatically jump if there's only one match and otherwise present you with a list. This defaults to `t`, which means it will try its best to guess where you want to jump and only if it can't then give you a list of matches.
-* `(setq dumb-jump-use-visible-window nil)` if `t` (the default) when you're using multiple windows/panes and the file to jump to is already open in one of those windows then dumb jump will focus that window and jump there instead of within your current window.
 * `(setq dumb-jump-prefer-searcher 'rg)` to let Dumb Jump know your searcher preference. If set this will still use `git-grep` if it's a git project (because it's the fastest), but will you use whatever you set here in any other situation. If not set Dumb Jump will follow the same order as mentioned in the `dumb-jump-force-searcher` description. At this time setting this value is only necessary if you prefer `rg` but have `ag` installed too.
 * `(setq dumb-jump-git-grep-search-args "")` to set additional command line arguments when using git-grep for searching (defaults to `""`).
 * `(setq dumb-jump-ag-search-args "")` to set additional command line arguments when using ag for searching (defaults to `""`).
@@ -139,23 +133,6 @@ If you want to stop a directory from registering as the project root (and have D
 #### If your project has multi-line method signatures [you should use `ag`](https://github.com/jacktasia/dumb-jump/issues/129) or [`rg` version `0.10.0` or higher](https://github.com/jacktasia/dumb-jump/issues/255).
 
 To learn more about how Dumb Jump picks a searcher see [this issue](https://github.com/jacktasia/dumb-jump/issues/109) and this [pull request](https://github.com/jacktasia/dumb-jump/pull/111).
-
-
-##### `use-package` example configuration.
-
-I personally no longer use the `dumb-jump-mode` keybindings that were inspired by IntelliJ's emacs bindings. I use [use-package](https://github.com/jwiegley/use-package) like so:
-
-```el
-(use-package dumb-jump
-  :bind (("M-g o" . dumb-jump-go-other-window)
-         ("M-g j" . dumb-jump-go)
-         ("M-g b" . dumb-jump-back)
-         ("M-g i" . dumb-jump-go-prompt)
-         ("M-g x" . dumb-jump-go-prefer-external)
-         ("M-g z" . dumb-jump-go-prefer-external-other-window))
-  :config (setq dumb-jump-selector 'ivy) ;; (setq dumb-jump-selector 'helm)
-  :ensure)
-```
 
 ##### Hydra for effieciency
 
@@ -182,6 +159,46 @@ It can be explicitly bound or used inside another hydra (if you already use some
 1. go to buffer `*Messages*`
 
 More details [here](http://p.cweiske.de/506). Thanks to @cweiske and @Glumanda99
+
+## Obsolete commands and options
+
+Older versions of dumb jump didn't use xref, and instead had custom
+commands. These, while marked obsolete, can still be used:
+
+* `dumb-jump-go` (former) core functionality. Attempts to jump to the
+  definition for the thing under point. This has been replaced in the
+  new interface with `xref-find-definitions` (<kbd>M-.</kbd>).
+* `dumb-jump-back` jumps back to where you were when you jumped. These
+  are chained so if you go down a rabbit hole you can get back out or
+  where you want to be. This has been replaced with
+  `xref-pop-marker-stack` (<kbd>M-,</kbd>), but is mostly equivalent.
+* `dumb-jump-quick-look` like `dumb-jump-go` but **only** shows
+  tooltip with `file`, `line`, and `context` it does not jump.
+* `dumb-jump-go-other-window` exactly like `dumb-jump-go` but uses
+  `find-file-other-window` instead of `find-file`
+* `dumb-jump-go-prefer-external` like `dumb-jump-go` but will prefer
+  definitions not in the current buffer
+* `dumb-jump-go-prefer-external-other-window` expected combination of
+  `dumb-jump-go-prefer-external` and `dumb-jump-go-other-window`
+* `dumb-jump-go-prompt` exactly like `dumb-jump-go` but prompts user
+  for function to jump to
+
+A few user options only have an effect when used with the legacy
+interface. These are:
+
+* `dumb-jump-after-jump-hook` (use `xref-after-jump-hook` instead)
+* `dumb-jump-before-jump-hook` (use `xref-after-return-hook` instead)
+* `dumb-jump-selector`
+* `dumb-jump-aggressive`
+* `dumb-jump-use-visible-window`
+* `dumb-jump-confirm-jump-to-modified-file`
+
+The minor mode `dumb-jump-mode` binds a few of these commands by
+default.
+
+If you still use Emacs 24 or older, you won't have xref, and have to
+use the legacy interface instead. In that case, there will also be no
+"obsolete" warnings.
 
 ## Why?
 
