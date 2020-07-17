@@ -21,6 +21,10 @@
 
 ;;; Commentary:
 
+;; Dumb Jump is an Emacs "jump to definition" package with support for 40+ programming languages that favors
+;; "just working" over speed or accuracy.  This means minimal -- and ideally zero -- configuration with absolutely
+;; no stored indexes (TAGS) or persistent background processes.
+;;
 ;; Dumb Jump provides a xref-based interface for jumping to
 ;; definitions. It is based on tools such as grep, the silver searcher
 ;; (https://geoff.greer.fm/ag/), ripgrep
