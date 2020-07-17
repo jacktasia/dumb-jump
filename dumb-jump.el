@@ -1417,6 +1417,22 @@ or most optimal searcher."
            :regex "(class|interface)\\s*JJJ\\b"
            :tests ("class test" "class test : SomeInterface" "interface test"))
 
+    ;; zig
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "zig"
+           :regex "fn\\s+JJJ\\b"
+           :tests ("fn test() void {"
+                   "fn test(a: i32) i32 {"
+                   "pub fn test(a: i32) i32 {"
+                   "export fn test(a: i32) i32 {"
+                   "extern \"c\" fn test(a: i32) i32 {"
+                   "inline fn test(a: i32) i32 {"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "zig"
+           :regex "(var|const)\\s+JJJ\\b"
+           :tests ("const test: i32 = 3;"
+                   "var test: i32 = 3;"
+                   "pub const test: i32 = 3;"))
+
     ;; protobuf
     (:type "message" :supports ("ag" "grep" "rg" "git-grep") :language "protobuf"
            :regex "message\\s+JJJ\\s*\\\{"
@@ -1542,6 +1558,7 @@ or most optimal searcher."
     (:language "ruby" :ext "rake" :agtype "ruby" :rgtype nil)
     (:language "ruby" :ext "slim" :agtype "ruby" :rgtype nil)
     (:language "rust" :ext "rs" :agtype "rust" :rgtype "rust")
+    (:language "zig" :ext "zig" :agtype nil :rgtype "zig")
     (:language "scad" :ext "scad" :agtype nil :rgtype nil)
     (:language "scala" :ext "scala" :agtype "scala" :rgtype "scala")
     (:language "scheme" :ext "scm" :agtype "scheme" :rgtype "lisp")
@@ -2237,6 +2254,7 @@ current file."
     (:comment "//" :language "faust")
     (:comment "!" :language "fortran")
     (:comment "//" :language "go")
+    (:comment "//" :language "zig")
     (:comment "#" :language "perl")
     (:comment "//" :language "php")
     (:comment "#" :language "python")
