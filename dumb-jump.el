@@ -29,9 +29,7 @@
 ;; definitions. It is based on tools such as grep, the silver searcher
 ;; (https://geoff.greer.fm/ag/), ripgrep
 ;; (https://github.com/BurntSushi/ripgrep) or git-grep
-;; (https://git-scm.com/docs/git-grep). This means minimal -- and
-;; ideally zero -- configuration with absolutely no stored indexes
-;; (TAGS) or persistent background processes.
+;; (https://git-scm.com/docs/git-grep). 
 ;;
 ;; To enable Dumb Jump, add the following to your initialisation file:
 ;;
