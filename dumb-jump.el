@@ -324,17 +324,17 @@ or most optimal searcher."
            :regex "\\\(define\\s+\\(\\s*JJJ\\j"
            :tests ("(define (test blah)" "(define (test\n")
            :not ("(define test blah" "(define (test-asdf blah)" "(define test (lambda (blah"))
-    
+
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
            :regex "\\\(define\\s+JJJ\\s*\\\(\\s*lambda"
            :tests ("(define test (lambda (blah" "(define test (lambda\n")
            :not ("(define test blah" "(define test-asdf (lambda (blah)" "(define (test)" "(define (test blah) (lambda (foo"))
-    
+
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
            :regex "\\\(let\\s+JJJ\\s*(\\\(|\\\[)*"
            :tests ("(let test ((blah foo) (bar bas))" "(let test\n" "(let test [(foo")
            :not ("(let ((test blah"))
-    
+
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
            :regex "\\\(define\\s+JJJ\\j"
            :tests ("(define test " "(define test\n")
@@ -354,7 +354,7 @@ or most optimal searcher."
            :regex "\\\(define\\s+\\\([^\(\)]+\\s*JJJ\\j\\s*\\\)?"
            :tests ("(define (foo test)" "(define (foo test bar)")
            :not ("(define foo test" "(define (test foo" "(define (test)"))
-    
+
     ;; c++
     (:type "function" :supports ("ag" "rg" "git-grep") :language "c++"
            :regex "\\bJJJ(\\s|\\))*\\((\\w|[,&*.<>]|\\s)*(\\))\\s*(const|->|\\{|$)|typedef\\s+(\\w|[(*]|\\s)+JJJ(\\)|\\s)*\\("
@@ -459,17 +459,24 @@ or most optimal searcher."
     ;; swift
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
            :regex "(let|var)\\s*JJJ\\s*(=|:)[^=:\\n]+"
-           :tests ("let test = 1234" "var test = 1234" "private lazy var test: UITapGestureRecognizer") :not ("if test == 1234:"))
+           :tests ("let test = 1234" "var test = 1234" "private lazy var test: UITapGestureRecognizer")
+           :not ("if test == 1234:"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
-           :regex "func\\s*JJJ\\b\\s*\\\("
-           :tests ("func test(asdf)" "func test()")
+           :regex "func\\s+JJJ\\b\\s*(<[^>]*>)?\\s*\\("
+           :tests ("func test(asdf)" "func test()" "func test<Value: Protocol>()")
            :not ("func testnot(asdf)" "func testnot()"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
-           :regex "(class|struct|protocol)\\s*JJJ\\b\\s*?"
-           :tests ("class test:" "class test: UIWindow")
-           :not ("class testnot:" "class testnot(object):"))
+           :regex "(class|struct|protocol|enum)\\s+JJJ\\b\\s*?"
+           :tests ("struct test" "struct test: Codable" "struct test<Value: Codable>"
+                   "class test:" "class test: UIWindow" "class test<Value: Codable>")
+           :not ("class testnot:" "class testnot(object):" "struct testnot(object)"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
+           :regex "(typealias)\\s+JJJ\\b\\s*?="
+           :tests ("typealias test =")
+           :not ("typealias testnot"))
 
     ;; c#
     (:type "function" :supports ("ag" "rg") :language "csharp"
@@ -930,7 +937,7 @@ or most optimal searcher."
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
            :regex "class\\s*JJJ\\s+extends"
            :tests ("class test extends Component{"))
-    
+
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
@@ -951,7 +958,7 @@ or most optimal searcher."
            :tests ("function (test)" "function (test, blah)" "function somefunc(test, blah) {" "function(blah, test)")
            :not ("function (testLen)" "function (test1, blah)" "function somefunc(testFirst, blah) {" "function(blah, testLast)"
                  "function (Lentest)" "function (blahtest, blah)" "function somefunc(Firsttest, blah) {" "function(blah, Lasttest)"))
-    
+
     ;; julia
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
            :regex "(@noinline|@inline)?\\s*function\\s*JJJ(\\{[^\\}]*\\})?\\("
@@ -1359,22 +1366,22 @@ or most optimal searcher."
            :regex "\\\\.*newcommand\\\*?\\s*\\\{\\s*(\\\\)JJJ\\s*}"
            :tests ("\\newcommand{\\test}" "\\renewcommand{\\test}" "\\renewcommand*{\\test}" "\\newcommand*{\\test}" "\\renewcommand{ \\test }")
            :not("\\test"  "test"))
-    
+
     (:type "command" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
            :regex "\\\\.*newcommand\\\*?\\s*(\\\\)JJJ\\j"
            :tests ("\\newcommand\\test {}" "\\renewcommand\\test{}" "\\newcommand \\test")
            :not("\\test"  "test"))
-    
+
     (:type "length" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
            :regex "\\\\(s)etlength\\s*\\\{\\s*(\\\\)JJJ\\s*}"
            :tests ("\\setlength { \\test}" "\\setlength{\\test}" "\\setlength{\\test}{morecommands}" )
            :not("\\test"  "test"))
-    
+
     (:type "counter" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
            :regex "\\\\newcounter\\\{\\s*JJJ\\s*}"
            :tests ("\\newcounter{test}" )
            :not("\\test"  "test"))
-    
+
     (:type "environment" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
            :regex "\\\\.*newenvironment\\s*\\\{\\s*JJJ\\s*}"
            :tests ("\\newenvironment{test}" "\\newenvironment {test}{morecommands}" "\\lstnewenvironment{test}" "\\newenvironment {test}" )
@@ -1676,7 +1683,7 @@ If `nil` always show list of more than 1 match."
   "If `t` will print helpful debug information."
   :group 'dumb-jump
   :type 'boolean)
-           
+
 (defcustom dumb-jump-confirm-jump-to-modified-file
   t
   "If t, confirm before jumping to a modified file (which may lead to an
