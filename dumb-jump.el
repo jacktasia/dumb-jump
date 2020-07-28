@@ -471,6 +471,11 @@ or most optimal searcher."
            :tests ("class test:" "class test: UIWindow")
            :not ("class testnot:" "class testnot(object):"))
 
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
+           :regex "(typealias)\\s*JJJ\\b\\s*?="
+           :tests ("typealias test =")
+           :not ("typealias testnot"))
+
     ;; c#
     (:type "function" :supports ("ag" "rg") :language "csharp"
            :regex "^\\s*(?:[\\w\\[\\]]+\\s+){1,3}JJJ\\s*\\\("
