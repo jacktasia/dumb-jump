@@ -463,17 +463,18 @@ or most optimal searcher."
            :not ("if test == 1234:"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
-           :regex "func\\s*JJJ\\b\\s*\\\("
-           :tests ("func test(asdf)" "func test()")
+           :regex "func\\s+JJJ\\b\\s*(<[^>]*>)?\\s*\\("
+           :tests ("func test(asdf)" "func test()" "func test<Value: Protocol>()")
            :not ("func testnot(asdf)" "func testnot()"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
-           :regex "(class|struct|protocol|enum)\\s*JJJ\\b\\s*?"
-           :tests ("class test:" "class test: UIWindow")
-           :not ("class testnot:" "class testnot(object):"))
+           :regex "(class|struct|protocol|enum)\\s+JJJ\\b\\s*?"
+           :tests ("struct test" "struct test: Codable" "struct test<Value: Codable>"
+                   "class test:" "class test: UIWindow" "class test<Value: Codable>")
+           :not ("class testnot:" "class testnot(object):" "struct testnot(object)"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
-           :regex "(typealias)\\s*JJJ\\b\\s*?="
+           :regex "(typealias)\\s+JJJ\\b\\s*?="
            :tests ("typealias test =")
            :not ("typealias testnot"))
 
