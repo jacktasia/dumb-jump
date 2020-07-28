@@ -459,7 +459,8 @@ or most optimal searcher."
     ;; swift
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
            :regex "(let|var)\\s*JJJ\\s*(=|:)[^=:\\n]+"
-           :tests ("let test = 1234" "var test = 1234" "private lazy var test: UITapGestureRecognizer") :not ("if test == 1234:"))
+           :tests ("let test = 1234" "var test = 1234" "private lazy var test: UITapGestureRecognizer")
+           :not ("if test == 1234:"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
            :regex "func\\s*JJJ\\b\\s*\\\("
@@ -467,7 +468,7 @@ or most optimal searcher."
            :not ("func testnot(asdf)" "func testnot()"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
-           :regex "(class|struct|protocol)\\s*JJJ\\b\\s*?"
+           :regex "(class|struct|protocol|enum)\\s*JJJ\\b\\s*?"
            :tests ("class test:" "class test: UIWindow")
            :not ("class testnot:" "class testnot(object):"))
 
