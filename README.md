@@ -90,7 +90,7 @@ Dumb Jump performs best with The Silver Searcher `ag` ([ag install instructions]
 To enable the [xref][] backend, evaluate
 
 ~~~lisp
-(add-to-list 'xref-backend-functions #'dumb-jump-xref-activate)
+(add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
 ~~~
 
 or add it to your initialisation file. Using this, you can now use
