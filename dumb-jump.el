@@ -3058,7 +3058,10 @@ Using ag to search only the files found via git-grep literal symbol search."
 			   0)))
 		       (if do-var-jump
 			   (list var-to-jump)
-			 match-cur-file-front)))))))
+             match-cur-file-front))))))
+
+    (cl-defmethod xref-backend-apropos ((_backend (eql dumb-jump)) pattern)
+      (xref-backend-definitions 'dumb-jump pattern)))
 
 ;;;###autoload
 (defun dumb-jump-xref-activate ()
