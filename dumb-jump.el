@@ -794,7 +794,7 @@ or most optimal searcher."
            :tests ("function test()" "function test ()"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "php"
-           :regex "\\*\\s@method\\s+[^          ]+\\s+JJJ\\("
+           :regex "\\*\\s@method\\s+[^ \t]+\\s+JJJ\\("
            :tests ("/** @method string|false test($a)" " * @method bool test()"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "php"
@@ -802,7 +802,7 @@ or most optimal searcher."
            :tests ("$test = 1234" "$foo->test = 1234"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "php"
-           :regex "\\*\\s@property(-read|-write)?\\s+([^        ]+\\s+)&?\\$JJJ(\\s+|$)"
+           :regex "\\*\\s@property(-read|-write)?\\s+([^ \t]+\\s+)&?\\$JJJ(\\s+|$)"
            :tests ("/** @property string $test" "/** @property string $test description for $test property"  " * @property-read bool|bool $test" " * @property-write \\ArrayObject<string,resource[]> $test"))
     (:type "trait" :supports ("ag" "grep" "rg" "git-grep") :language "php"
            :regex "trait\\s*JJJ\\s*\\\{"
