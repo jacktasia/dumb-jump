@@ -1885,7 +1885,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
 (defmacro dumb-jump-debug-message (&rest exprs)
   "Generate a debug message to print all expressions EXPRS."
   (declare (indent defun))
-  (let ((i 5) frames frame defun-name)
+  (let ((i 5) frames frame)
     ;; based on https://emacs.stackexchange.com/a/2312
     (while (setq frame (backtrace-frame i))
       (push frame frames)
@@ -1893,32 +1893,28 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
     ;; this is a macro-expanded version of the code in the stackexchange
     ;; code from above. This version should work on emacs-24.3, since it
     ;; doesn't depend on thread-last.
-    (setq defun-name (symbol-name
-                      (cl-cadadr
-                       (cl-caddr
-                        (cl-find-if
-                         (lambda
-                           (frame)
-                           (ignore-errors
-                             (and
-                              (car frame)
-                              (eq
-                               (cl-caaddr frame)
-                               'defalias))))
-                         (reverse frames))))))
-    (with-temp-buffer
-      (insert "DUMB JUMP DEBUG `")
-      (insert defun-name)
-      (insert "` START\n----\n\n")
-      (dolist (expr exprs)
-        (insert (prin1-to-string expr) ":\n\t%s\n\n"))
-      (insert "\n-----\nDUMB JUMP DEBUG `")
-      (insert defun-name)
-      (insert "` END\n-----")
-      `(when dumb-jump-debug
-         (dumb-jump-message
-          ,(buffer-string)
-          ,@exprs)))))
+    (let* ((frame (cl-find-if
+                   (lambda (frame)
+                     (ignore-errors
+                       (and (car frame)
+                            (eq (caaddr frame)
+                                'defalias))))
+                   (reverse frames)))
+           (func (cl-cadadr (cl-caddr frame)))
+           (defun-name (symbol-name func)))
+      (with-temp-buffer
+        (insert "DUMB JUMP DEBUG `")
+        (insert defun-name)
+        (insert "` START\n----\n\n")
+        (dolist (expr exprs)
+          (insert (prin1-to-string expr) ":\n\t%s\n\n"))
+        (insert "\n-----\nDUMB JUMP DEBUG `")
+        (insert defun-name)
+        (insert "` END\n-----")
+        `(when dumb-jump-debug
+           (dumb-jump-message
+            ,(buffer-string)
+            ,@exprs))))))
 
 (defun dumb-jump-get-point-context (line func cur-pos)
   "Get the LINE context to the left and right of FUNC using CUR-POS as hint."
