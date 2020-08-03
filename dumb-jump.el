@@ -3030,14 +3030,13 @@ Using ag to search only the files found via git-grep literal symbol search."
 
       (dumb-jump-debug-message
        look-for
-       ctx-type
+       (plist-get info :ctx-type)
        var-to-jump
        (pp-to-string match-cur-file-front)
        (pp-to-string results)
-       prefer-external
        match-cur-file-front
        proj-root
-       cur-file)
+       (plist-get info :file))
       (cond ((eq issue 'nogrep)
              (dumb-jump-message "Please install ag, rg, git grep or grep!"))
             ((eq issue 'nosymbol)
