@@ -2465,13 +2465,13 @@ Ffrom the ROOT project CONFIG-FILE."
 
 (defun dumb-jump-file-modified-p (path)
   "Check if PATH is currently open in Emacs and has a modified buffer."
-  (let ((modified-file-buffers
-         (--filter
-          (and (buffer-modified-p it)
-               (buffer-file-name it)
-               (file-exists-p (buffer-file-name it))
-               (file-equal-p (buffer-file-name it) path))
-          (buffer-list))))))
+  (interactive)
+  (--any?
+   (and (buffer-modified-p it)
+        (buffer-file-name it)
+        (file-exists-p (buffer-file-name it))
+        (file-equal-p (buffer-file-name it) path))
+   (buffer-list)))
 
 (defun dumb-jump-result-follow (result &optional use-tooltip proj)
   "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump.  If dumb-jump-confirm-jump-to-modified-file is t, prompt if we should continue if destination has been modified.  If it is nil, display a warning."
