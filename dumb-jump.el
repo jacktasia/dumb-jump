@@ -2120,7 +2120,7 @@ to keep looking for another root."
                           dumb-jump-language-file-exts)))
     (--map (plist-get it :language) found)))
 
-(defun dumb-jump-fetch-results (cur-file proj-root lang config &optional prompt)
+(defun dumb-jump-fetch-results (cur-file proj-root lang _config &optional prompt)
   "Return a list of results based on current file context and calling grep/ag.
 CUR-FILE is the path of the current buffer.
 PROJ-ROOT is that file's root project directory.
@@ -2353,7 +2353,7 @@ PREFER-EXTERNAL will sort current file last."
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front)))))
 
 (defun dumb-jump-process-results
-    (results cur-file proj-root ctx-type look-for use-tooltip prefer-external)
+    (results cur-file proj-root ctx-type _look-for _use-tooltip prefer-external)
   "Process (filter, sort, ...) the searchers results.
 RESULTS is a list of property lists with the searcher's results.
 CUR-FILE is the current file within PROJ-ROOT.
@@ -2834,7 +2834,7 @@ searcher symbol."
    proj-root))
 
 ;; git-grep plus ag only recommended for huge repos like the linux kernel
-(defun dumb-jump-generate-git-grep-plus-ag-command (look-for cur-file proj regexes lang exclude-paths)
+(defun dumb-jump-generate-git-grep-plus-ag-command (look-for cur-file proj regexes _lang exclude-paths)
   "Generate the ag response based on the needle LOOK-FOR in the directory PROJ.
 Using ag to search only the files found via git-grep literal symbol search."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'ag))
@@ -2854,7 +2854,7 @@ Using ag to search only the files found via git-grep literal symbol search."
         ""
       (dumb-jump-concat-command cmd exclude-args regex-args proj))))
 
-(defun dumb-jump-generate-rg-command (look-for cur-file proj regexes lang exclude-paths)
+(defun dumb-jump-generate-rg-command (look-for _cur-file proj regexes lang exclude-paths)
   "Generate the rg response based on the needle LOOK-FOR in the directory PROJ."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'rg))
          (rgtypes (dumb-jump-get-rg-type-by-language lang))
@@ -2906,7 +2906,7 @@ Using ag to search only the files found via git-grep literal symbol search."
         ""
       (dumb-jump-concat-command cmd dumb-jump-grep-args exclude-args include-args regex-args proj))))
 
-(defun dumb-jump-generate-gnu-grep-command (look-for cur-file proj regexes lang exclude-paths)
+(defun dumb-jump-generate-gnu-grep-command (look-for cur-file proj regexes _lang _exclude-paths)
   "Find LOOK-FOR's CUR-FILE in the PROJ with REGEXES for the LANG but not in EXCLUDE-PATHS."
   (let* ((filled-regexes (--map (shell-quote-argument it)
                                 (dumb-jump-populate-regexes look-for regexes 'gnu-grep)))
