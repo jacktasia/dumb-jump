@@ -2135,7 +2135,7 @@ of project configuration."
          (config (when (s-ends-with? ".dumbjump" proj-config)
                    (dumb-jump-read-config proj-root proj-config)))
          (found-symbol (or prompt (dumb-jump-get-point-symbol)))
-         (look-for (or prompt (dumb-jump-process-symbol-by-lang lang found-symbol)))
+         (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
          (pt-ctx (or (and prompt (get-text-property 0 :dumb-jump-ctx prompt))
                      (if (and (not prompt) (not (string= cur-line look-for)))
                          (dumb-jump-get-point-context cur-line look-for look-for-start)
