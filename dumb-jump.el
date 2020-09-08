@@ -2886,7 +2886,7 @@ Using ag to search only the files found via git-grep literal symbol search."
                       (when (not (s-blank? dumb-jump-git-grep-search-args))
                         (concat " " dumb-jump-git-grep-search-args))
                       " -E"))
-         (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))
+         (fileexps (s-join " " (or (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes) '(":/"))))
          (exclude-args (s-join " "
                                (--map (shell-quote-argument (concat ":(exclude)" it))
                                       exclude-paths)))
