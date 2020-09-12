@@ -47,6 +47,7 @@
 (require 'dash)
 (require 'popup)
 (require 'cl-generic nil :noerror)
+(require 'cl-lib)
 
 (defgroup dumb-jump nil
   "Easily jump to project function and variable definitions"
@@ -1776,18 +1777,6 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
         (setq dumb-jump--grep-installed? variant))
     dumb-jump--grep-installed?))
 
-(defun dumb-jump-find-start-pos (line-in look-for cur-pos)
-  "Find start column position for LINE-IN of LOOK-FOR using CUR-POS as a hint."
-  (let ((is-found nil)
-        (line (s-replace "\t" (s-repeat tab-width " ") line-in)))
-    (while (and (> cur-pos 0) (not is-found))
-      (let* ((char (substring line cur-pos (1+ cur-pos)))
-             (is-at (s-index-of char look-for)))
-        (if (null is-at)
-            (setq is-found t)
-          (setq cur-pos (1- cur-pos)))))
-    (1+ cur-pos)))
-
 (defun dumb-jump-run-test (test cmd)
   "Use TEST as the standard input for the CMD."
   (with-temp-buffer
@@ -1934,16 +1923,9 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
 
 (defun dumb-jump-get-point-context (line func cur-pos)
   "Get the LINE context to the left and right of FUNC using CUR-POS as hint."
-  (let* ((loc (dumb-jump-find-start-pos line func cur-pos))
-         (func-len (length func))
-         (sen-len (length line))
-         (right-loc-start (+ loc func-len))
-         (right-loc-end (length line))
-         (left (substring line 0 loc))
-         (right (if (> right-loc-end sen-len)
-                    ""
-                  (substring line right-loc-start right-loc-end))))
-    `(:left ,left :right ,right)))
+  (let ((loc (or (cl-search func line :start2 cur-pos) 0)))
+    (list :left (substring line 0 loc)
+          :right (substring line (+ loc (length func))))))
 
 (defun dumb-jump-to-selected (results choices selected)
   "With RESULTS use CHOICES to find the SELECTED choice from multiple options."
@@ -2127,6 +2109,13 @@ to keep looking for another root."
         (thing-at-point 'symbol)
       (thing-at-point 'symbol t))))
 
+(defun dumb-jump--get-symbol-start ()
+  "Get the start of symbol at point"
+  (- (if (region-active-p)
+         (region-beginning)
+       (car (bounds-of-thing-at-point 'symbol)))
+     (line-beginning-position)))
+
 (defun dumb-jump-get-lang-by-shell-contents (buffer)
   "Return languages in BUFFER by checking if file extension is mentioned."
   (let* ((buffer-contents (with-current-buffer buffer
@@ -2142,20 +2131,18 @@ CUR-FILE is the path of the current buffer.
 PROJ-ROOT is that file's root project directory.
 LANG is a string programming language with CONFIG a property list
 of project configuration."
-  (let* ((cur-line (if prompt 0 (dumb-jump-get-point-line)))
-         (look-for-start (when (not prompt)
-                           (- (car (bounds-of-thing-at-point 'symbol))
-                              (point-at-bol))))
-         (cur-line-num (line-number-at-pos))
+  (let* ((cur-line-num (line-number-at-pos))
          (proj-config (dumb-jump-get-config proj-root))
          (config (when (s-ends-with? ".dumbjump" proj-config)
                    (dumb-jump-read-config proj-root proj-config)))
          (found-symbol (or prompt (dumb-jump-get-point-symbol)))
          (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
-         (pt-ctx (or (and prompt (get-text-property 0 :dumb-jump-ctx prompt))
-                     (if (and (not prompt) (not (string= cur-line look-for)))
-                         (dumb-jump-get-point-context cur-line look-for look-for-start)
-                       nil)))
+         (pt-ctx (if prompt
+                     (get-text-property 0 :dumb-jump-ctx prompt)
+                   (dumb-jump-get-point-context
+                    (dumb-jump-get-point-line)
+                    look-for
+                    (dumb-jump--get-symbol-start))))
          (ctx-type
           (dumb-jump-get-ctx-type-by-language lang pt-ctx))
 
@@ -3017,13 +3004,11 @@ Using ag to search only the files found via git-grep literal symbol search."
                  "2020-06-26")
 
   (cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumb-jump)))
-    (let ((bounds (bounds-of-thing-at-point 'symbol)))
-      (and bounds (let* ((ident (dumb-jump-get-point-symbol))
-                         (start (car bounds))
-                         (col (- start (point-at-bol)))
-                         (line (dumb-jump-get-point-line))
-                         (ctx (dumb-jump-get-point-context line ident col)))
-                    (propertize ident :dumb-jump-ctx ctx)))))
+    (let ((start (dumb-jump--get-symbol-start)))
+      (and start (let* ((ident (dumb-jump-get-point-symbol))
+                        (line (dumb-jump-get-point-line))
+                        (ctx (dumb-jump-get-point-context line ident start)))
+                   (propertize ident :dumb-jump-ctx ctx)))))
 
   (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump)) prompt)
     (let* ((info (dumb-jump-get-results prompt))
