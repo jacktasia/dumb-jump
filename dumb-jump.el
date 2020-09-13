@@ -87,7 +87,7 @@
   #'dumb-jump-ivy-jump-to-selected
   "Prompts user for a choice using ivy then dumb-jump to that choice."
   :group 'dumb-jump
-  :type 'symbol)
+  :type 'function)
 
 (defcustom dumb-jump-prefer-searcher
   nil
