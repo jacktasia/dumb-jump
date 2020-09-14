@@ -63,6 +63,7 @@ There is currently basic support for the following languages:
 * SQL
 * Swift
 * SystemVerilog
+* Tcl
 * TypeScript
 * Vala
 * VHDL
