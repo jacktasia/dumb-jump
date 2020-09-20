@@ -8,6 +8,9 @@ test: unit
 unit:
 	${CASK} exec ert-runner
 
+compile:
+	${CASK} exec emacs -batch -L . -f batch-byte-compile dumb-jump.el
+
 install:
 	${CASK} install
 

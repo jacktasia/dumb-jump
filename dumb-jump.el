@@ -1961,6 +1961,8 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
           (plist-get result :line)
           (s-trim (plist-get result :context))))
 
+(declare-function ivy-read "ext:ivy")
+
 (defun dumb-jump-ivy-jump-to-selected (results choices _proj)
   "Offer CHOICES as candidates through `ivy-read', then execute
 `dumb-jump-result-follow' on the selected choice.  Ignore _PROJ."
@@ -1968,6 +1970,9 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
             :action (lambda (cand)
                       (dumb-jump-result-follow (cdr cand)))
             :caller 'dumb-jump-ivy-jump-to-selected))
+
+(declare-function helm "ext:helm")
+(declare-function helm-build-sync-source "ext:helm-source" nil t)
 
 (defun dumb-jump-prompt-user-for-choice (proj results)
   "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy)
@@ -2444,6 +2449,9 @@ PREFER-EXTERNAL will sort current file last."
           :do-var-jump do-var-jump
           :var-to-jump var-to-jump
           :match-cur-file-front match-cur-file-front)))
+
+(declare-function tramp-dissect-file-name "tramp")
+(declare-function tramp-file-name-localname "tramp" nil t)
 
 (defun dumb-jump-read-config (root config-file)
   "Load and return options (exclusions, inclusions, etc).
