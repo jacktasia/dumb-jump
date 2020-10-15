@@ -2668,16 +2668,10 @@ searcher symbol."
       nil)
      ((and parts line-num-raw)
       (if (= (length parts) 2)
-          (list (let ((path (expand-file-name (nth 0 parts))))
-                  (if (file-name-absolute-p (nth 0 parts))
-                      path
-                    (file-relative-name path)))
+          (list (expand-file-name (nth 0 parts))
                 (nth 1 line-num-raw) (nth 1 parts))
                                         ; this case is when they are searching a particular file...
-        (list (let ((path (expand-file-name cur-file)))
-                (if (file-name-absolute-p cur-file)
-                    path
-                  (file-relative-name path)))
+        (list (expand-file-name cur-file)
               (nth 1 line-num-raw) (nth 0 parts)))))))
 
 (defun dumb-jump-parse-response-lines (parsed cur-file cur-line-num)
