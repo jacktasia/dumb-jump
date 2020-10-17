@@ -3053,7 +3053,7 @@ Using ag to search only the files found via git-grep literal symbol search."
                          (xref-make
                           (plist-get res :context)
                           (xref-make-file-location
-                           (plist-get res :path)
+                           (expand-file-name (plist-get res :path))
                            (plist-get res :line)
                            0)))
                        (if do-var-jump
