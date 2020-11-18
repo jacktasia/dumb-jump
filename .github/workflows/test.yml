@@ -18,7 +18,7 @@ jobs:
           - '27.1'
           - 'snapshot'
         cask_version:
-          - '0.8.0'
+          - 'snapshot'
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-python@v1.1.1
