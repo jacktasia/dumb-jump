@@ -9,14 +9,17 @@ jobs:
     strategy:
       matrix:
         emacs_version:
+          - '24.3'
+          - '24.4'
+          - '24.5'
+          - '25.1'
           - '26.1'
           - '26.2'
           - '26.3'
+          - '27.1'
           - 'snapshot'
         cask_version:
-          - '0.8.0'
           - '0.8.4'
-          - 'snapshot'
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-python@v1.1.1
