@@ -29,3 +29,8 @@ test-all-in-docker:
 
 test-in-docker:
 	@bash test/run-local-in-docker.sh current
+
+setup:
+	@bash test/github-actions-setup.sh
+
+actions-test: install setup unit
