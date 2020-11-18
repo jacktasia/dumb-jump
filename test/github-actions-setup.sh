@@ -1,5 +1,4 @@
 
-cask install
 sudo apt-get -qq update || ls
 sudo apt-get install -y --no-install-recommends software-properties-common curl
 sudo apt-get -qq update || ls

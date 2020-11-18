@@ -33,4 +33,4 @@ test-in-docker:
 setup:
 	@bash test/github-actions-setup.sh
 
-actions-test: setup unit
+actions-test: install setup unit
