@@ -3,6 +3,8 @@ on: [push]
 
 jobs:
   build:
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     runs-on: ubuntu-latest
     strategy:
       matrix:
