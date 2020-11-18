@@ -35,4 +35,4 @@ jobs:
           version: 'snapshot'
 
       - name: Run tests
-        run: cask install && make test
+        run: make actions-test
