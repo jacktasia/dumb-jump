@@ -3,7 +3,7 @@
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/jacktasia/dumb-jump
 ;; Version: 0.5.3
-;; Package-Requires: ((emacs "24.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.5"))
+;; Package-Requires: ((emacs "24.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.8"))
 ;; Keywords: programming
 
 ;; Dumb Jump is free software; you can redistribute it and/or modify it
