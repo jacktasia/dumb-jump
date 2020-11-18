@@ -32,6 +32,6 @@ test-in-docker:
 
 setup:
 	@bash cask install
-	@bash test/github-actions.set.up.sh
+	@bash test/github-actions-setup.sh
 
 actions-test: setup unit
