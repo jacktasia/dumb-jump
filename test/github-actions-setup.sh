@@ -1,3 +1,5 @@
+
+cask install
 sudo apt-get -qq update || ls
 sudo apt-get install -y --no-install-recommends software-properties-common curl && rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb /var/cache/apt/*.bin || true
 sudo apt-get -qq update || ls
