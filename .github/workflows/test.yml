@@ -32,4 +32,4 @@ jobs:
           version: 'snapshot'
 
       - name: Run tests
-        run: make test
+        run: cask install && make test
