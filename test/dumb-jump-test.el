@@ -424,14 +424,14 @@
 (ert-deftest dumb-jump-context-point-test ()
   (let* ((sentence "mainWindow.loadUrl('file://')")
          (func "loadUrl")
-         (ctx (dumb-jump-get-point-context sentence func 15)))
+         (ctx (dumb-jump-get-point-context sentence func 11)))
          (should (string= (plist-get ctx :left) "mainWindow."))
          (should (string= (plist-get ctx :right) "('file://')"))))
 
 (ert-deftest dumb-jump-context-point-type-test ()
   (let* ((sentence "mainWindow.loadUrl('file://' + __dirname + '/dt/inspector.html?electron=true');")
          (func "loadUrl")
-         (pt-ctx (dumb-jump-get-point-context sentence func 14))
+         (pt-ctx (dumb-jump-get-point-context sentence func 11))
          (ctx-type (dumb-jump-get-ctx-type-by-language "javascript" pt-ctx)))
     (should (string= ctx-type "function"))))
 
@@ -916,12 +916,6 @@
     (with-mock
      (mock (dumb-jump-goto-file-line "/usr/blah/test2.txt" 52 1))
      (dumb-jump--result-follow data nil "/usr/blah"))))
-
-(ert-deftest dumb-jump-find-start-pos-test ()
-  (let ((cur-pos 9)
-        (line "event event")
-        (word "event"))
-    (should (= (dumb-jump-find-start-pos line word cur-pos) 6))))
 
 (ert-deftest dumb-jump-go-include-lib-test ()
   (let ((el-file (f-join test-data-dir-elisp "fake2.el"))

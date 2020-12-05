@@ -1,0 +1,43 @@
+name: CI
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+
+jobs:
+  build:
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        emacs_version:
+          - '24.4'
+          - '24.5'
+          - '26.1'
+          - '26.2'
+          - '26.3'
+          - '27.1'
+          - 'snapshot'
+        cask_version:
+          - 'snapshot'
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-python@v1.1.1
+        with:
+          python-version: '3.6'
+          architecture: 'x64'
+      - uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs_version }}
+
+      - uses: conao3/setup-cask@master
+        with:
+          version: 'snapshot'
+
+      - name: Run tests
+        run: make actions-test
