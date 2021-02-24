@@ -32,6 +32,7 @@ There is currently basic support for the following languages:
 * Erlang
 * F#
 * Faust
+* Fennel
 * Fortran
 * Go
 * Groovy

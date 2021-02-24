@@ -846,6 +846,21 @@ or most optimal searcher."
            :regex "\\bJJJ\(\\\(.+\\\)\)*\\s*="
            :tests ("test = osc + 0.5;" "test(freq) = osc(freq) + 0.5;"))
 
+    ;; fennel
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "fennel"
+           :regex "\\((local|var)\\s+JJJ\\j"
+           :tests ("(local test (foo)"
+                   "(var test (foo)"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "fennel"
+           :regex "\\(fn\\s+JJJ\\j"
+           :tests ("(fn test [foo]")
+           :not ("(fn test? [foo]"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "fennel"
+           :regex "\\(macro\\s+JJJ\\j"
+           :tests ("(macro test [foo]"))
+
     ;; fortran
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "fortran"
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+"
@@ -1536,6 +1551,7 @@ or most optimal searcher."
     (:language "coffeescript" :ext "coffee" :agtype "coffee" :rgtype "coffeescript")
     (:language "faust" :ext "dsp" :agtype nil :rgtype nil)
     (:language "faust" :ext "lib" :agtype nil :rgtype nil)
+    (:language "fennel" :ext "fnl" :agtype nil :rgtype nil)
     (:language "fortran" :ext "F" :agtype "fortran" :rgtype "fortran")
     (:language "fortran" :ext "f" :agtype "fortran" :rgtype "fortran")
     (:language "fortran" :ext "f77" :agtype "fortran" :rgtype "fortran")
@@ -2093,6 +2109,8 @@ to keep looking for another root."
   (cond
    ((and (string= lang "clojure") (s-contains? "/" look-for))
     (nth 1 (s-split "/" look-for)))
+   ((and (string= lang "fennel") (s-contains? "." look-for))
+    (-last-item (s-split "." look-for)))
    ((and (string= lang "ruby") (s-contains? "::" look-for))
     (-last-item (s-split "::" look-for)))
    ((and (or (string= lang "ruby") (string= lang "crystal")) (s-starts-with? ":" look-for))
@@ -2279,6 +2297,7 @@ current file."
     (:comment ";" :language "clojure")
     (:comment "#" :language "coffeescript")
     (:comment "//" :language "faust")
+    (:comment ";" :language "fennel")
     (:comment "!" :language "fortran")
     (:comment "//" :language "go")
     (:comment "//" :language "zig")
