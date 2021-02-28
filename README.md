@@ -5,7 +5,7 @@
 ![Dumb Jump GIF](media/dumb-jump-example-v2.gif?raw=true)
 
 ## About
-**Dumb Jump** is an Emacs "jump to definition" package with support for 40+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes. Dumb Jump requires at least GNU Emacs `24.3`.
+**Dumb Jump** is an Emacs "jump to definition" package with support for 50+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes. Dumb Jump requires at least GNU Emacs `24.3`.
 
 
 #### How  it works
@@ -19,6 +19,7 @@ For the currently [supported languages](#supported-languages) it seems to do a g
 
 There is currently basic support for the following languages:
 
+* Apex
 * Bash
 * C/C++
 * C#
@@ -27,6 +28,7 @@ There is currently basic support for the following languages:
 * Common Lisp
 * Coq
 * Crystal
+* Dart
 * Elixir
 * Emacs Lisp
 * Erlang
@@ -49,6 +51,7 @@ There is currently basic support for the following languages:
 * Objective-C
 * OCaml
 * OpenSCAD
+* Org mode
 * Pascal
 * Perl
 * PHP
@@ -58,16 +61,19 @@ There is currently basic support for the following languages:
 * Racket
 * Ruby
 * Rust
-* SML
+* Sass
 * Scala
 * Scheme
+* SML
 * SQL
 * Swift
 * SystemVerilog
 * Tcl
+* Terraform / HCL
 * TypeScript
 * Vala
 * VHDL
+* Zig
 
 
 If you have any issues with the existing languages, or you want support for another one, then please [open an issue](https://github.com/jacktasia/dumb-jump/issues). PRs are also welcome. If you'd like to add a language these PRs for [lua](https://github.com/jacktasia/dumb-jump/pull/33) and [rust](https://github.com/jacktasia/dumb-jump/pull/57) are good examples.
