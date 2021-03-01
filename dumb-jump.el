@@ -1,4 +1,4 @@
-;;; dumb-jump.el --- Jump to definition for 40+ languages without configuration -*- lexical-binding: t; -*-
+;;; dumb-jump.el --- Jump to definition for 50+ languages without configuration -*- lexical-binding: t; -*-
 ;; Copyright (C) 2015-2019 jack angers
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/jacktasia/dumb-jump
