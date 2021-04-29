@@ -104,6 +104,19 @@ To enable the [xref][] backend, evaluate
 or add it to your initialisation file. Using this, you can now use
 <kbd>M-.</kbd> (or <kbd>gd</kbd> when using Evil).
 
+Xref can be customized to use `completing-read` to select a
+target. That way a completion framework of your choice (Icomplete,
+Helm, Ivy, ...) will be used instead of the default pop-up buffer. To
+do this, evaluate
+
+~~~lisp
+(setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+~~~
+
+Note that the function `xref-show-definitions-completing-read`
+requires at least Xref 1.1.0. This can either be downloaded from ELPA
+or is bundled with Emacs 28.1 or newer.
+
 [xref]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html
 
 ## Configuration
