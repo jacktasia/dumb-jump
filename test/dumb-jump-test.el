@@ -448,7 +448,7 @@
          (results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
                     (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
     (with-mock
-     (mock (helm-build-sync-source * :action * :candidates * :persistent-action *))
+     (mock (helm-make-source "Jump to: " 'helm-source-sync :action * :candidates * :persistent-action *))
      (mock (helm * * :buffer "*helm dumb jump choices*"))
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
