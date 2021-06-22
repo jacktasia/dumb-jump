@@ -65,6 +65,7 @@ There is currently basic support for the following languages:
 * Scala
 * Scheme
 * SML
+* Solidity
 * SQL
 * Swift
 * SystemVerilog
