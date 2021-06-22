@@ -758,6 +758,23 @@ or most optimal searcher."
            :regex "object\\s*JJJ\\s*\\\(?"
            :tests ("object test(object)"))
 
+    ;; solidity
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "solidity"
+           :regex  "function\\s*JJJ\\s*\\\("
+           :tests ("function test() internal" "function test (uint x, address y)" "function test() external"))
+
+    (:type "modifier" :supports ("ag" "grep" "rg" "git-grep") :language "solidity"
+           :regex  "modifier\\s*JJJ\\s*\\\("
+           :tests ("modifier test()" "modifier test ()"))
+
+    (:type "event" :supports ("ag" "grep" "rg" "git-grep") :language "solidity"
+           :regex  "event\\s*JJJ\\s*\\\("
+           :tests ("event test();" "event test (uint indexed x)" "event test(uint x, address y)"))
+
+    (:type "error" :supports ("ag" "grep" "rg" "git-grep") :language "solidity"
+           :regex  "error\\s*JJJ\\s*\\\("
+           :tests ("error test();" "error test (uint x)" "error test(uint x, address y)"))
+
     ;; R
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "r"
            :regex "\\bJJJ\\s*=[^=><]" :tests ("test = 1234") :not ("if (test == 1234)"))
@@ -1639,6 +1656,7 @@ or most optimal searcher."
     (:language "shell" :ext "ksh" :agtype nil :rgtype nil)
     (:language "shell" :ext "tcsh" :agtype nil :rgtype nil)
     (:language "sml" :ext "sml" :agtype "sml" :rgtype "sml")
+    (:language "solidity" :ext "sol" :agtype nil :rgtype nil)
     (:language "sql" :ext "sql" :agtype "sql" :rgtype "sql")
     (:language "swift" :ext "swift" :agtype nil :rgtype "swift")
     (:language "tex" :ext "tex" :agtype "tex" :rgtype "tex")
@@ -2333,6 +2351,7 @@ current file."
     (:comment "//" :language "scala")
     (:comment ";" :language "scheme")
     (:comment "#" :language "shell")
+    (:comment "//" :language "solidity")
     (:comment "//" :language "swift")
     (:comment "#" :language "elixir")
     (:comment "%" :language "erlang")
