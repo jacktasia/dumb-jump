@@ -1,8 +1,8 @@
 ;;; dumb-jump.el --- Jump to definition for 50+ languages without configuration -*- lexical-binding: t; -*-
-;; Copyright (C) 2015-2019 jack angers
+;; Copyright (C) 2015-2021 jack angers
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/jacktasia/dumb-jump
-;; Version: 0.5.3
+;; Version: 0.5.4
 ;; Package-Requires: ((emacs "24.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
