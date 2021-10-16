@@ -621,18 +621,18 @@ or most optimal searcher."
 
     ;; nim
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "nim"
-           :regex "(const|let|var)\\s*JJJ\\s*(=|:)[^=:\\n]+"
-           :tests ("let test = 1234" "var test = 1234" "var test: Stat" "const test = 1234")
+           :regex "(const|let|var)\\s*JJJ\\*?\\s*(=|:)[^=:\\n]+"
+           :tests ("let test = 1234" "var test = 1234" "var test: Stat" "const test = 1234" "const test* = 1234")
            :not ("if test == 1234:"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "nim"
-           :regex "(proc|func|macro|template)\\s*`?JJJ`?\\b\\s*\\\("
-           :tests ("\tproc test(asdf)" "proc test()" "func test()" "macro test()" "template test()")
+           :regex "(proc|func|macro|template)\\s*`?JJJ`?\\b\\*?\\s*\\\("
+           :tests ("\tproc test(asdf)" "proc test()" "func test()" "macro test()" "template test()" "proc test*()")
            :not ("\tproc testnot(asdf)" "proc testnot()"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "nim"
-           :regex "type\\s*JJJ\\b\\s*(\\{[^}]+\\})?\\s*=\\s*\\w+"
-           :tests ("type test = object" "type test {.pure.} = enum")
+           :regex "type\\s*JJJ\\b\\*?\\s*(\\{[^}]+\\})?\\s*=\\s*\\w+"
+           :tests ("type test = object" "type test {.pure.} = enum" "type test* = ref object")
            :not ("type testnot = object"))
 
     ;; nix
