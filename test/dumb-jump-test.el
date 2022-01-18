@@ -1042,6 +1042,42 @@
        (mock (dumb-jump-goto-file-line * 6 18))
        (should (string= cpp-file (dumb-jump-go)))))))
 
+(ert-deftest dumb-jump-org-test1 ()
+  (let ((org-file (f-join test-data-dir-proj1 "src" "org" "test.org")))
+    (with-current-buffer (find-file-noselect org-file t)
+      (goto-char (point-min))
+      (forward-line 3)
+      (forward-char 2)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 9 6))
+       (should (string= org-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-org-test2 ()
+  (let ((org-file (f-join test-data-dir-proj1 "src" "org" "test.org")))
+    (with-current-buffer (find-file-noselect org-file t)
+      (goto-char (point-min))
+      (forward-line 14)
+      (forward-char 10)
+       (with-mock
+       (mock (dumb-jump-goto-file-line * 21 2))
+       (should (string= org-file (dumb-jump-go)))))))
+
+(ert-deftest dumb-jump-org-issue135 ()
+      (require 'org)
+      (require 'ob-python)
+      (org-babel-do-load-languages 'org-babel-load-languages '((python . t)))
+      (let ((org-file (f-join test-data-dir-proj1 "src" "org" "test.org")))
+    (with-current-buffer (find-file-noselect org-file t)
+     (goto-char (point-min))
+      (forward-line 3)
+      (forward-char 2)
+      (org-edit-src-code) 
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 9 6))
+       (should (string= org-file (dumb-jump-go)))))))
+
+
+
 ;; This test verifies that having ".dumbjumpignore" files in the two sub-projects will make it find
 ;; the "multiproj" folder as project root since it has a ".dumbjump" file. The two sub-projects have
 ;; a dummy ".git" folder to signify it as a repository that would normally become the root without
