@@ -50,7 +50,7 @@
 (require 'cl-lib)
 
 (defgroup dumb-jump nil
-  "Easily jump to project function and variable definitions."
+  "Easily jump to project function and variable definitions"
   :group 'tools
   :group 'convenience)
 
@@ -235,19 +235,19 @@ or most optimal searcher."
 
 (defcustom dumb-jump-git-grep-search-args
   ""
-  "Appends the passed arguments to the git-grep search function. Default: \"\"."
+  "Appends the passed arguments to the git-grep search function. Default: \"\""
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-ag-search-args
   ""
-  "Appends the passed arguments to the ag search function. Default: \"\"."
+  "Appends the passed arguments to the ag search function. Default: \"\""
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-rg-search-args
   "--pcre2"
-  "Appends the passed arguments to the rg search function. Default: \"--pcre2\"."
+  "Appends the passed arguments to the rg search function. Default: \"--pcre2\""
   :group 'dumb-jump
   :type 'string)
 
@@ -1777,8 +1777,8 @@ If `nil` always show list of more than 1 match."
 
 (defcustom dumb-jump-confirm-jump-to-modified-file
   t
-  "If t, confirm before jumping to a modified file (which may lead to an inaccurate jump).
-If nil, jump without confirmation but print a warning."
+  "If t, confirm before jumping to a modified file (which may lead to an
+inaccurate jump).  If nil, jump without confirmation but print a warning."
   :group 'dumb-jump
   :type 'boolean)
 
@@ -1850,7 +1850,7 @@ If nil, jump without confirmation but print a warning."
     (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun dumb-jump-run-test-temp-file (test thefile realcmd)
-  "Write content to the temporary file, run cmd on it, return result."
+  "Write content to the temporary file, run cmd on it, return result"
   (with-temp-buffer
     (insert test)
     (write-file thefile nil)
@@ -1866,8 +1866,8 @@ Because git grep must be given a file as input, not just a string."
     (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
 
 (defun dumb-jump-run-ag-test (test cmd)
-  "Use TEST as input, but first write it into temporary file and then run ag on it.
-The difference is that ag ignores multiline
+  "Use TEST as input, but first write it into temporary file
+and then run ag on it. The difference is that ag ignores multiline
 matches when passed input from stdin, which is a crucial feature."
   (let ((thefile ".ag.test"))
     (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
@@ -2025,8 +2025,8 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
           (s-trim (plist-get result :context))))
 
 (defun dumb-jump-ivy-jump-to-selected (results choices _proj)
-  "Offer CHOICES as candidates through `ivy-read', then execute `dumb-jump-result-follow' on the selected choice.
-Ignore _PROJ."
+  "Offer CHOICES as candidates through `ivy-read', then execute
+`dumb-jump-result-follow' on the selected choice.  Ignore _PROJ."
   (ivy-read "Jump to: " (-zip choices results)
             :action (lambda (cand)
                       (dumb-jump-result-follow (cdr cand)))
@@ -2044,9 +2044,9 @@ for user to select.  Filters PROJ path from files for display."
      ((and (eq dumb-jump-selector 'helm) (fboundp 'helm))
       (helm :sources
             (helm-make-source "Jump to: " 'helm-source-sync
-                              :action '(("Jump to match" . dumb-jump-result-follow))
-                              :candidates (-zip choices results)
-                              :persistent-action 'dumb-jump-helm-persist-action)
+                                    :action '(("Jump to match" . dumb-jump-result-follow))
+                                    :candidates (-zip choices results)
+                                    :persistent-action 'dumb-jump-helm-persist-action)
             :buffer "*helm dumb jump choices*"))
      (t
       (dumb-jump-to-selected results choices (popup-menu* choices))))))
@@ -2757,7 +2757,9 @@ searcher symbol."
     (dumb-jump-generators-by-searcher 'grep))))
 
 (defun dumb-jump-shell-command-switch ()
-  "Yields the shell command switch to use for the current `shell-file-name' in order to not load the shell profile/RC for speeding up things."
+  "Yields the shell command switch to use for the current
+  `shell-file-name' in order to not load the shell profile/RC for
+  speeding up things."
   (let ((base-name (downcase (file-name-base shell-file-name))))
     (cond
      ((or (string-equal "zsh" base-name)
@@ -3117,7 +3119,7 @@ Using ag to search only the files found via git-grep literal symbol search."
 
 ;;;###autoload
 (define-minor-mode dumb-jump-mode
-  "Minor mode for jumping to variable and function definitions."
+  "Minor mode for jumping to variable and function definitions"
   :global t
   :keymap dumb-jump-mode-map)
 
