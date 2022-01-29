@@ -50,7 +50,7 @@
 (require 'cl-lib)
 
 (defgroup dumb-jump nil
-  "Easily jump to project function and variable definitions"
+  "Easily jump to project function and variable definitions."
   :group 'tools
   :group 'convenience)
 
@@ -235,19 +235,19 @@ or most optimal searcher."
 
 (defcustom dumb-jump-git-grep-search-args
   ""
-  "Appends the passed arguments to the git-grep search function. Default: \"\""
+  "Appends the passed arguments to the git-grep search function. Default: \"\"."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-ag-search-args
   ""
-  "Appends the passed arguments to the ag search function. Default: \"\""
+  "Appends the passed arguments to the ag search function. Default: \"\"."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-rg-search-args
   "--pcre2"
-  "Appends the passed arguments to the rg search function. Default: \"--pcre2\""
+  "Appends the passed arguments to the rg search function. Default: \"--pcre2\"."
   :group 'dumb-jump
   :type 'string)
 
@@ -1777,8 +1777,8 @@ If `nil` always show list of more than 1 match."
 
 (defcustom dumb-jump-confirm-jump-to-modified-file
   t
-  "If t, confirm before jumping to a modified file (which may lead to an
-inaccurate jump).  If nil, jump without confirmation but print a warning."
+  "If t, confirm before jumping to a modified file (which may lead to an inaccurate jump).
+If nil, jump without confirmation but print a warning."
   :group 'dumb-jump
   :type 'boolean)
 
@@ -1850,7 +1850,7 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
     (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun dumb-jump-run-test-temp-file (test thefile realcmd)
-  "Write content to the temporary file, run cmd on it, return result"
+  "Write content to the temporary file, run cmd on it, return result."
   (with-temp-buffer
     (insert test)
     (write-file thefile nil)
@@ -1866,8 +1866,8 @@ Because git grep must be given a file as input, not just a string."
     (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
 
 (defun dumb-jump-run-ag-test (test cmd)
-  "Use TEST as input, but first write it into temporary file
-and then run ag on it. The difference is that ag ignores multiline
+  "Use TEST as input, but first write it into temporary file and then run ag on it.
+The difference is that ag ignores multiline
 matches when passed input from stdin, which is a crucial feature."
   (let ((thefile ".ag.test"))
     (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
@@ -2025,8 +2025,8 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
           (s-trim (plist-get result :context))))
 
 (defun dumb-jump-ivy-jump-to-selected (results choices _proj)
-  "Offer CHOICES as candidates through `ivy-read', then execute
-`dumb-jump-result-follow' on the selected choice.  Ignore _PROJ."
+  "Offer CHOICES as candidates through `ivy-read', then execute `dumb-jump-result-follow' on the selected choice.
+Ignore _PROJ."
   (ivy-read "Jump to: " (-zip choices results)
             :action (lambda (cand)
                       (dumb-jump-result-follow (cdr cand)))
@@ -2098,7 +2098,7 @@ to keep looking for another root."
   "In org mode, if inside a src block return
 associated language or org when outside a src block."
   (let ((lang (nth 0 (org-babel-get-src-block-info))))
-                                        ; if lang exists then create a composite language
+;; if lang exists then create a composite language
     (if lang
         (dumb-jump-make-composite-language
          "org"
@@ -2113,15 +2113,12 @@ return a new proplist. The new proplis is PROPLIS
 where a NEWLANG plist(s) is (are) added to PROPLIST.
 The plist(s) value of NEWLANG is (are) copied from
 those of LANG and LANG is replaced by NEWLANG." 
-  (let ((alreadyuptodate
-         (--filter (string= newlang (plist-get it :language))
-                   proplist)))
-    (if alreadyuptodate
-        nil
+  (unless (--filter (string= newlang (plist-get it :language))
+                   proplist)
       (--splice
        (string= lang (plist-get it :language))
        (list it (plist-put (copy-tree it) :language newlang))
-       proplist))))
+       proplist)))
 
 (defun dumb-jump-make-composite-language (mode lang extension agtype rgtype)
   "Concat one MODE  (usually the string org) with a LANG  (c or python or etc)
@@ -2138,27 +2135,25 @@ Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
          (newfindrule (dumb-jump-add-language-to-proplist complang dumb-jump-find-rules lang))
          (newfileexts (dumb-jump-add-language-to-proplist complang dumb-jump-language-file-exts lang)))
     ;; add (if needed) composite language to dumb-jump-find-rules
-    (if newfindrule
+    (when newfindrule
         (set-default 'dumb-jump-find-rules newfindrule))
     ;; add (if needed) composite language to dumb-jump-language-file-exts
-    (if (not dumb-jump-search-type-org-only-org)
-        (if newfileexts
+    (unless dumb-jump-search-type-org-only-org
+        (when newfileexts
             (set-default 'dumb-jump-language-file-exts newfileexts)))
     ;; add (if needed) a new extension to dumb-jump-language-file-exts
-    (if (not alreadyextension)
+    (unless alreadyextension
         (set-default 'dumb-jump-language-file-exts
                      (cons `(:language ,complang :ext ,extension :agtype ,agtype :rgtype ,rgtype)
                            dumb-jump-language-file-exts)))
     complang))
 
 (defun dumb-jump-get-language-from-aliases (lang)
-  "Extract the lang from aliases."
-  (let* ((lookup '(sh "shell" shell "shell" cperl "perl"
-                      matlab "matlab" octave "matlab"
-                      emacs-lisp "elisp" elisp "elisp"
-                      R "r" r "r"))
-         (result (plist-get lookup (intern lang))))
-    (if result result nil)))
+  "Extract the lang from LANG and aliases."
+  (assoc-default lang '(("sh" . "shell") ("shell" . "shell") ("cperl" . "perl")
+                      ("matlab" . "matlab") ("octave" . "matlab")
+                      ("emacs-lisp" . "elisp") ("elisp" . "elisp")
+                      ("R" . "r") ("r" . "r"))))
 
 (defun dumb-jump-get-mode-base-name ()
   "Get the base name of the mode."
@@ -2185,8 +2180,7 @@ Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
   `(:results nil :lang nil :symbol nil :ctx-type nil :file nil :root nil :issue ,(intern issue)))
 
 (defun dumb-jump-get-results (&optional prompt)
-  "Run dumb-jump-fetch-results if searcher installed, buffer is saved,
-and there's a symbol under point."
+  "Run dumb-jump-fetch-results if searcher installed, buffer is saved, and there's a symbol under point."
   (cond
    ((not (or (dumb-jump-ag-installed?)
              (dumb-jump-rg-installed?)
@@ -2763,9 +2757,7 @@ searcher symbol."
     (dumb-jump-generators-by-searcher 'grep))))
 
 (defun dumb-jump-shell-command-switch ()
-  "Yields the shell command switch to use for the current
-  `shell-file-name' in order to not load the shell profile/RC for
-  speeding up things."
+  "Yields the shell command switch to use for the current `shell-file-name' in order to not load the shell profile/RC for speeding up things."
   (let ((base-name (downcase (file-name-base shell-file-name))))
     (cond
      ((or (string-equal "zsh" base-name)
@@ -3125,7 +3117,7 @@ Using ag to search only the files found via git-grep literal symbol search."
 
 ;;;###autoload
 (define-minor-mode dumb-jump-mode
-  "Minor mode for jumping to variable and function definitions"
+  "Minor mode for jumping to variable and function definitions."
   :global t
   :keymap dumb-jump-mode-map)
 
