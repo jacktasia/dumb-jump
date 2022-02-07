@@ -2079,15 +2079,10 @@ to keep looking for another root."
                                         ; src edit buffer ? org-edit-src-exit
     (if (and (fboundp 'org-src-edit-buffer-p)
              (org-src-edit-buffer-p))
-        ;; set the composite language
-        (let* ((beg org-src--beg-marker)
-               (source-buffer (marker-buffer beg)))
-          (with-current-buffer source-buffer
-            (setq language (dumb-jump-get-language-in-org)))
-          ;; save+exit the sub-editing buffer and search in project
-          (org-edit-src-exit))
-      (if (string= language "org")
-          (setq language (dumb-jump-get-language-in-org))))
+        (progn (setq language "org")
+               (org-edit-src-exit)))
+    (if (string= language "org")
+        (setq language (dumb-jump-get-language-in-org)))
     (if (member language (-distinct
                           (--map (plist-get it :language)
                                  dumb-jump-find-rules)))
