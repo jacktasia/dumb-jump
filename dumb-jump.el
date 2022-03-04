@@ -2080,7 +2080,9 @@ to keep looking for another root."
     (if (and (fboundp 'org-src-edit-buffer-p)
              (org-src-edit-buffer-p))
         (progn (setq language "org")
-               (org-edit-src-exit)))
+               (org-edit-src-exit)
+               (if (version< org-version "9")
+                   (save-buffer))))
     (if (string= language "org")
         (setq language (dumb-jump-get-language-in-org)))
     (if (member language (-distinct
