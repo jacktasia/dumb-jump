@@ -1729,7 +1729,7 @@ a symbol then it's probably a function call"
                                (string :tag "Regular expression")))))))
 
 (defcustom dumb-jump-project-denoters
-  '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile" "PkgInfo" "-pkg.el")
+  '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile" "PkgInfo" "-pkg.el" "_FOSSIL_")
   "Files and directories that signify a directory is a project root."
   :group 'dumb-jump
   :type '(repeat (string  :tag "Name")))
