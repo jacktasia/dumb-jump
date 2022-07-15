@@ -2891,7 +2891,7 @@ searcher symbol."
   "Search for the literal SYMBOL in the PROJ-ROOT via git grep for a list of file matches."
   (let* ((cmd (format "git grep --full-name -F -c %s %s" (shell-quote-argument symbol) proj-root))
          (result (s-trim (shell-command-to-string cmd)))
-         (matched-files (--map (first (s-split ":" it))
+         (matched-files (--map (cl-first (s-split ":" it))
                                (s-split "\n" result))))
     matched-files))
 
