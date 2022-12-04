@@ -22,7 +22,7 @@ jobs:
           - '26.2'
           - '26.3'
           - '27.1'
-          - 'snapshot'
+          - '28.1'
         cask_version:
           - 'snapshot'
     steps:
