@@ -378,6 +378,24 @@ or most optimal searcher."
            :tests ("(define (foo test)" "(define (foo test bar)")
            :not ("(define foo test" "(define (test foo" "(define (test)"))
 
+    ;; janet
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "janet"
+           :regex "\\(\(de\)?f\\s+JJJ\\j"
+           :tests ("(def test (foo)"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "janet"
+           :regex "\\(var\\s+JJJ\\j"
+           :tests ("(var test (foo)"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "janet"
+           :regex "\\(\(de\)fn-?\\s+JJJ\\j"
+           :tests ("(defn test [foo]" "(defn- test [foo]")
+           :not ("(defn test? [foo]" "(defn- test? [foo]"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "janet"
+           :regex "\\(defmacro\\s+JJJ\\j"
+           :tests ("(defmacro test [foo]"))
+
     ;; c++
     (:type "function" :supports ("ag" "rg" "git-grep") :language "c++"
            :regex "\\bJJJ(\\s|\\))*\\((\\w|[,&*.<>:]|\\s)*(\\))\\s*(const|->|\\{|$)|typedef\\s+(\\w|[(*]|\\s)+JJJ(\\)|\\s)*\\("
@@ -1656,6 +1674,7 @@ or most optimal searcher."
     (:language "scheme" :ext "scm" :agtype "scheme" :rgtype "lisp")
     (:language "scheme" :ext "ss" :agtype "scheme" :rgtype "lisp")
     (:language "scheme" :ext "sld" :agtype "scheme" :rgtype "lisp")
+    (:language "janet" :ext "janet" :agtype "janet" :rgtype "lisp")
     (:language "shell" :ext "sh" :agtype nil :rgtype nil)
     (:language "shell" :ext "bash" :agtype nil :rgtype nil)
     (:language "shell" :ext "csh" :agtype nil :rgtype nil)
@@ -2356,6 +2375,7 @@ current file."
     (:comment "#" :language "nix")
     (:comment "//" :language "scala")
     (:comment ";" :language "scheme")
+    (:comment "#" :language "janet")
     (:comment "#" :language "shell")
     (:comment "//" :language "solidity")
     (:comment "//" :language "swift")

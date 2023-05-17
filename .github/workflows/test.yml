@@ -16,20 +16,18 @@ jobs:
     strategy:
       matrix:
         emacs_version:
-          - '24.4'
-          - '24.5'
           - '26.1'
           - '26.2'
           - '26.3'
           - '27.1'
-          - 'snapshot'
+          - '28.1'
         cask_version:
           - 'snapshot'
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-python@v1.1.1
         with:
-          python-version: '3.6'
+          python-version: '3.7.16'
           architecture: 'x64'
       - uses: purcell/setup-emacs@master
         with:
