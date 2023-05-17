@@ -1192,6 +1192,8 @@
 (ert-deftest dumb-jump-pick-grep-variant-fallback-ag ()
   (let* ((dumb-jump-force-searcher nil)
          (dumb-jump-prefer-searcher nil)
+	  (dumb-jump--ag-installed? t)
+         (dumb-jump--rg-installed? nil)
          (gen-funcs (dumb-jump-generators-by-searcher 'ag))
          (variant (dumb-jump-pick-grep-variant)))
     (should (generator-plist-equal gen-funcs variant))))
