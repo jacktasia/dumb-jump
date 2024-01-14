@@ -774,6 +774,10 @@ or most optimal searcher."
            :regex  "error\\s*JJJ\\s*\\\("
            :tests ("error test();" "error test (uint x)" "error test(uint x, address y)"))
 
+    (:type "contract" :supports ("ag" "grep" "rg" "git-grep") :language "solidity"
+           :regex  "contract\\s*JJJ\\s*(is|\\\{)"
+           :tests ("contract test{" "contract test {" "contract test is foo"))
+
     ;; R
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "r"
            :regex "\\bJJJ\\s*=[^=><]" :tests ("test = 1234") :not ("if (test == 1234)"))
