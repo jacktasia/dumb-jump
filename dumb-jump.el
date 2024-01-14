@@ -775,7 +775,7 @@ or most optimal searcher."
            :tests ("error test();" "error test (uint x)" "error test(uint x, address y)"))
 
     (:type "contract" :supports ("ag" "grep" "rg" "git-grep") :language "solidity"
-           :regex  "contract\\s*JJJ\\s*\\(is|{)"
+           :regex  "contract\\s*JJJ\\s*(is|{)"
            :tests ("contract test{" "contract test {" "contract test is foo"))
 
     ;; R
