@@ -1,7 +1,7 @@
 (source gnu)
 (source melpa)
 
-(package-file "dumb-jump.el")
+(package-file "dumber-jump.el")
 
 (development
  (depends-on "el-mock")

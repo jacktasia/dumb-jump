@@ -13,7 +13,7 @@ install:
 
 test-concurrent:
 	cask
-	@go run test/ert_runner.go -p ".*-ag-.*" -p ".*-rg-.*" test/dumb-jump-test.el
+	@go run test/ert_runner.go -p ".*-ag-.*" -p ".*-rg-.*" test/dumber-jump-test.el
 
 test-go:
 	@go test ./... -v
