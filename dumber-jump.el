@@ -1816,7 +1816,7 @@ to keep looking for another root."
   (cond
    ((not (dumber-jump-rg-installed?))
     (dumber-jump-issue-result "nogrep"))
-   ((or (string= (buffer-name) "*shell*")
+   ((or (string= (buffer-name) "*shell*") ; TODO: seriously?!?
         (string= (buffer-name) "*eshell*"))
     (dumber-jump-fetch-shell-results prompt))
    ((and (not prompt) (not (region-active-p)) (not (thing-at-point 'symbol)))
