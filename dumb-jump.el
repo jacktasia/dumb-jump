@@ -2025,7 +2025,7 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
 (defun dumb-jump-ivy-jump-to-selected (results choices _proj)
   "Offer CHOICES as candidates through `ivy-read', then execute
 `dumb-jump-result-follow' on the selected choice.  Ignore _PROJ."
-  (ivy-read "Jump to: " (-zip choices results)
+  (ivy-read "Jump to: " (-zip-pair choices results)
             :action (lambda (cand)
                       (dumb-jump-result-follow (cdr cand)))
             :caller 'dumb-jump-ivy-jump-to-selected))
@@ -2043,7 +2043,7 @@ for user to select.  Filters PROJ path from files for display."
       (helm :sources
             (helm-make-source "Jump to: " 'helm-source-sync
                                     :action '(("Jump to match" . dumb-jump-result-follow))
-                                    :candidates (-zip choices results)
+                                    :candidates (-zip-pair choices results)
                                     :persistent-action 'dumb-jump-helm-persist-action)
             :buffer "*helm dumb jump choices*"))
      (t
