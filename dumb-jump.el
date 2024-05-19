@@ -54,14 +54,6 @@
   :group 'tools
   :group 'convenience)
 
-;;;###autoload
-(defvar dumb-jump-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-M-g") 'dumb-jump-go)
-    (define-key map (kbd "C-M-p") 'dumb-jump-back)
-    (define-key map (kbd "C-M-q") 'dumb-jump-quick-look)
-    map))
-
 (defcustom dumb-jump-window
   'current
   "Which window to use when jumping.  Valid options are 'current (default) or 'other."
@@ -1780,11 +1772,6 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
   :group 'dumb-jump
   :type 'boolean)
 
-(defcustom dumb-jump-disable-obsolete-warnings nil
-  "If non-nil, don't warn about using the legacy interface."
-  :group 'dumb-jump
-  :type 'boolean)
-
 (defun dumb-jump-message-prin1 (str &rest args)
   "Helper function when debugging apply STR 'prin1-to-string' to all ARGS."
   (apply 'message str (-map 'prin1-to-string args)))
@@ -2229,93 +2216,6 @@ of project configuration."
 
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
-;;;###autoload
-(defun dumb-jump-back ()
-  "Jump back to where the last jump was done."
-  (interactive)
-  (with-demoted-errors "Error running `dumb-jump-before-jump-hook': %S"
-    (run-hooks 'dumb-jump-before-jump-hook))
-  (pop-tag-mark)
-  (with-demoted-errors "Error running `dumb-jump-after-jump-hook': %S"
-    (run-hooks 'dumb-jump-after-jump-hook)))
-
-;;;###autoload
-(defun dumb-jump-quick-look ()
-  "Run dumb-jump-go in quick look mode.  That is, show a tooltip of where it would jump instead."
-  (interactive)
-  (dumb-jump-go t))
-
-;;;###autoload
-(defun dumb-jump-go-other-window ()
-  "Like 'dumb-jump-go' but use 'find-file-other-window' instead of 'find-file'."
-  (interactive)
-  (let ((dumb-jump-window 'other))
-    (dumb-jump-go)))
-
-;;;###autoload
-(defun dumb-jump-go-current-window ()
-  "Like dumb-jump-go but always use 'find-file'."
-  (interactive)
-  (let ((dumb-jump-window 'current))
-    (dumb-jump-go)))
-
-;;;###autoload
-(defun dumb-jump-go-prefer-external ()
-  "Like dumb-jump-go but prefer external matches from the current file."
-  (interactive)
-  (dumb-jump-go nil t))
-
-;;;###autoload
-(defun dumb-jump-go-prompt ()
-  "Like dumb-jump-go but prompts for function instead of using under point"
-  (interactive)
-  (dumb-jump-go nil nil (read-from-minibuffer "Jump to: ")))
-
-;;;###autoload
-(defun dumb-jump-go-prefer-external-other-window ()
-  "Like dumb-jump-go-prefer-external but use 'find-file-other-window' instead of 'find-file'."
-  (interactive)
-  (let ((dumb-jump-window 'other))
-    (dumb-jump-go-prefer-external)))
-
-;;;###autoload
-(defun dumb-jump-go (&optional use-tooltip prefer-external prompt)
-  "Go to the function/variable declaration for thing at point.
-When USE-TOOLTIP is t a tooltip jump preview will show instead.
-When PREFER-EXTERNAL is t it will sort external matches before
-current file."
-  (interactive "P")
-  (let* ((start-time (float-time))
-         (info (dumb-jump-get-results prompt))
-         (end-time (float-time))
-         (fetch-time (- end-time start-time))
-         (results (plist-get info :results))
-         (look-for (or prompt (plist-get info :symbol)))
-         (proj-root (plist-get info :root))
-         (issue (plist-get info :issue))
-         (lang (plist-get info :lang))
-         (result-count (length results)))
-    (when (> fetch-time dumb-jump-max-find-time)
-      (dumb-jump-message
-       "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
-       (number-to-string dumb-jump-max-find-time) look-for proj-root))
-    (cond
-     ((eq issue 'nogrep)
-      (dumb-jump-message "Please install ag, rg, git grep or grep!"))
-     ((eq issue 'nosymbol)
-      (dumb-jump-message "No symbol under point."))
-     ((s-ends-with? " file" lang)
-      (dumb-jump-message "Could not find rules for '%s'." lang))
-     ((= result-count 1)
-      (dumb-jump-result-follow (car results) use-tooltip proj-root))
-     ((> result-count 1)
-      ;; multiple results so let the user pick from a list
-      ;; unless the match is in the current file
-      (dumb-jump-handle-results results (plist-get info :file) proj-root (plist-get info :ctx-type)
-                                look-for use-tooltip prefer-external))
-     ((= result-count 0)
-      (dumb-jump-message "'%s' %s %s declaration not found." look-for (if (s-blank? lang) "with unknown language so" lang) (plist-get info :ctx-type))))))
-
 (defcustom dumb-jump-language-comments
   '((:comment "//" :language "c++")
     (:comment ";" :language "elisp")
@@ -2389,37 +2289,6 @@ given the LANG of the current file."
         (-concat
          (--filter (not (s-starts-with? comment (s-trim (plist-get it :context)))) results))
       results)))
-
-(defun dumb-jump-handle-results
-    (results cur-file proj-root ctx-type look-for use-tooltip prefer-external)
-  "Handle the searchers results.
-RESULTS is a list of property lists with the searcher's results.
-CUR-FILE is the current file within PROJ-ROOT.
-CTX-TYPE is a string of the current context.
-LOOK-FOR is the symbol we're jumping for.
-USE-TOOLTIP shows a preview instead of jumping.
-PREFER-EXTERNAL will sort current file last."
-  (let* ((processed (dumb-jump-process-results results cur-file proj-root ctx-type look-for use-tooltip prefer-external))
-         (results (plist-get processed :results))
-         (do-var-jump (plist-get processed :do-var-jump))
-         (var-to-jump (plist-get processed :var-to-jump))
-         (match-cur-file-front (plist-get processed :match-cur-file-front)))
-    (dumb-jump-debug-message
-     look-for
-     ctx-type
-     var-to-jump
-     (pp-to-string match-cur-file-front)
-     (pp-to-string results)
-     prefer-external
-     proj-root
-     cur-file)
-    (cond
-     (use-tooltip ;; quick-look mode
-      (popup-menu* (--map (dumb-jump--format-result proj-root it) results)))
-     (do-var-jump
-      (dumb-jump-result-follow var-to-jump use-tooltip proj-root))
-     (t
-      (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front)))))
 
 (defun dumb-jump-process-results
     (results cur-file proj-root ctx-type _look-for _use-tooltip prefer-external)
@@ -3040,35 +2909,7 @@ Using ag to search only the files found via git-grep literal symbol search."
         (--filter (string= (plist-get it ':type) "function") results)
       results)))
 
-;;;###autoload
-(define-minor-mode dumb-jump-mode
-  "Minor mode for jumping to variable and function definitions"
-  :global t
-  :keymap dumb-jump-mode-map)
-
-
-;;; Xref Backend
 (when (featurep 'xref)
-  (unless dumb-jump-disable-obsolete-warnings
-    (dolist (obsolete
-             '(dumb-jump-mode
-               dumb-jump-go
-               dumb-jump-go-prefer-external-other-window
-               dumb-jump-go-prompt
-               dumb-jump-quick-look
-               dumb-jump-go-other-window
-               dumb-jump-go-current-window
-               dumb-jump-go-prefer-external
-               dumb-jump-go-current-window))
-      (make-obsolete
-       obsolete
-       (format "`%s' has been obsoleted by the xref interface."
-               obsolete)
-       "2020-06-26"))
-    (make-obsolete 'dumb-jump-back
-                   "`dumb-jump-back' has been obsoleted by `xref-pop-marker-stack'."
-                   "2020-06-26"))
-
   (cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumb-jump)))
     (let ((bounds (bounds-of-thing-at-point 'symbol)))
       (and bounds (let* ((ident (dumb-jump-get-point-symbol))
