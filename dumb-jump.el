@@ -1772,10 +1772,6 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
   :group 'dumb-jump
   :type 'boolean)
 
-(defun dumb-jump-message-prin1 (str &rest args)
-  "Helper function when debugging apply STR 'prin1-to-string' to all ARGS."
-  (apply 'message str (-map 'prin1-to-string args)))
-
 (defvar dumb-jump--ag-installed? 'unset)
 (defun dumb-jump-ag-installed? ()
   "Return t if ag is installed."
