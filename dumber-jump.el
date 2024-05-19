@@ -67,21 +67,6 @@
   :group 'dumber-jump
   :type 'boolean)
 
-(defcustom dumber-jump-selector
-  'popup
-  "Which selector to use when there is multiple choices.  `ivy` and `helm' are also supported."
-  :group 'dumber-jump
-  :type '(choice (const :tag "Popup" popup)
-                 (const :tag "Helm" helm)
-                 (const :tag "Ivy" ivy)
-                 (const :tag "Completing Read" completing-read)))
-
-(defcustom dumber-jump-ivy-jump-to-selected-function
-  #'dumber-jump-ivy-jump-to-selected
-  "Prompts user for a choice using ivy then dumber-jump to that choice."
-  :group 'dumber-jump
-  :type 'function)
-
 (defcustom dumber-jump-prefer-searcher
   nil
   "The preferred searcher to use 'ag, 'rg, 'git-grep, 'gnu-grep,or 'grep.
@@ -1981,56 +1966,18 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
     (when result
       (dumber-jump-result-follow result))))
 
-(defun dumber-jump-helm-persist-action (candidate)
-  "Previews CANDIDATE in a temporary buffer displaying the file at the matched line.
-\\<helm-map>
-This is the persistent action (\\[helm-execute-persistent-action]) for helm."
-  (let* ((file (plist-get candidate :path))
-         (line (plist-get candidate :line))
-         (default-directory-old default-directory))
-    (switch-to-buffer (get-buffer-create " *helm dumber jump persistent*"))
-    (setq default-directory default-directory-old)
-    (fundamental-mode)
-    (erase-buffer)
-    (insert-file-contents file)
-    (let ((buffer-file-name file))
-      (set-auto-mode)
-      (font-lock-fontify-region (point-min) (point-max))
-      (goto-char (point-min))
-      (forward-line (1- line)))))
-
 (defun dumber-jump--format-result (proj result)
   (format "%s:%s: %s"
           (s-replace proj "" (plist-get result :path))
           (plist-get result :line)
           (s-trim (plist-get result :context))))
 
-(defun dumber-jump-ivy-jump-to-selected (results choices _proj)
-  "Offer CHOICES as candidates through `ivy-read', then execute
-`dumber-jump-result-follow' on the selected choice.  Ignore _PROJ."
-  (ivy-read "Jump to: " (-zip-pair choices results)
-            :action (lambda (cand)
-                      (dumber-jump-result-follow (cdr cand)))
-            :caller 'dumber-jump-ivy-jump-to-selected))
-
-(defun dumber-jump-prompt-user-for-choice (proj results)
-  "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy)
+(defun dumber-jump-prompt-user-for-choice (proj results) ; TODO: remove?
+  "Put a PROJ's list of RESULTS using `completing-read'
 for user to select.  Filters PROJ path from files for display."
-  (let ((choices (--map (dumber-jump--format-result proj it) results)))
-    (cond
-     ((eq dumber-jump-selector 'completing-read)
-      (dumber-jump-to-selected results choices (completing-read "Jump to: " choices)))
-     ((and (eq dumber-jump-selector 'ivy) (fboundp 'ivy-read))
-      (funcall dumber-jump-ivy-jump-to-selected-function results choices proj))
-     ((and (eq dumber-jump-selector 'helm) (fboundp 'helm))
-      (helm :sources
-            (helm-make-source "Jump to: " 'helm-source-sync
-                                    :action '(("Jump to match" . dumber-jump-result-follow))
-                                    :candidates (-zip-pair choices results)
-                                    :persistent-action 'dumber-jump-helm-persist-action)
-            :buffer "*helm dumber jump choices*"))
-     (t
-      (dumber-jump-to-selected results choices (popup-menu* choices))))))
+  (let* ((choices   (--map (dumber-jump--format-result proj it) results))
+         (selection (completing-read "Jump to: " choices)))
+    (dumber-jump-to-selected results choices selection)))
 
 (defun dumber-jump-get-project-root (filepath)
   "Keep looking at the parent dir of FILEPATH until a denoter file/dir is found."
