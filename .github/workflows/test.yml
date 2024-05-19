@@ -7,28 +7,23 @@ on:
     paths-ignore:
       - '**.md'
 
-
 jobs:
   build:
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         emacs_version:
-          - '26.1'
-          - '26.2'
-          - '26.3'
-          - '27.1'
-          - '28.1'
+          - '28.2'
+          - '29.1'
+          - '29.2'
+          - '29.3'
         cask_version:
           - 'snapshot'
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/setup-python@v1.1.1
-        with:
-          python-version: '3.7'
-          architecture: 'x64'
       - uses: purcell/setup-emacs@master
         with:
           version: ${{ matrix.emacs_version }}
