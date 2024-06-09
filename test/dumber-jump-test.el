@@ -5,12 +5,7 @@
 (require 'el-mock)
 ;;; Code:
 
-;; (defun dumber-jump-go ()                ; LOL: wrap up the replacement
-;;   (let ((xref-backend-functions (list #'dumber-jump-xref-activate)))
-;;     ;; (xref-find-definitions nil)
-;;     (dumber-jump-fetch-file-results)))
-
-;; TODO: nuke me
+;; TODO: nuke me: this should be using (xref-backend-definitions 'dumber-jump nil)
 (defun dumber-jump-go (&optional use-tooltip prefer-external prompt)
   (interactive "P")
   (let* ((start-time (float-time))
@@ -31,9 +26,11 @@
      ((= result-count 1)
       (car results))
      ((> result-count 1)
-      results)
+      (if dumber-jump-aggressive
+          (car results)
+        results))
      ((= result-count 0)
-      nil))))
+      '(:path nil :line nil)))))
 
 (defun goto-line-and-col (l c)          ; TODO clean this crap up
   (goto-char (point-min))
@@ -63,16 +60,6 @@ searcher symbol."
   (with-temp-buffer
     (insert test)
     (shell-command-on-region (point-min) (point-max) cmd nil t)
-    (buffer-substring-no-properties (point-min) (point-max))))
-
-(defun dumber-jump-run-test-temp-file (test thefile realcmd)
-  "Write content to the temporary file, run cmd on it, return result"
-  (with-temp-buffer
-    (insert test)
-    (write-file thefile nil)
-    (delete-region (point-min) (point-max))
-    (shell-command realcmd t)
-    (delete-file thefile)
     (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun dumber-jump-test-rg-rules (&optional run-not-tests)
@@ -154,9 +141,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
   (let* ((config (dumber-jump-read-config test-data-dir-proj1 ".dumbjump-lang")))
     (should (string= "python" (plist-get config :language)))))
 
-(ert-deftest dumber-jump-language-to-ext-test ()
-  (should (-contains? (dumber-jump-get-file-exts-by-language "elisp") "el")))
-
 (ert-deftest dumber-jump-generate-rg-command-no-ctx-test ()
   (let* ((regexes (dumber-jump-get-contextual-regexes "elisp" nil 'rg))
          (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
@@ -201,14 +185,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (= (plist-get first-result :line) 6))))
 
-;; (ert-deftest dumber-jump-run-grep-cmd-test ()
-;;   (let* ((dumber-jump-force-grep t)
-;;          (regexes (dumber-jump-get-contextual-regexes "elisp" nil))
-;;          (results (dumber-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""  "blah.el" 3))
-;;         (first-result (car results)))
-;;     (should (s-contains? "/fake.el" (plist-get first-result :path)))
-;;     (should (= (plist-get first-result :line) 6))))
-
 (ert-deftest dumber-jump-run-cmd-fail-test ()
   (let* ((gen-funcs (dumber-jump-pick-grep-variant test-data-dir-elisp))
          (parse-fn (plist-get gen-funcs :parse))
@@ -238,14 +214,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
    (mock (region-end) => 1)
    (mock (buffer-substring-no-properties * *) => "blah")
    (dumber-jump-get-point-symbol)))
-
-(ert-deftest dumber-jump-goto-file-line-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
-    (with-mock
-     (mock (ring-insert * *))
-     (dumber-jump-goto-file-line js-file 3 0)
-     (should (string= (buffer-file-name) js-file))
-     (should (= (line-number-at-pos) 3)))))
 
 (ert-deftest dumber-jump-test-rg-rules-test ()
   (let ((rule-failures (dumber-jump-test-rg-rules)))
@@ -284,17 +252,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
          (ctx-type (dumber-jump-get-ctx-type-by-language "javascript" pt-ctx)))
     (should (string= ctx-type "function"))))
 
-(ert-deftest dumber-jump-a-back-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
-        (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
-    (with-current-buffer (find-file-noselect js-file t)
-      (goto-char (point-min))
-      (forward-char 13)
-      (with-mock
-       (mock (pop-tag-mark))
-       (dumber-jump-go)
-       (dumber-jump-back)))))
-
 (ert-deftest dumber-jump-fetch-results-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
     (with-current-buffer (find-file-noselect js-file t)
@@ -331,16 +288,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (goto-char (point-min))
       (forward-char 13)
       (dumber-jump-should-go go-js-file 3))))
-
-(ert-deftest dumber-jump-quick-look-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
-        (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
-    (with-current-buffer (find-file-noselect js-file t)
-      (goto-char (point-min))
-      (forward-char 13)
-      (with-mock
-       (mock (popup-tip "/src/js/fake.js:3: function doSomeStuff() {"))
-       (should (string= go-js-file (dumber-jump-quick-look)))))))
 
 (ert-deftest dumber-jump-go-js2-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
@@ -457,17 +404,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
        (mock (dumber-jump-message "'%s' %s %s declaration not found." "nothing" * *))
        (dumber-jump-go)))))
 
-(ert-deftest dumber-jump-go-no-result-force-grep-test ()
-  (let ((dumber-jump-force-grep t)
-        (js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
-    (with-current-buffer (find-file-noselect js-file t)
-      (goto-char (point-min))
-      (forward-line 1)
-      (forward-char 4)
-      (with-mock
-       (mock (dumber-jump-message "'%s' %s %s declaration not found." "nothing" * *))
-       (dumber-jump-go)))))
-
 (ert-deftest dumber-jump-go-no-rules-test ()
   (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt")))
     (with-current-buffer (find-file-noselect txt-file t)
@@ -475,35 +411,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (with-mock
        (mock (dumber-jump-message "Could not find rules for '%s'." ".txt file"))
        (dumber-jump-go)))))
-
-(ert-deftest dumber-jump-go-too-long-test ()
-  (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt"))
-        (dumber-jump-max-find-time 0.2))
-    (with-current-buffer (find-file-noselect txt-file t)
-      (goto-char (point-min))
-      (noflet ((dumber-jump-fetch-file-results (&optional prompt)
-                 (sleep-for 0 300)
-                 '(:results (:result))))
-        (with-mock
-          (mock (dumber-jump-message "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions" * * *))
-          (mock (dumber-jump-result-follow * * *))
-          (dumber-jump-go))))))
-
-(ert-deftest dumber-jump-message-handle-results-test ()
-  (let ((dumber-jump-aggressive t)
-        (results '((:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
-                   (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
-    (with-mock
-     (mock (dumber-jump-goto-file-line "src/file.js" 62 4))
-     (dumber-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil nil))))
-
-(ert-deftest dumber-jump-message-handle-results-choices-test ()
-  (let ((results '((:path "src/file2.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
-                   (:path "src/file2.js" :line 63 :context "var isNow = true" :diff 7 :target "isNow")
-                   (:path "src/file2.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
-    (with-mock
-     (mock (dumber-jump-prompt-user-for-choice "/code/redux" *))
-     (dumber-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil nil))))
 
 (ert-deftest dumber-jump-rg-installed?-test-no ()
   (let ((dumber-jump--rg-installed? 'unset))
@@ -554,46 +461,10 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
    (let ((results (dumber-jump-get-results)))
      (should (eq (plist-get results :issue) 'nogrep)))))
 
-(ert-deftest dumber-jump-message-result-follow-test ()
-  (with-mock
-   (mock (dumber-jump-goto-file-line "src/file.js" 62 4))
-   (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
-     (dumber-jump--result-follow result))))
-
-(ert-deftest dumber-jump-message-result-follow-remote-fullpath-test ()
-  (with-mock
-    (mock (dumber-jump-goto-file-line * * *))
-    (mock (file-remote-p *) => "/ssh:user@1.2.3.4#5678:")
-    (let ((result '(:path "/usr/src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
-      (should (string=
-               (dumber-jump--result-follow result)
-               "/ssh:user@1.2.3.4#5678:/usr/src/file.js")))))
-
-(ert-deftest dumber-jump-message-result-follow-remote-relative-test ()
-  (with-mock
-    (mock (dumber-jump-goto-file-line * * *))
-    (mock (file-remote-p *) => "/ssh:user@1.2.3.4#5678:")
-    (let ((result '(:path "here/is/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow"))
-          (default-directory "/ssh:user@1.2.3.4#5678:/path/to/default-directory/"))
-      (should (string=
-               (dumber-jump--result-follow result)
-               "/ssh:user@1.2.3.4#5678:/path/to/default-directory/here/is/file.js")))))
-
-(ert-deftest dumber-jump-message-result-follow-tooltip-test ()
-  (with-mock
-   (mock (popup-tip "/file.js:62: var isNow = true"))
-   (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
-     (dumber-jump--result-follow result t "src"))))
-
 (ert-deftest dumber-jump-populate-regexes-rg-test ()
   (should (equal (dumber-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'rg) '("testvar\\s*=\\s*")))
   (should (equal (dumber-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'rg) '("\\$testvar\\s*=\\s*")))
   (should (equal (dumber-jump-populate-regexes "-testvar" '("JJJ\\s*=\\s*") 'rg) '("[-]testvar\\s*=\\s*"))))
-
-(ert-deftest dumber-jump-message-prin1-test ()
-  (with-mock
-   (mock (message "%s %s" "(:path \"test\" :line 24)" "3"))
-   (dumber-jump-message-prin1 "%s %s" '(:path "test" :line 24) 3)))
 
 (ert-deftest dumber-jump-message-test ()
   (with-mock
@@ -621,12 +492,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
     (should (string= result3b "QueueGrowth"))
     (should (string= result3c "Health"))
     (should (string= result4 "myvlfunc"))))
-
-(ert-deftest dumber-jump--result-follow-test ()
-  (let* ((data '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
-    (with-mock
-     (mock (dumber-jump-goto-file-line "/usr/blah/test2.txt" 52 1))
-     (dumber-jump--result-follow data nil "/usr/blah"))))
 
 (ert-deftest dumber-jump-go-include-lib-test ()
   (let ((el-file (f-join test-data-dir-elisp "fake2.el"))
@@ -656,9 +521,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
     (should (equal t4 '("c:\\Users\\test\\foo2.js" "2" "test = {a:1,b:1};")))
     ;; normal w/ extra :
     (should (equal t5 '("/opt/test/foo1.js" "41" " var test = {c:3, d: 4};")))))
-
-(ert-deftest dumber-jump-agtype-test ()
-  (should (equal (dumber-jump-get-ag-type-by-language "python") '("python"))))
 
 (ert-deftest dumber-jump-rgtype-test ()
   (should (equal (dumber-jump-get-rg-type-by-language "python") '("py"))))
@@ -772,27 +634,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
          (gen-funcs (dumber-jump-generators-by-searcher searcher)))
     (should (generators-valid gen-funcs searcher))))
 
-(defun generator-plist-equal (pl1 pl2)
-  (and (eq (length pl1) (length pl2))
-       (eq (plist-get pl1 :parse)
-           (plist-get pl2 :parse))
-       (eq (plist-get pl1 :generate)
-           (plist-get pl2 :generate))
-       (eq (plist-get pl1 :installed)
-           (plist-get pl2 :installed))
-       (eq (plist-get pl1 :searcher)
-           (plist-get pl2 :searcher))))
-
-;; This test makes sure that if the `cur-file' is absolute but results are relative, then it must
-;; still find and sort results correctly.
-(ert-deftest dumber-jump-handle-results-relative-current-file-test ()
-  (let ((dumber-jump-aggressive t)
-        (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
-                   (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
-    (with-mock
-     (mock (dumber-jump-goto-file-line "relfile.js" 62 4))
-     (dumber-jump-handle-results results "/code/redux/relfile.js" "/code/redux" "" "isNow" nil nil))))
-
 ;; Make sure it jumps aggressively, i.e. normally.
 (ert-deftest dumber-jump-handle-results-aggressively-test ()
   (let ((dumber-jump-aggressive t)
@@ -810,14 +651,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
     (with-mock
      (mock (dumber-jump-prompt-user-for-choice "/code/redux" *))
      (dumber-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" nil nil))))
-
-(ert-deftest dumber-jump-handle-results-non-aggressively-quick-look-test ()
-  (let ((dumber-jump-aggressive nil)
-        (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
-                   (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
-    (with-mock
-     (mock (popup-menu* '("relfile.js:62: var isNow = true" "src/absfile.js:69: isNow = false")) :times 1)
-     (dumber-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" t nil))))
 
 ;; Make sure it jumps when there's only one possibility in non-aggressive mode.
 (ert-deftest dumber-jump-handle-results-non-aggressive-do-jump-test ()

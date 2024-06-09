@@ -40,28 +40,15 @@
 
 ;;; Code:
 (require 'xref)
-;; (require 's)
-;; (require 'dash)
-;; (require 'cl-generic nil :noerror)
-;; (require 'cl-lib)
+(require 's)
+(require 'dash)
+(require 'cl-generic nil :noerror)
+(require 'cl-lib)
 
 (defgroup dumber-jump nil
   "Easily jump to project function and variable definitions"
   :group 'tools
   :group 'convenience)
-
-;; (defcustom dumber-jump-window
-;;   'current
-;;   "Which window to use when jumping.  Valid options are 'current (default) or 'other."
-;;   :group 'dumber-jump
-;;   :type '(choice (const :tag "Current window" current)
-;;                  (const :tag "Other window" other)))
-;;
-;; (defcustom dumber-jump-use-visible-window
-;;   t
-;;   "When true will jump in a visible window if that window already has the file open."
-;;   :group 'dumber-jump
-;;   :type 'boolean)
 
 (defcustom dumber-jump-rg-cmd
   "rg"
@@ -2211,12 +2198,6 @@ Ffrom the ROOT project CONFIG-FILE."
 (defun dumber-jump-concat-command (&rest parts)
   "Concat the PARTS of a command if each part has a length."
   (s-join " " (-map #'s-trim (--filter (> (length it) 0) parts))))
-
-;; (defun dumber-jump-get-file-exts-by-language (language)
-;;   "Return list of file extensions for a LANGUAGE."
-;;   (--map (plist-get it :ext)
-;;          (--filter (string= (plist-get it :language) language)
-;;                    dumber-jump-language-file-exts)))
 
 (defun dumber-jump-get-rg-type-by-language (language)
   "Return list of rg type argument for a LANGUAGE."
