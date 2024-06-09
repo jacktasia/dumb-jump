@@ -400,9 +400,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (goto-char (point-min))
       (forward-line 1)
       (forward-char 4)
-      (with-mock
-       (mock (dumber-jump-message "'%s' %s %s declaration not found." "nothing" * *))
-       (dumber-jump-go)))))
+      (dumber-jump-should-go nil nil))))
 
 (ert-deftest dumber-jump-go-no-rules-test ()
   (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt")))
@@ -441,19 +439,17 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
+
       (with-mock
        (mock (dumber-jump-rg-installed?) => nil)
-       (mock (dumber-jump-message "Please install ag, rg, git grep or grep!"))
-       (dumber-jump-go)))))
+       (should (equal "Please install rg!" (dumber-jump-go)))))))
 
 (ert-deftest dumber-jump-go-nosymbol-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 1)
-      (with-mock
-       (mock (dumber-jump-message "No symbol under point."))
-       (dumber-jump-go)))))
+      (should (equal "No symbol under point." (dumber-jump-go))))))
 
 (ert-deftest dumber-jump-message-get-results-nogrep-test ()
   (with-mock
@@ -575,9 +571,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (goto-char (point-min))
       (forward-line 8)
       (forward-char 14)
-      (with-mock
-       (mock (dumber-jump-goto-file-line * 3 6))
-       (should (string= cpp-file (dumber-jump-go)))))))
+      (dumber-jump-should-go cpp-file 3))))
 
 (ert-deftest dumber-jump-cpp-test2 ()
   (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "test.cpp")))
@@ -585,9 +579,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (goto-char (point-min))
       (forward-line 8)
       (forward-char 9)
-      (with-mock
-       (mock (dumber-jump-goto-file-line * 1 6))
-       (should (string= cpp-file (dumber-jump-go)))))))
+      (dumber-jump-should-go cpp-file 1))))
 
 (ert-deftest dumber-jump-cpp-issue87 ()
   (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "issue-87.cpp")))
@@ -595,9 +587,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (goto-char (point-min))
       (forward-line 16)
       (forward-char 12)
-      (with-mock
-       (mock (dumber-jump-goto-file-line * 6 18))
-       (should (string= cpp-file (dumber-jump-go)))))))
+      (dumber-jump-should-go cpp-file 6))))
 
 ;; This test verifies that having ".dumbjumpignore" files in the two sub-projects will make it find
 ;; the "multiproj" folder as project root since it has a ".dumbjump" file. The two sub-projects have
@@ -610,9 +600,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (goto-char (point-min))
       (forward-line 3)
       (forward-char 18)
-      (with-mock
-       (mock (dumber-jump-goto-file-line * 6 6))
-       (should (string= header-file (dumber-jump-go)))))))
+      (dumber-jump-should-go header-file 6))))
 
 (ert-deftest dumber-jump-filter-no-start-comments ()
   (should (equal '((:context "yield me"))
