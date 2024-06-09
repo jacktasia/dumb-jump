@@ -1,5 +1,6 @@
 CASK ?= cask
 EMACS ?= emacs
+ERT ?= ${EMACS} -batch -l ert -l package -f package-initialize
 
 all: test
 
@@ -34,3 +35,6 @@ setup:
 	@bash test/github-actions-setup.sh
 
 actions-test: install setup unit
+
+local:
+	${ERT} -l dumber-jump.el -l test/dumber-jump-test.el -f ert-run-tests-batch-and-exit 
