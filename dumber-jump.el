@@ -40,28 +40,28 @@
 
 ;;; Code:
 (require 'xref)
-(require 's)
-(require 'dash)
-(require 'cl-generic nil :noerror)
-(require 'cl-lib)
+;; (require 's)
+;; (require 'dash)
+;; (require 'cl-generic nil :noerror)
+;; (require 'cl-lib)
 
 (defgroup dumber-jump nil
   "Easily jump to project function and variable definitions"
   :group 'tools
   :group 'convenience)
 
-(defcustom dumber-jump-window
-  'current
-  "Which window to use when jumping.  Valid options are 'current (default) or 'other."
-  :group 'dumber-jump
-  :type '(choice (const :tag "Current window" current)
-                 (const :tag "Other window" other)))
-
-(defcustom dumber-jump-use-visible-window
-  t
-  "When true will jump in a visible window if that window already has the file open."
-  :group 'dumber-jump
-  :type 'boolean)
+;; (defcustom dumber-jump-window
+;;   'current
+;;   "Which window to use when jumping.  Valid options are 'current (default) or 'other."
+;;   :group 'dumber-jump
+;;   :type '(choice (const :tag "Current window" current)
+;;                  (const :tag "Other window" other)))
+;;
+;; (defcustom dumber-jump-use-visible-window
+;;   t
+;;   "When true will jump in a visible window if that window already has the file open."
+;;   :group 'dumber-jump
+;;   :type 'boolean)
 
 (defcustom dumber-jump-rg-cmd
   "rg"
@@ -81,7 +81,7 @@
   :group 'dumber-jump
   :type 'string)
 
-(defcustom dumber-jump-fallback-search
+(defcustom dumber-jump-fallback-search  ; TODO: remove?
   t
   "If nothing is found with normal search fallback to searching the fallback regex."
   :group 'dumber-jump
@@ -1606,18 +1606,6 @@ a symbol then it's probably a function call"
   :group 'dumber-jump
   :type 'string)
 
-(defcustom dumber-jump-before-jump-hook nil
-  "Hooks called before jumping."
-  :type 'hook
-  :group 'dumber-jump
-  :type 'hook)
-
-(defcustom dumber-jump-after-jump-hook nil
-  "Hooks called after jumping."
-  :type 'hook
-  :group 'dumber-jump
-  :type 'hook)
-
 (defcustom dumber-jump-aggressive
   nil
   "If `t` jump aggressively with the possibility of a false positive.
@@ -1628,13 +1616,6 @@ If `nil` always show list of more than 1 match."
 (defcustom dumber-jump-debug
   nil
   "If `t` will print helpful debug information."
-  :group 'dumber-jump
-  :type 'boolean)
-
-(defcustom dumber-jump-confirm-jump-to-modified-file
-  t
-  "If t, confirm before jumping to a modified file (which may lead to an
-inaccurate jump).  If nil, jump without confirmation but print a warning."
   :group 'dumber-jump
   :type 'boolean)
 
@@ -1652,41 +1633,6 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
                    (and (= major 0) (>= minor 10))
                    (>= major 1))))))
     dumber-jump--rg-installed?))
-
-(defun dumber-jump-run-test (test cmd)
-  "Use TEST as the standard input for the CMD."
-  (with-temp-buffer
-    (insert test)
-    (shell-command-on-region (point-min) (point-max) cmd nil t)
-    (buffer-substring-no-properties (point-min) (point-max))))
-
-(defun dumber-jump-run-test-temp-file (test thefile realcmd)
-  "Write content to the temporary file, run cmd on it, return result"
-  (with-temp-buffer
-    (insert test)
-    (write-file thefile nil)
-    (delete-region (point-min) (point-max))
-    (shell-command realcmd t)
-    (delete-file thefile)
-    (buffer-substring-no-properties (point-min) (point-max))))
-
-(defun dumber-jump-test-rg-rules (&optional run-not-tests)
-  "Test all the rg rules and return count of those that fail.
-Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
-  (let ((fail-tmpl "rg FAILURE '%s' %s in response '%s' | CMD: '%s' | rule: '%s'"))
-    (-mapcat
-     (lambda (rule)
-       (-mapcat
-        (lambda (test)
-          (let* ((cmd (concat "rg --color never --no-heading -U --pcre2 "
-                              (shell-quote-argument (dumber-jump-populate-regex (plist-get rule :regex) "test" 'rg))))
-                 (resp (dumber-jump-run-test test cmd)))
-            (when (or
-                   (and (not run-not-tests) (not (s-contains? test resp)))
-                   (and run-not-tests (> (length resp) 0)))
-              (list (format fail-tmpl test (if run-not-tests "IS unexpectedly" "NOT") resp cmd rule)))))
-        (plist-get rule (if run-not-tests :not :tests))))
-     (--filter (member "rg" (plist-get it :supports)) dumber-jump-find-rules))))
 
 (defun dumber-jump-message (str &rest args)
   "Log message STR with ARGS to the *Messages* buffer if not using dumber-jump-quiet."
@@ -1734,27 +1680,6 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
     (list :left (substring line 0 loc)
           :right (substring line (+ loc (length func))))))
 
-(defun dumber-jump-to-selected (results choices selected)
-  "With RESULTS use CHOICES to find the SELECTED choice from multiple options."
-  (let* ((result-index (--find-index (string= selected it) choices))
-         (result (when result-index
-                   (nth result-index results))))
-    (when result
-      (dumber-jump-result-follow result))))
-
-(defun dumber-jump--format-result (proj result)
-  (format "%s:%s: %s"
-          (s-replace proj "" (plist-get result :path))
-          (plist-get result :line)
-          (s-trim (plist-get result :context))))
-
-(defun dumber-jump-prompt-user-for-choice (proj results) ; TODO: remove?
-  "Put a PROJ's list of RESULTS using `completing-read'
-for user to select.  Filters PROJ path from files for display."
-  (let* ((choices   (--map (dumber-jump--format-result proj it) results))
-         (selection (completing-read "Jump to: " choices)))
-    (dumber-jump-to-selected results choices selection)))
-
 (defun dumber-jump-get-project-root (filepath)
   "Keep looking at the parent dir of FILEPATH until a denoter file/dir is found."
   (s-chop-suffix
@@ -1797,7 +1722,6 @@ to keep looking for another root."
          (m (dumber-jump-get-mode-base-name))
          (result (plist-get lookup (intern m))))
     result))
-
 
 (defun dumber-jump-get-language-by-filename (file)
   "Get the programming language from the FILE."
@@ -1863,11 +1787,11 @@ to keep looking for another root."
    (t
     look-for)))
 
-(defun dumber-jump-get-point-line ()
+(defun dumber-jump-get-point-line ()    ; TODO: remove
   "Get line at point."
   (thing-at-point 'line t))
 
-(defun dumber-jump-get-point-symbol ()
+(defun dumber-jump-get-point-symbol ()  ; TODO: remove?
   "Get symbol at point."
   (if (region-active-p)
       (buffer-substring-no-properties (region-beginning) (region-end))
@@ -2116,83 +2040,6 @@ Ffrom the ROOT project CONFIG-FILE."
             :include (nreverse include)
             :language lang))))
 
-(defun dumber-jump-file-modified-p (path)
-  "Check if PATH is currently open in Emacs and has a modified buffer."
-  (interactive)
-  (--any?
-   (and (buffer-modified-p it)
-        (buffer-file-name it)
-        (file-exists-p (buffer-file-name it))
-        (file-equal-p (buffer-file-name it) path))
-   (buffer-list)))
-
-(defun dumber-jump-result-follow (result &optional use-tooltip proj)
-  "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump.  If dumber-jump-confirm-jump-to-modified-file is t, prompt if we should continue if destination has been modified.  If it is nil, display a warning."
-  (if (dumber-jump-file-modified-p (plist-get result :path))
-      (let ((target-file (plist-get result :path)))
-        (if dumber-jump-confirm-jump-to-modified-file
-            (when (y-or-n-p (concat target-file " has been modified so we may have the wrong location. Continue?"))
-              (dumber-jump--result-follow result use-tooltip proj))
-          (progn (message
-                  "Warning: %s has been modified so we may have the wrong location."
-                  target-file)
-                 (dumber-jump--result-follow result use-tooltip proj))))
-    (dumber-jump--result-follow result use-tooltip proj)))
-
-(defun dumber-jump--result-follow (result &optional use-tooltip proj)
-  "Take the RESULT to jump to and record the jump, for jumping back, and then trigger jump."
-  (let* ((target-boundary (s-matched-positions-all
-                           (concat "\\b" (regexp-quote (plist-get result :target)) "\\b")
-                           (plist-get result :context)))
-         ;; column pos is either via tpos from ag or by using the regex above or last using old s-index-of
-         (pos (if target-boundary
-                  (car (car target-boundary))
-                (s-index-of (plist-get result :target) (plist-get result :context))))
-
-         (result-path (plist-get result :path))
-
-         ;; Return value is either a string like "/ssh:user@1.2.3.4:" or nil
-         (tramp-path-prefix (file-remote-p default-directory))
-
-         ;; If result-path is an absolute path, the prefix is added to the head of it,
-         ;; or result-path is added to the end of default-directory
-         (path-for-tramp (when (and result-path tramp-path-prefix)
-                           (if (file-name-absolute-p result-path)
-                               (concat tramp-path-prefix result-path)
-                             (concat default-directory result-path))))
-
-         (thef (or path-for-tramp result-path))
-         (line (plist-get result :line)))
-    (when thef
-      (dumber-jump-goto-file-line thef line pos))
-    ;; return the file for test
-    thef))
-
-
-(defun dumber-jump-goto-file-line (thefile theline pos)
-  "Open THEFILE and go line THELINE"
-  (if (fboundp 'xref-push-marker-stack)
-      (xref-push-marker-stack)
-    (ring-insert find-tag-marker-ring (point-marker)))
-
-  (with-demoted-errors "Error running `dumber-jump-before-jump-hook': %S"
-    (run-hooks 'dumber-jump-before-jump-hook))
-
-  (let* ((visible-buffer (find-buffer-visiting thefile))
-         (visible-window (when visible-buffer (get-buffer-window visible-buffer))))
-    (cond
-     ((and visible-window dumber-jump-use-visible-window)
-      (select-window visible-window))
-     ((eq dumber-jump-window 'other)
-      (find-file-other-window thefile))
-     (t (find-file thefile))))
-
-  (goto-char (point-min))
-  (forward-line (1- theline))
-  (forward-char pos)
-  (with-demoted-errors "Error running `dumber-jump-after-jump-hook': %S"
-    (run-hooks 'dumber-jump-after-jump-hook)))
-
 (defun dumber-jump-current-file-results (path results)
   "Return the PATH's RESULTS."
   (let ((matched (--filter (string= path (plist-get it :path)) results)))
@@ -2237,6 +2084,7 @@ Ffrom the ROOT project CONFIG-FILE."
       (let ((results (funcall parse-fn rawresults cur-file line-num)))
         (--filter (s-contains? look-for (plist-get it :context)) results)))))
 
+;; TODO: extend to support column?
 (defun dumber-jump-parse-response-line (resp-line cur-file)
   "Parse a search program's single RESP-LINE for CUR-FILE into a list of (path line context)."
   (let* ((parts (--remove (string= it "")
@@ -2329,6 +2177,8 @@ Ffrom the ROOT project CONFIG-FILE."
 
 (defun dumber-jump-populate-regex (it look-for variant)
   "Populate IT regex template with LOOK-FOR."
+  (when (not (eq variant 'rg))
+    (error "NO more support for %s" variant))
   (let ((boundary dumber-jump-rg-word-boundary))
     (let ((text it))
       (setq text (s-replace "\\j" boundary text))
@@ -2362,11 +2212,11 @@ Ffrom the ROOT project CONFIG-FILE."
   "Concat the PARTS of a command if each part has a length."
   (s-join " " (-map #'s-trim (--filter (> (length it) 0) parts))))
 
-(defun dumber-jump-get-file-exts-by-language (language)
-  "Return list of file extensions for a LANGUAGE."
-  (--map (plist-get it :ext)
-         (--filter (string= (plist-get it :language) language)
-                   dumber-jump-language-file-exts)))
+;; (defun dumber-jump-get-file-exts-by-language (language)
+;;   "Return list of file extensions for a LANGUAGE."
+;;   (--map (plist-get it :ext)
+;;          (--filter (string= (plist-get it :language) language)
+;;                    dumber-jump-language-file-exts)))
 
 (defun dumber-jump-get-rg-type-by-language (language)
   "Return list of rg type argument for a LANGUAGE."
@@ -2391,11 +2241,11 @@ Ffrom the ROOT project CONFIG-FILE."
   (cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumber-jump)))
     (let ((bounds (bounds-of-thing-at-point 'symbol)))
       (and bounds (let* ((ident (dumber-jump-get-point-symbol))
-			             (start (car bounds))
-			             (col (- start (point-at-bol)))
-			             (line (dumber-jump-get-point-line))
-			             (ctx (dumber-jump-get-point-context line ident col)))
-		            (propertize ident :dumber-jump-ctx ctx)))))
+                         (start (car bounds))
+                         (col (- start (point-at-bol)))
+                         (line (dumber-jump-get-point-line))
+                         (ctx (dumber-jump-get-point-context line ident col)))
+                    (propertize ident :dumber-jump-ctx ctx)))))
 
   (cl-defmethod xref-backend-definitions ((_backend (eql dumber-jump)) prompt)
     (let* ((info (dumber-jump-get-results prompt))
