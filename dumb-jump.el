@@ -2162,17 +2162,13 @@ to keep looking for another root."
 
 (defun dumb-jump-get-point-line ()
   "Get line at point."
-  (if (version< emacs-version "24.4")
-      (thing-at-point 'line)
-    (thing-at-point 'line t)))
+  (thing-at-point 'line t))
 
 (defun dumb-jump-get-point-symbol ()
   "Get symbol at point."
   (if (region-active-p)
       (buffer-substring-no-properties (region-beginning) (region-end))
-    (if (version< emacs-version "24.4")
-        (thing-at-point 'symbol)
-      (thing-at-point 'symbol t))))
+    (thing-at-point 'symbol t)))
 
 (defun dumb-jump--get-symbol-start ()
   "Get the start of symbol at point"
