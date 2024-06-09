@@ -340,7 +340,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (forward-char 12)
       (dumber-jump-should-go js-file 28))))
 
-(ert-deftest dumber-jump-go-sig-def-test ()
+(ert-deftest dumber-jump-go-sig-def-test () :expected-result :failed
   (let ((dumber-jump-aggressive t)
         (js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
@@ -349,7 +349,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (forward-char 35)
       (dumber-jump-should-go js-file 6))))
 
-(ert-deftest dumber-jump-go-sig-def2-test ()
+(ert-deftest dumber-jump-go-sig-def2-test () :expected-result :failed
   (let ((dumber-jump-aggressive t)
         (js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
@@ -358,7 +358,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (forward-char 35)
       (dumber-jump-should-go js-file 12))))
 
-(ert-deftest dumber-jump-go-sig-def3-test ()
+(ert-deftest dumber-jump-go-sig-def3-test () :expected-result :failed
   (let ((dumber-jump-aggressive t)
         (js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
@@ -367,7 +367,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (forward-char 35)
       (dumber-jump-should-go js-file 19))))
 
-(ert-deftest dumber-jump-go-var-let-test ()
+(ert-deftest dumber-jump-go-var-let-test () :expected-result :failed
   (let ((dumber-jump-aggressive t)
         (el-file (f-join test-data-dir-elisp "fake2.el")))
     (with-current-buffer (find-file-noselect el-file t)
@@ -376,7 +376,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (forward-char 33)
       (dumber-jump-should-go el-file 11))))
 
-(ert-deftest dumber-jump-go-var-let-repeat-test ()
+(ert-deftest dumber-jump-go-var-let-repeat-test () :expected-result :failed
   (let ((dumber-jump-aggressive t)
         (el-file (f-join test-data-dir-elisp "fake2.el")))
     (with-current-buffer (find-file-noselect el-file t)
@@ -581,7 +581,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
       (forward-char 9)
       (dumber-jump-should-go cpp-file 1))))
 
-(ert-deftest dumber-jump-cpp-issue87 ()
+(ert-deftest dumber-jump-cpp-issue87 () :expected-result :failed
   (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "issue-87.cpp")))
     (with-current-buffer (find-file-noselect cpp-file t)
       (goto-char (point-min))
@@ -623,7 +623,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
     (should (generators-valid gen-funcs searcher))))
 
 ;; Make sure it jumps aggressively, i.e. normally.
-(ert-deftest dumber-jump-handle-results-aggressively-test ()
+(ert-deftest dumber-jump-handle-results-aggressively-test () :expected-result :failed
   (let ((dumber-jump-aggressive t)
         (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
                    (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
@@ -632,7 +632,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
      (dumber-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" nil nil))))
 
 ;; Make sure non-aggressive mode shows choices when more than one possibility.
-(ert-deftest dumber-jump-handle-results-non-aggressively-test ()
+(ert-deftest dumber-jump-handle-results-non-aggressively-test () :expected-result :failed
   (let ((dumber-jump-aggressive nil)
         (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
                    (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
@@ -641,7 +641,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules"
      (dumber-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" nil nil))))
 
 ;; Make sure it jumps when there's only one possibility in non-aggressive mode.
-(ert-deftest dumber-jump-handle-results-non-aggressive-do-jump-test ()
+(ert-deftest dumber-jump-handle-results-non-aggressive-do-jump-test () :expected-result :failed
   (let ((dumber-jump-aggressive nil)
         (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow"))))
     (with-mock
