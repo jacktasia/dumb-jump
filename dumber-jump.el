@@ -1,4 +1,4 @@
-;;; dumber-jump.el --- Jump to definition for 50+ languages without configuration -*- lexical-binding: t; -*-
+;;; dumber-jump.el --- Jump to definition for 50+ languages without configuration -*- lexical-binding: t; byte-compile-docstring-max-column: 999; -*-
 ;; Copyright (C) 2015-2021 jack angers
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/zenspider/dumber-jump
@@ -44,9 +44,10 @@
 (require 'dash)
 (require 'cl-generic nil :noerror)
 (require 'cl-lib)
+(require 'tramp)
 
 (defgroup dumber-jump nil
-  "Easily jump to project function and variable definitions"
+  "Easily jump to project function and variable definitions."
   :group 'tools
   :group 'convenience)
 
@@ -64,7 +65,7 @@
 
 (defcustom dumber-jump-fallback-regex
   "\\bJJJ\\j"
-  "When dumber-jump-fallback-search is t use this regex.  Defaults to boundary search of symbol under point."
+  "When `dumber-jump-fallback-search' is t use this regex.  Defaults to boundary search of symbol under point."
   :group 'dumber-jump
   :type 'string)
 
@@ -94,7 +95,7 @@
 
 (defcustom dumber-jump-rg-search-args
   "--pcre2"
-  "Appends the passed arguments to the rg search function. Default: \"--pcre2\""
+  "Appends the passed arguments to the rg search function. Default: \"--pcre2\"."
   :group 'dumber-jump
   :type 'string)
 
@@ -1562,7 +1563,7 @@
 
   "List of under points contexts for each language.
 This helps limit the number of regular expressions we use
-if we know that if there's a '(' immediately to the right of
+if we know that if there's a `(' immediately to the right of
 a symbol then it's probably a function call"
   :group 'dumber-jump
   :type
@@ -1622,9 +1623,9 @@ If `nil` always show list of more than 1 match."
     dumber-jump--rg-installed?))
 
 (defun dumber-jump-message (str &rest args)
-  "Log message STR with ARGS to the *Messages* buffer if not using dumber-jump-quiet."
+  "Log message STR with ARGS to the *Messages* buffer if not using `dumber-jump-quiet'."
   (when (not dumber-jump-quiet)
-    (apply 'message str args))
+    (apply #'message str args))
   nil)
 
 (defmacro dumber-jump-debug-message (&rest exprs)
@@ -1678,8 +1679,8 @@ If `nil` always show list of more than 1 match."
      dumber-jump-default-project))))
 
 (defun dumber-jump-get-config (dir)
-  "If a project denoter is in DIR then return it, otherwise
-nil. However, if DIR contains a `.dumbjumpignore' it returns nil
+  "If a project denoter is in DIR then return it, otherwise nil.
+However, if DIR contains a `.dumbjumpignore' it returns nil
 to keep looking for another root."
   (if (file-exists-p (expand-file-name ".dumbjumpignore" dir))
       nil
@@ -1688,7 +1689,7 @@ to keep looking for another root."
           dumber-jump-project-denoters))))
 
 (defun dumber-jump-get-language (file)
-  "Get language from FILE extension and then fallback to using 'major-mode' name."
+  "Get language from FILE extension and then fallback to using `major-mode' name."
   (let* ((languages (-distinct
                      (--map (plist-get it :language)
                             dumber-jump-find-rules)))
@@ -1704,7 +1705,7 @@ to keep looking for another root."
   (s-replace "-mode" "" (symbol-name major-mode)))
 
 (defun dumber-jump-get-language-from-mode ()
-  "Extract the language from the 'major-mode' name.  Currently just everything before '-mode'."
+  "Extract the language from the `major-mode' name.  Currently just everything before `-mode'."
   (let* ((lookup '(sh "shell" cperl "perl" matlab "matlab" octave "matlab"))
          (m (dumber-jump-get-mode-base-name))
          (result (plist-get lookup (intern m))))
@@ -1785,7 +1786,7 @@ to keep looking for another root."
     (thing-at-point 'symbol t)))
 
 (defun dumber-jump--get-symbol-start ()
-  "Get the start of symbol at point"
+  "Get the start of symbol at point."
   (- (if (region-active-p)
          (region-beginning)
        (car (bounds-of-thing-at-point 'symbol)))
@@ -1801,7 +1802,7 @@ to keep looking for another root."
     (--map (plist-get it :language) found)))
 
 (defun dumber-jump-fetch-results (cur-file proj-root lang _config &optional prompt)
-  "Return a list of results based on current file context and calling grep/ag.
+  "Return a list of results based on current file context and calling rg.
 CUR-FILE is the path of the current buffer.
 PROJ-ROOT is that file's root project directory.
 LANG is a string programming language with CONFIG a property list
@@ -1908,8 +1909,7 @@ of project configuration."
       nil)))
 
 (defun dumber-jump-filter-no-start-comments (results lang)
-  "Filter out RESULTS with a :context that starts with a comment
-given the LANG of the current file."
+  "Filter out RESULTS with a :context that start with a comment given the LANG of the current file."
   (let ((comment (dumber-jump-get-comment-by-language lang)))
     (if comment
         (-concat
@@ -1924,8 +1924,9 @@ CUR-FILE is the current file within PROJ-ROOT.
 CTX-TYPE is a string of the current context.
 LOOK-FOR is the symbol we're jumping for.
 USE-TOOLTIP shows a preview instead of jumping.
-PREFER-EXTERNAL will sort current file last."
-  "Figure which of the RESULTS to jump to. Favoring the CUR-FILE"
+PREFER-EXTERNAL will sort current file last.
+
+Figure which of the RESULTS to jump to. Favoring the CUR-FILE"
   (let* ((lang (dumber-jump-get-language-by-filename cur-file))
          (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
          (match-no-comments (dumber-jump-filter-no-start-comments match-sorted lang))
@@ -2033,9 +2034,7 @@ Ffrom the ROOT project CONFIG-FILE."
     matched))
 
 (defun dumber-jump-shell-command-switch ()
-  "Yields the shell command switch to use for the current
-  `shell-file-name' in order to not load the shell profile/RC for
-  speeding up things."
+  "Yields the shell command switch to use for the current `shell-file-name' in order to not load the shell profile/RC for speeding up things."
   (let ((base-name (downcase (file-name-base shell-file-name))))
     (cond
      ((or (string-equal "zsh" base-name)
@@ -2052,7 +2051,7 @@ Ffrom the ROOT project CONFIG-FILE."
 ;; TODO: rename dumber-jump-run-definition-command
 (defun dumber-jump-run-command
     (look-for proj regexes lang exclude-args cur-file line-num parse-fn generate-fn)
-  "Run the command based on the needle LOOK-FOR in the directory TOSEARCH"
+  "Run the command based on the needle LOOK-FOR in the directory TOSEARCH."
   (let* ((proj-root (if (file-remote-p proj)
                         (directory-file-name
                          (tramp-file-name-localname (tramp-dissect-file-name proj)))
@@ -2207,7 +2206,7 @@ Ffrom the ROOT project CONFIG-FILE."
                                (string= (plist-get it :language) language))
                               dumber-jump-language-file-exts))))
 
-(defun dumber-jump-get-rules-by-language (language searcher)
+(defun dumber-jump-get-rules-by-language (language _searcher)
   "Return a list of rules for the LANGUAGE by SEARCHER."
   (let* ((searcher-str "rg")
          (results (--filter (and
@@ -2223,7 +2222,7 @@ Ffrom the ROOT project CONFIG-FILE."
     (let ((bounds (bounds-of-thing-at-point 'symbol)))
       (and bounds (let* ((ident (dumber-jump-get-point-symbol))
                          (start (car bounds))
-                         (col (- start (point-at-bol)))
+                         (col (- start (line-beginning-position)))
                          (line (dumber-jump-get-point-line))
                          (ctx (dumber-jump-get-point-context line ident col)))
                     (propertize ident :dumber-jump-ctx ctx)))))
