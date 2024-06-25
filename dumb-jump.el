@@ -2229,15 +2229,7 @@ of project configuration."
                                               cur-line-num parse-fn generate-fn)
                        search-paths))
 
-         (tramp-path-prefix (or (file-remote-p default-directory) ""))
-
-         (results (delete-dups
-                   (--map
-                    (progn
-                      (plist-put it :target look-for)
-                      (plist-put it :path
-                                 (concat tramp-path-prefix (plist-get it :path))))
-                    raw-results))))
+         (results (delete-dups (--map (plist-put it :target look-for) raw-results))))
 
     `(:results ,results :lang ,(if (null lang) "" lang) :symbol ,look-for :ctx-type ,(if (null ctx-type) "" ctx-type) :file ,cur-file :root ,proj-root)))
 
