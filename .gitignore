@@ -1,3 +1,4 @@
 .cask/
 \#.*test#
 .*test~
+*.elc
