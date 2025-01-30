@@ -778,6 +778,10 @@ or most optimal searcher."
            :regex  "contract\\s*JJJ\\s*(is|\\\{)"
            :tests ("contract test{" "contract test {" "contract test is foo"))
 
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "solidity"
+           :regex  "struct\\s*JJJ\\s*\\\{"
+           :tests ("struct test{" "struct test {"))
+
     ;; R
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "r"
            :regex "\\bJJJ\\s*=[^=><]" :tests ("test = 1234") :not ("if (test == 1234)"))
