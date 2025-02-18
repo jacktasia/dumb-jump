@@ -348,7 +348,8 @@
 (ert-deftest dumb-jump-goto-file-line-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
     (with-mock
-     (mock (ring-insert * *))
+     (when (version< emacs-version "29")
+       (mock (ring-insert * *)))
      (dumb-jump-goto-file-line js-file 3 0)
      (should (string= (buffer-file-name) js-file))
      (should (= (line-number-at-pos) 3)))))
