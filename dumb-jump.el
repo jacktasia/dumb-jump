@@ -418,45 +418,20 @@ or most optimal searcher."
 
     ;; clojure
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
-           :regex "\\(def\\s+JJJ\\j"
-           :tests ("(def test (foo)"))
-
-    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
-           :regex "\\(defn-?\\s+JJJ\\j"
-           :tests ("(defn test [foo]" "(defn- test [foo]")
-           :not ("(defn test? [foo]" "(defn- test? [foo]"))
-
-    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
-           :regex "\\(defmacro\\s+JJJ\\j"
-           :tests ("(defmacro test [foo]"))
-
-    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
-           :regex "\\(deftask\\s+JJJ\\j"
-           :tests ("(deftask test [foo]"))
-
-    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
-           :regex "\\(deftype\\s+JJJ\\j"
-           :tests ("(deftype test [foo]"))
-
-    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
-           :regex "\\(defmulti\\s+JJJ\\j"
-           :tests ("(defmulti test fn"))
-
-    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
-           :regex "\\(defmethod\\s+JJJ\\j"
-           :tests ("(defmethod test type"))
-
-    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
-           :regex "\\(definterface\\s+JJJ\\j"
-           :tests ("(definterface test (foo)"))
-
-    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
-           :regex "\\(defprotocol\\s+JJJ\\j"
-           :tests ("(defprotocol test (foo)"))
-
-    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
-           :regex "\\(defrecord\\s+JJJ\\j"
-           :tests ("(defrecord test [foo]"))
+           :regex "\\(def.*\ JJJ\\j"
+           :tests ("(def test (foo)"
+                   "(defn test [foo]"
+                   "(defn ^:some-data test [foo]"
+                   "(defn- test [foo]"
+                   "(defmacro test [foo]"
+                   "(deftask test [foo]"
+                   "(deftype test [foo]"
+                   "(defmulti test fn"
+                   "(defmethod test type"
+                   "(definterface test (foo)"
+                   "(defprotocol test (foo)"
+                   "(defrecord test [foo]"
+                   "(deftest test"))
 
     ;; coffeescript
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "coffeescript"
@@ -798,6 +773,10 @@ or most optimal searcher."
     (:type "error" :supports ("ag" "grep" "rg" "git-grep") :language "solidity"
            :regex  "error\\s*JJJ\\s*\\\("
            :tests ("error test();" "error test (uint x)" "error test(uint x, address y)"))
+
+    (:type "contract" :supports ("ag" "grep" "rg" "git-grep") :language "solidity"
+           :regex  "contract\\s*JJJ\\s*(is|\\\{)"
+           :tests ("contract test{" "contract test {" "contract test is foo"))
 
     ;; R
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "r"
