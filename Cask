@@ -7,4 +7,5 @@
  (depends-on "el-mock")
  (depends-on "noflet")
  (depends-on "ert-runner")
- (depends-on "undercover"))
+ (depends-on "undercover")
+ (depends-on "compat"))
