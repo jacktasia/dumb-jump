@@ -1528,7 +1528,32 @@ or most optimal searcher."
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "apex"
            :regex "(class|interface)\\s*JJJ\\b"
            :tests ("class test:" "public class test implements Something")
-           :not ("class testnot:" "public class testnot implements Something")))
+           :not ("class testnot:" "public class testnot implements Something"))
+
+    ;; odin
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
+           :regex "\\s*\\bJJJ\\s*::\\s*proc"
+           :tesots ("test :: proc()"
+                   "test ::proc() {"
+                   "test:: proc(a: i32) -> i32 {"
+                   "test::proc{}"))
+    
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
+           :regex "\\s*\\bJJJ\\s*::\\s*(struct|enum|union)"
+           :tests ("test :: struct"
+                   "test ::enum"
+                   "test:: union"))
+    
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
+           :regex "\\s*\\bJJJ\\s*:(\\s*[^=\\n]+\\s*:|:|\\s*[^=\\n]+\\s*=|=)"
+           :tests ("test :: [2]f32"
+                   "test : f32 : 20"
+                   "test: i32 : 10"
+                   "test := 20"
+                   "test : f32 = 20"
+                   "test: i32 = 10"
+                   "test: i32= 10"
+                   "test :i32= 10")))
 
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
@@ -1686,7 +1711,8 @@ or most optimal searcher."
     (:language "hcl" :ext "tf" :agtype "terraform" :rgtype "tf")
     (:language "hcl" :ext "tfvars" :agtype "terraform" :rgtype nil)
     (:language "apex" :ext "cls" :agtype nil :rgtype nil)
-    (:language "apex" :ext "trigger" :agtype nil :rgtype nil))
+    (:language "apex" :ext "trigger" :agtype nil :rgtype nil)
+    (:language "odin" :ext "odin" :agtype nil :rgtype nil))
 
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
