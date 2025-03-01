@@ -1537,7 +1537,7 @@ or most optimal searcher."
                    "test ::proc() {"
                    "test:: proc(a: i32) -> i32 {"
                    "test::proc{}"
-                   "test: :proc "contextless"{}"))
+                   "test: :proc \"contextless\" {}"))
     
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
            :regex "\\s*\\bJJJ\\s*:"
