@@ -1532,21 +1532,20 @@ or most optimal searcher."
 
     ;; odin
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
-           :regex "\\s*\\bJJJ\\s*::\\s*proc"
+           :regex "\\s*\\bJJJ\\s*:\\s*:\\s*proc"
            :tesots ("test :: proc()"
                    "test ::proc() {"
                    "test:: proc(a: i32) -> i32 {"
-                   "test::proc{}"))
-    
-    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
-           :regex "\\s*\\bJJJ\\s*::\\s*(struct|enum|union)"
-           :tests ("test :: struct"
-                   "test ::enum"
-                   "test:: union"))
+                   "test::proc{}"
+                   "test: :proc "contextless"{}"))
     
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
-           :regex "\\s*\\bJJJ\\s*:(\\s*[^=\\n]+\\s*:|:|\\s*[^=\\n]+\\s*=|=)"
-           :tests ("test :: [2]f32"
+           :regex "\\s*\\bJJJ\\s*:"
+           :tests ("test :: struct"
+                   "test ::enum"
+                   "test:: union"
+                   "test: : custom_type"
+                   "test :: [2]f32"
                    "test : f32 : 20"
                    "test: i32 : 10"
                    "test := 20"
