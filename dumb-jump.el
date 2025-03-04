@@ -1532,7 +1532,7 @@ or most optimal searcher."
 
     ;; odin
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
-           :regex "\\s*\\bJJJ\\s*:\\s*:\\s*proc"
+           :regex "\\s*\\bJJJ\\s*:\\s*(:|=)\\s*proc"
            :tesots ("test :: proc()"
                    "test ::proc() {"
                    "test:: proc(a: i32) -> i32 {"
@@ -1540,7 +1540,7 @@ or most optimal searcher."
                    "test: :proc \"contextless\" {}"))
     
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
-           :regex "\\s*\\bJJJ\\s*:"
+           :regex "\\s*\\bJJJ\\s*:\\s*([^=\\n]+\\s*:|:|[^=\\n]+\\s*=|=)"
            :tests ("test :: struct"
                    "test ::enum"
                    "test:: union"
