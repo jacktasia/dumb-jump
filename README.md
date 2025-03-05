@@ -50,6 +50,7 @@ There is currently basic support for the following languages:
 * Nix
 * Objective-C
 * OCaml
+* Odin
 * OpenSCAD
 * Org mode
 * Pascal
