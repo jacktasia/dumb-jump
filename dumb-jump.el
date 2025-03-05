@@ -1530,15 +1530,7 @@ or most optimal searcher."
            :tests ("class test:" "public class test implements Something")
            :not ("class testnot:" "public class testnot implements Something"))
 
-    ;; odin
-    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
-           :regex "\\s*\\bJJJ\\s*:\\s*(:|=)\\s*proc"
-           :tesots ("test :: proc()"
-                   "test ::proc() {"
-                   "test:: proc(a: i32) -> i32 {"
-                   "test::proc{}"
-                   "test: :proc \"contextless\" {}"))
-    
+    ;; odin    
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
            :regex "\\s*\\bJJJ\\s*:\\s*([^=\\n]+\\s*:|:|[^=\\n]+\\s*=|=)"
            :tests ("test :: struct"
@@ -1552,7 +1544,12 @@ or most optimal searcher."
                    "test : f32 = 20"
                    "test: i32 = 10"
                    "test: i32= 10"
-                   "test :i32= 10")))
+                   "test :i32= 10"
+                   "test :: proc()"
+                   "test ::proc() {"
+                   "test:: proc(a: i32) -> i32 {"
+                   "test::proc{}"
+                   "test: :proc \"contextless\" {}")))
 
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
