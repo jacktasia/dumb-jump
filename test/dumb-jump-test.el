@@ -502,6 +502,7 @@
   (let* ((go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js"))
          (default-directory test-data-dir-proj1))
     (with-current-buffer (get-buffer-create "*shell*")
+      (shell-mode)
       (insert ".js doSomeStuff()")
       (goto-char (point-min))
       (forward-char 6)
