@@ -251,6 +251,12 @@ or most optimal searcher."
   :group 'dumb-jump
   :type 'string)
 
+(defcustom dumb-jump-search-type-org-only-org
+  t
+  "If non nil restrict type ag/rg to org file.
+If nil add also the language type of current src block"
+  :group 'dumb-jump
+  :type 'boolean)
 
 (defcustom dumb-jump-find-rules
   '((:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
@@ -2138,15 +2144,84 @@ to keep looking for another root."
 
 (defun dumb-jump-get-language (file)
   "Get language from FILE extension and then fallback to using 'major-mode' name."
-  (let* ((languages (-distinct
-                     (--map (plist-get it :language)
-                            dumb-jump-find-rules)))
-         (language (or (dumb-jump-get-language-from-mode)
+  (let* ((language (or (dumb-jump-get-language-from-mode)
                        (dumb-jump-get-language-by-filename file)
                        (dumb-jump-get-mode-base-name))))
-    (if (member language languages)
+                                        ; src edit buffer ? org-edit-src-exit
+    (if (and (fboundp 'org-src-edit-buffer-p)
+             (org-src-edit-buffer-p))
+        (progn (setq language "org")
+               (org-edit-src-exit)
+               (if (version< org-version "9")
+                   (save-buffer))))
+    (if (string= language "org")
+        (setq language (dumb-jump-get-language-in-org)))
+    (if (member language (-distinct
+                          (--map (plist-get it :language)
+                                 dumb-jump-find-rules)))
         language
       (format ".%s file" (or (file-name-extension file) "")))))
+
+(defun dumb-jump-get-language-in-org ()
+  "In org mode, if inside a src block return
+associated language or org when outside a src block."
+  (let ((lang (nth 0 (org-babel-get-src-block-info))))
+;; if lang exists then create a composite language
+    (if lang
+        (dumb-jump-make-composite-language
+         "org"
+         (if (dumb-jump-get-language-from-aliases lang)
+             (dumb-jump-get-language-from-aliases lang) lang)
+         "org" "org" "org")
+      "org")))
+
+(defun dumb-jump-add-language-to-proplist (newlang proplist lang)
+  "Return nil if NEWLANG  is already in PROPLIST or (if not)
+return a new proplist. The new proplis is PROPLIS
+where a NEWLANG plist(s) is (are) added to PROPLIST.
+The plist(s) value of NEWLANG is (are) copied from
+those of LANG and LANG is replaced by NEWLANG." 
+  (unless (--filter (string= newlang (plist-get it :language))
+                   proplist)
+      (--splice
+       (string= lang (plist-get it :language))
+       (list it (plist-put (copy-tree it) :language newlang))
+       proplist)))
+
+(defun dumb-jump-make-composite-language (mode lang extension agtype rgtype)
+  "Concat one MODE  (usually the string org) with a LANG  (c or python or etc)
+to make a composite language of the form cPLUSorg or pythonPLUSorg or etc. 
+Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
+(using EXTENSION AGTYPE RGTYPE)"
+  (let* ((complang (concat lang "PLUS" mode))
+         (alreadyextension (--filter (and
+                                      (string= complang (plist-get it :language))
+                                      (string= extension (plist-get it :ext))
+                                      (string= agtype (plist-get it :agtype))
+                                      (string= rgtype (plist-get it :rgtype)))
+                                     dumb-jump-language-file-exts))
+         (newfindrule (dumb-jump-add-language-to-proplist complang dumb-jump-find-rules lang))
+         (newfileexts (dumb-jump-add-language-to-proplist complang dumb-jump-language-file-exts lang)))
+    ;; add (if needed) composite language to dumb-jump-find-rules
+    (when newfindrule
+        (set-default 'dumb-jump-find-rules newfindrule))
+    ;; add (if needed) composite language to dumb-jump-language-file-exts
+    (unless dumb-jump-search-type-org-only-org
+        (when newfileexts
+            (set-default 'dumb-jump-language-file-exts newfileexts)))
+    ;; add (if needed) a new extension to dumb-jump-language-file-exts
+    (unless alreadyextension
+        (set-default 'dumb-jump-language-file-exts
+                     (cons `(:language ,complang :ext ,extension :agtype ,agtype :rgtype ,rgtype)
+                           dumb-jump-language-file-exts)))
+    complang))
+
+(defun dumb-jump-get-language-from-aliases (lang)
+  "Extract the lang from LANG and aliases."
+  (assoc-default lang '(("sh" . "shell") ("shell" . "shell") ("cperl" . "perl")
+                      ("matlab" . "matlab") ("octave" . "matlab")
+                      ("emacs-lisp" . "elisp") ("elisp" . "elisp")
+                      ("R" . "r") ("r" . "r"))))
 
 (defun dumb-jump-get-mode-base-name ()
   "Get the base name of the mode."
@@ -2154,11 +2229,8 @@ to keep looking for another root."
 
 (defun dumb-jump-get-language-from-mode ()
   "Extract the language from the 'major-mode' name.  Currently just everything before '-mode'."
-  (let* ((lookup '(sh "shell" cperl "perl" matlab "matlab" octave "matlab"))
-         (m (dumb-jump-get-mode-base-name))
-         (result (plist-get lookup (intern m))))
-    result))
-
+  (let ((m (dumb-jump-get-mode-base-name)))
+    (dumb-jump-get-language-from-aliases m)))
 
 (defun dumb-jump-get-language-by-filename (file)
   "Get the programming language from the FILE."
@@ -2168,7 +2240,7 @@ to keep looking for another root."
          (result (--filter
                   (s-ends-with? (concat "." (plist-get it :ext)) filename)
                   dumb-jump-language-file-exts)))
-    (when result
+    (when (and result (eq (length result) 1))
       (plist-get (car result) :language))))
 
 (defun dumb-jump-issue-result (issue)
@@ -2385,7 +2457,7 @@ current file."
       ;; multiple results so let the user pick from a list
       ;; unless the match is in the current file
       (dumb-jump-handle-results results (plist-get info :file) proj-root (plist-get info :ctx-type)
-                                look-for use-tooltip prefer-external))
+                                look-for use-tooltip prefer-external lang))
      ((= result-count 0)
       (dumb-jump-message "'%s' %s %s declaration not found." look-for (if (s-blank? lang) "with unknown language so" lang) (plist-get info :ctx-type))))))
 
@@ -2464,15 +2536,16 @@ given the LANG of the current file."
       results)))
 
 (defun dumb-jump-handle-results
-    (results cur-file proj-root ctx-type look-for use-tooltip prefer-external)
+    (results cur-file proj-root ctx-type look-for use-tooltip prefer-external &optional language)
   "Handle the searchers results.
 RESULTS is a list of property lists with the searcher's results.
 CUR-FILE is the current file within PROJ-ROOT.
 CTX-TYPE is a string of the current context.
 LOOK-FOR is the symbol we're jumping for.
 USE-TOOLTIP shows a preview instead of jumping.
-PREFER-EXTERNAL will sort current file last."
-  (let* ((processed (dumb-jump-process-results results cur-file proj-root ctx-type look-for use-tooltip prefer-external))
+PREFER-EXTERNAL will sort current file last
+LANGUAGE is an optional language to pass to `dumb-jump-process-results'."
+  (let* ((processed (dumb-jump-process-results results cur-file proj-root ctx-type look-for use-tooltip prefer-external language))
          (results (plist-get processed :results))
          (do-var-jump (plist-get processed :do-var-jump))
          (var-to-jump (plist-get processed :var-to-jump))
@@ -2495,16 +2568,18 @@ PREFER-EXTERNAL will sort current file last."
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front)))))
 
 (defun dumb-jump-process-results
-    (results cur-file proj-root ctx-type _look-for _use-tooltip prefer-external)
+    (results cur-file proj-root ctx-type _look-for _use-tooltip prefer-external &optional language)
   "Process (filter, sort, ...) the searchers results.
 RESULTS is a list of property lists with the searcher's results.
 CUR-FILE is the current file within PROJ-ROOT.
 CTX-TYPE is a string of the current context.
 LOOK-FOR is the symbol we're jumping for.
 USE-TOOLTIP shows a preview instead of jumping.
-PREFER-EXTERNAL will sort current file last."
+PREFER-EXTERNAL will sort current file last.
+LANGUAGE is the optional given language, if nil it will be found by
+dumb-jump-get-language-by-filename."
   "Figure which of the RESULTS to jump to. Favoring the CUR-FILE"
-  (let* ((lang (dumb-jump-get-language-by-filename cur-file))
+  (let* ((lang (if language language (dumb-jump-get-language-by-filename cur-file)))
          (match-sorted (-sort (lambda (x y) (< (plist-get x :diff) (plist-get y :diff))) results))
          (match-no-comments (dumb-jump-filter-no-start-comments match-sorted lang))
 
@@ -3187,7 +3262,8 @@ Using ag to search only the files found via git-grep literal symbol search."
                        (plist-get info :ctx-type)
                        look-for
                        nil
-                       nil))
+                       nil
+                       lang))
            (results (plist-get processed :results))
            (do-var-jump (plist-get processed :do-var-jump))
            (var-to-jump (plist-get processed :var-to-jump))

@@ -1,0 +1,24 @@
+* python
+#+begin_src python :results none :session "ses1" :exports code :comments org
+  a=1
+  blabla(x)
+  b=1
+  c=2
+  d=3
+  e=3
+  def blabla(x):
+      return x
+#+end_src
+
+* R
+  #+begin_src R :file toto.png :results graphics file :session :exports both :comments org
+  plot(1, blabla(1))
+  blabla(2)
+  #+end_src
+
+  #+begin_src R :results none :session :exports code :comments org
+  blabla(x)
+  blabla <- function(x) {
+  x*x
+  }
+  #+end_src

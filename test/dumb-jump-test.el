@@ -1053,6 +1053,58 @@
        (mock (dumb-jump-goto-file-line * 6 18))
        (should (string= cpp-file (dumb-jump-go)))))))
 
+(ert-deftest dumb-jump-org-test1 ()
+  (let ((org-file (f-join test-data-dir-proj1 "src" "org" "test.org"))
+        (oldpar dumb-jump-force-searcher))
+    (setq dumb-jump-force-searcher 'rg)
+    (with-current-buffer (find-file-noselect org-file t)
+      (goto-char (point-min))
+      (forward-line 3)
+      (forward-char 2)
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 9 6))
+       (should (string= org-file (dumb-jump-go)))))
+    (setq dumb-jump-force-searcher oldpar)))
+
+(ert-deftest dumb-jump-org-test2 ()
+  (let ((org-file (f-join test-data-dir-proj1 "src" "org" "test.org"))
+        (oldpar dumb-jump-force-searcher))
+    (setq dumb-jump-force-searcher 'rg)
+    (with-current-buffer (find-file-noselect org-file t)
+      (goto-char (point-min))
+      (forward-line 14)
+      (forward-char 10)
+       (with-mock
+       (mock (dumb-jump-goto-file-line * 21 2))
+       (should (string= org-file (dumb-jump-go)))))
+    (setq dumb-jump-force-searcher oldpar)))
+
+(ert-deftest dumb-jump-org-issue135 ()
+      (require 'org)
+      (require 'ob-python)
+      (org-babel-do-load-languages 'org-babel-load-languages '((python . t)))
+      (let ((org-file (f-join test-data-dir-proj1 "src" "org" "test.org"))
+            (oldpar dumb-jump-force-searcher)
+            (oldproject dumb-jump-project))
+        ;; in docker test AG version is 0.3 and 2.1.0 is needed
+        (setq dumb-jump-force-searcher 'rg)
+    ;; old version of org does not lead to point to the right directory
+    (if (version< org-version "9")
+        (setq dumb-jump-project (f-join test-data-dir-proj1 "src" "org")))
+    (with-current-buffer (find-file-noselect org-file t)
+     (goto-char (point-min))
+      (forward-line 3)
+      (forward-char 2)
+      (org-edit-src-code) 
+      (with-mock
+       (mock (dumb-jump-goto-file-line * 9 6))
+       (should (string= org-file (dumb-jump-go)))))
+       (setq dumb-jump-force-searcher oldpar)
+       (if (version< org-version "9")
+           (setq dumb-jump-project oldproject))))
+
+
+
 ;; This test verifies that having ".dumbjumpignore" files in the two sub-projects will make it find
 ;; the "multiproj" folder as project root since it has a ".dumbjump" file. The two sub-projects have
 ;; a dummy ".git" folder to signify it as a repository that would normally become the root without
