@@ -1583,14 +1583,14 @@ If nil add also the language type of current src block"
 
     ;; jai
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "jai"
-            :regex "\\bJJJ\\s*::"
-            :tests ("test ::"))
+           :regex "\\bJJJ\\s*::"
+           :tests ("test ::"))
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "jai"
-            :regex "\\bJJJ\\s*(:|::)"
-            :tests ("test :" "test ::"))
-    (:type "type" :supports ("ag" "grep" "git-grep") :language "jai"
-            :regex "\\bJJJ\\s*::"
-            :tests ("test ::"))
+           :regex "\\bJJJ\\s*(:|:\\s*=|::)"
+           :tests ("test: Type" "test : Type = Val" "test :: Val"))
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "jai"
+           :regex "\\bJJJ\\s*::"
+           :tests ("test ::"))
     
     ;; odin    
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
@@ -1799,7 +1799,9 @@ If nil add also the language type of current src block"
     (:language "elisp" :type "function" :right nil :left "($")
     (:language "elisp" :type "variable" :right "^)" :left nil)
     (:language "scheme" :type "function" :right nil :left "($")
-    (:language "scheme" :type "variable" :right "^)" :left nil))
+    (:language "scheme" :type "variable" :right "^)" :left nil)
+    (:language "jai" :type "function" :right "\\s*(" :left nil)
+    (:language "jai" :type "type" :left "\\s*:\\s*" :right nil))
 
   "List of under points contexts for each language.
 This helps limit the number of regular expressions we use
