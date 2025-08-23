@@ -39,6 +39,7 @@ There is currently basic support for the following languages:
 * Go
 * Groovy
 * Haskell
+* Jai
 * Java
 * JavaScript
 * Julia
