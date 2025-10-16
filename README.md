@@ -128,7 +128,7 @@ or is bundled with Emacs 28.1 or newer.
 
 Dumb Jump will automatically look for a project root. If it's not finding one then either put a `.dumbjump` file in your project root and optionally add excluded directories to make it faster.
 
-Project root directory denoters: `.dumbjump` `.projectile` `.git` `.hg` `.fslckout` `.bzr` `_darcs` `.svn` `Makefile` `PkgInfo` `-pkg.el`.
+Project root directory denoters: `.dumbjump` `.projectile` `.git` `.hg` `.fslckout` `.bzr` `_darcs` `.svn` `Makefile` `PkgInfo` `-pkg.el` `_FOSSIL_`.
 
 If you want to stop a directory from registering as the project root (and have Dumb Jump keep looking) add an empty `.dumbjumpignore` file in that directory.
 
