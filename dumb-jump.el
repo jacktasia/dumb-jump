@@ -1611,7 +1611,34 @@ If nil add also the language type of current src block"
                    "test ::proc() {"
                    "test:: proc(a: i32) -> i32 {"
                    "test::proc{}"
-                   "test: :proc \"contextless\" {}")))
+                   "test: :proc \"contextless\" {}"))
+    ;; cobol
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "cobol"
+           :regex "^(.{6}[^*/])?\\s*([frs]d|[[:digit:]]{1,2})\\s+JJJ([\\. ]|$)"
+           :tests ("       01 test."
+                   "000350     10 test pic x."
+                   "  88 test value '10'."
+                   "fd  test."
+                   "       sd test.")
+           :not ("      *01 test"
+                 "       05 test-01"
+                 "       05 testing"))
+
+    (:type "section" :supports ("ag" "grep" "rg" "git-grep") :language "cobol"
+           :regex "^(.{6}[^*/])?JJJ(\\s+section)?\\."
+           :tests ("       test."
+                   "       test section."
+                   "test."
+                   "test section.")
+           :not ("        test."
+                 "      *test section."))
+
+    (:type "submodule" :supports ("ag" "grep" "rg" "git-grep") :language "cobol"
+           :regex "^(.{6}[^*/])?program-id\\.\\s*[\"']?JJJ[\"']?.*\\."
+           :tests ("       program-id. test."
+                   "       program-id. 'test'."
+                   "program-id. \"test\".")
+           :not ("        test.")))
 
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
@@ -1771,7 +1798,10 @@ If nil add also the language type of current src block"
     (:language "apex" :ext "cls" :agtype nil :rgtype nil)
     (:language "apex" :ext "trigger" :agtype nil :rgtype nil)
     (:language "jai" :ext "jai" :agtype nil :rgtype nil)
-    (:language "odin" :ext "odin" :agtype nil :rgtype nil))
+    (:language "odin" :ext "odin" :agtype nil :rgtype nil)
+    (:language "cobol" :ext "cbl" :agtype nil :rgtype nil)
+    (:language "cobol" :ext "cob" :agtype nil :rgtype nil)
+    (:language "cobol" :ext "cpy" :agtype nil :rgtype nil))
 
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
@@ -1801,7 +1831,10 @@ If nil add also the language type of current src block"
     (:language "scheme" :type "function" :right nil :left "($")
     (:language "scheme" :type "variable" :right "^)" :left nil)
     (:language "jai" :type "function" :right "\\s*(" :left nil)
-    (:language "jai" :type "type" :left "\\s*:\\s*" :right nil))
+    (:language "jai" :type "type" :left "\\s*:\\s*" :right nil)
+    (:language "cobol" :type "submodule" :right nil :left "call\s+")
+    (:language "cobol" :type "section" :right nil :left "perform\s+")
+    (:language "cobol" :type "section" :right nil :left "go to\s+"))
 
   "List of under points contexts for each language.
 This helps limit the number of regular expressions we use
@@ -2522,7 +2555,8 @@ current file."
     (:comment "//" :language "pascal")
     (:comment "//" :language "protobuf")
     (:comment "#" :language "hcl")
-    (:comment "//" :language "apex"))
+    (:comment "//" :language "apex")
+    (:comment "*>" :language "cobol"))
   "List of one-line comments organized by language."
   :group 'dumb-jump
   :type
@@ -2859,7 +2893,8 @@ searcher symbol."
       shell-command-switch))))
 
 (defconst dumb-jump--case-insensitive-languages
-  '("commonlisp"))
+  '("commonlisp"
+    "cobol"))
 
 ;; TODO: rename dumb-jump-run-definition-command
 (defun dumb-jump-run-command
