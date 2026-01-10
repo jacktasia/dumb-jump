@@ -5,16 +5,23 @@
 (require 'noflet)
 (require 'el-mock)
 (require 'popup)
+;;
+(require 'dumb-jump)
 ;;; Code:
 
 (defun dumb-jump-output-rule-test-failures (failures)
   (--each failures (princ (format "\t%s\n" it))))
 
-(setq test-data-dir (f-expand "./test/data"))
-(setq test-data-dir-elisp (f-join test-data-dir "proj2-elisp"))
-(setq test-data-dir-proj1 (f-join test-data-dir "proj1"))
-(setq test-data-dir-proj3 (f-join test-data-dir "proj3-clj"))
-(setq test-data-dir-multiproj (f-join test-data-dir "multiproj"))
+(defvar test-data-dir (f-expand "./test/data")
+  "Test directory.")
+(defvar test-data-dir-elisp (f-join test-data-dir "proj2-elisp")
+  "Test directory.")
+(defvar test-data-dir-proj1 (f-join test-data-dir "proj1")
+  "Test directory.")
+(defvar test-data-dir-proj3 (f-join test-data-dir "proj3-clj")
+  "Test directory.")
+(defvar test-data-dir-multiproj (f-join test-data-dir "multiproj")
+  "Test directory.")
 
 (ert-deftest data-dir-exists-test ()
   (should (f-dir? test-data-dir)))
@@ -49,7 +56,6 @@
 (ert-deftest dumb-jump-exclude-path-test ()
   (let* ((expected (list (f-join test-data-dir-proj1 "ignored")
                          (f-join test-data-dir-proj1 "ignored2")))
-         (root (dumb-jump-get-project-root test-data-dir-proj1))
          (config (dumb-jump-read-config test-data-dir-proj1  ".dumbjump")))
     (should (equal (plist-get config :exclude)  expected))))
 
@@ -478,15 +484,14 @@
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
 (ert-deftest dumb-jump-a-back-test ()
-  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
-        (go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
       (with-mock
        (mock (pop-tag-mark))
-       (dumb-jump-go)
-       (dumb-jump-back)))))
+       (with-no-warnings (dumb-jump-go))
+       (with-no-warnings (dumb-jump-back))))))
 
 (ert-deftest dumb-jump-fetch-results-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
@@ -499,15 +504,13 @@
         (should (string= "javascript" (plist-get results :lang)))))))
 
 (ert-deftest dumb-jump-go-shell-test ()
-  (let* ((go-js-file (f-join test-data-dir-proj1 "src" "js" "fake.js"))
-         (default-directory test-data-dir-proj1))
-    (with-current-buffer (get-buffer-create "*shell*")
-      (insert ".js doSomeStuff()")
-      (goto-char (point-min))
-      (forward-char 6)
-      (let ((results (dumb-jump-get-results)))
-        (should (string= "doSomeStuff" (plist-get results :symbol)))
-        (should (string= "javascript" (plist-get results :lang)))))))
+  (with-current-buffer (get-buffer-create "*shell*")
+    (insert ".js doSomeStuff()")
+    (goto-char (point-min))
+    (forward-char 6)
+    (let ((results (dumb-jump-get-results)))
+      (should (string= "doSomeStuff" (plist-get results :symbol)))
+      (should (string= "javascript" (plist-get results :lang))))))
 
 (ert-deftest dumb-jump-go-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
@@ -517,7 +520,7 @@
       (forward-char 13)
       (with-mock
        (mock (dumb-jump-goto-file-line * 3 9))
-       (should (string= go-js-file (dumb-jump-go)))))))
+       (should (string= go-js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-other-window-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
@@ -527,7 +530,7 @@
       (forward-char 13)
       (with-mock
        (mock (dumb-jump-goto-file-line * 3 9))
-       (should (string= go-js-file (dumb-jump-go-other-window)))))))
+       (should (string= go-js-file (with-no-warnings (dumb-jump-go-other-window))))))))
 
 (ert-deftest dumb-jump-go-current-window-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
@@ -537,7 +540,7 @@
       (forward-char 13)
       (with-mock
        (mock (dumb-jump-goto-file-line * 3 9))
-       (should (string= go-js-file (dumb-jump-go-current-window)))))))
+       (should (string= go-js-file (with-no-warnings (dumb-jump-go-current-window))))))))
 
 (ert-deftest dumb-jump-quick-look-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js"))
@@ -547,7 +550,7 @@
       (forward-char 13)
       (with-mock
        (mock (popup-tip "/src/js/fake.js:3: function doSomeStuff() {"))
-       (should (string= go-js-file (dumb-jump-quick-look)))))))
+       (should (string= go-js-file (with-no-warnings (dumb-jump-quick-look))))))))
 
 (ert-deftest dumb-jump-go-js2-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
@@ -557,7 +560,7 @@
       (forward-char 76)
       (with-mock
        (mock (dumb-jump-goto-file-line * 7 35))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-js-es6a-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
@@ -566,7 +569,7 @@
       (forward-line 20)
       (with-mock
        (mock (dumb-jump-goto-file-line * 1 4))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-js-es6b-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
@@ -575,7 +578,7 @@
       (forward-line 21)
       (with-mock
        (mock (dumb-jump-goto-file-line * 3 6))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-js-es6c-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
@@ -584,7 +587,7 @@
       (forward-line 22)
       (with-mock
        (mock (dumb-jump-goto-file-line * 5 6))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-js-es6d-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
@@ -593,7 +596,7 @@
       (forward-line 23)
       (with-mock
        (mock (dumb-jump-goto-file-line * 10 2))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-js-es6e-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
@@ -602,7 +605,7 @@
       (forward-line 24)
       (with-mock
        (mock (dumb-jump-goto-file-line * 16 2))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-js-es6-class-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "es6.js")))
@@ -612,7 +615,7 @@
       (forward-char 12)
       (with-mock
        (mock (dumb-jump-goto-file-line * 28 6))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 
 (ert-deftest dumb-jump-go-sig-def-test ()
@@ -624,7 +627,7 @@
       (forward-char 35)
       (with-mock
        (mock (dumb-jump-goto-file-line * 6 25))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-sig-def2-test ()
   (let ((dumb-jump-aggressive t)
@@ -635,7 +638,7 @@
       (forward-char 35)
       (with-mock
        (mock (dumb-jump-goto-file-line * 12 32))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-sig-def3-test ()
   (let ((dumb-jump-aggressive t)
@@ -646,7 +649,7 @@
       (forward-char 35)
       (with-mock
        (mock (dumb-jump-goto-file-line * 19 32))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-var-let-test ()
   (let ((dumb-jump-aggressive t)
@@ -657,7 +660,7 @@
       (forward-char 33)
       (with-mock
        (mock (dumb-jump-goto-file-line * 11 10))
-       (should (string= el-file (dumb-jump-go)))))))
+       (should (string= el-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-var-let-repeat-test ()
   (let ((dumb-jump-aggressive t)
@@ -668,7 +671,7 @@
       (forward-char 33)
       (with-mock
        (mock (dumb-jump-goto-file-line * 18 10))
-       (should (string= el-file (dumb-jump-go)))))))
+       (should (string= el-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-var-arg-test ()
   (let ((dumb-jump-aggressive t)
@@ -679,7 +682,7 @@
       (forward-char 12)
       (with-mock
        (mock (dumb-jump-goto-file-line * 3 27))
-       (should (string= el-file (dumb-jump-go)))))))
+       (should (string= el-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-no-result-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
@@ -689,7 +692,7 @@
       (forward-char 4)
       (with-mock
        (mock (dumb-jump-message "'%s' %s %s declaration not found." "nothing" * *))
-       (dumb-jump-go)))))
+       (with-no-warnings (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-go-no-result-force-grep-test ()
   (let ((dumb-jump-force-grep t)
@@ -700,7 +703,7 @@
       (forward-char 4)
       (with-mock
        (mock (dumb-jump-message "'%s' %s %s declaration not found." "nothing" * *))
-       (dumb-jump-go)))))
+       (with-no-warnings (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-go-no-rules-test ()
   (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt")))
@@ -708,7 +711,7 @@
       (goto-char (point-min))
       (with-mock
        (mock (dumb-jump-message "Could not find rules for '%s'." ".txt file"))
-       (dumb-jump-go)))))
+       (with-no-warnings (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-go-too-long-test ()
   (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt"))
@@ -716,12 +719,15 @@
     (with-current-buffer (find-file-noselect txt-file t)
       (goto-char (point-min))
       (noflet ((dumb-jump-fetch-file-results (&optional prompt)
-                 (sleep-for 0 300)
+                 (with-no-warnings
+                   (if (version< emacs-version "29.1")
+                       (sleep-for 0 300)
+                     (sleep-for 0.3)))
                  '(:results (:result))))
         (with-mock
           (mock (dumb-jump-message "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions" * * *))
           (mock (dumb-jump-result-follow * * *))
-          (dumb-jump-go))))))
+          (with-no-warnings (dumb-jump-go)))))))
 
 (ert-deftest dumb-jump-message-handle-results-test ()
   (let ((dumb-jump-aggressive t)
@@ -817,7 +823,7 @@
        (mock (dumb-jump-git-grep-installed?) => nil)
        (mock (dumb-jump-grep-installed?) => nil)
        (mock (dumb-jump-message "Please install ag, rg, git grep or grep!"))
-       (dumb-jump-go)))))
+       (with-no-warnings (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-go-nosymbol-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
@@ -826,7 +832,7 @@
       (forward-line 1)
       (with-mock
        (mock (dumb-jump-message "No symbol under point."))
-       (dumb-jump-go)))))
+       (with-no-warnings (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-message-get-results-nogrep-test ()
   (with-mock
@@ -937,7 +943,7 @@
       (forward-char 3)
       (with-mock
        (mock (dumb-jump-goto-file-line * 4 7))
-        (should (string= (dumb-jump-go) lib-file))))))
+        (should (string= (with-no-warnings (dumb-jump-go)) lib-file))))))
 
 (ert-deftest dumb-jump-parse-response-line-test ()
   (let ((t1 (dumb-jump-parse-response-line "/opt/test/foo.js:44: var test = 12;" "/opt/test/blah.js"))
@@ -978,7 +984,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 3 6))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-react-test2 ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
@@ -988,7 +994,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 13 6))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 
 (ert-deftest dumb-jump-react-test3 ()
@@ -999,7 +1005,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 26 6))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-react-test4 ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
@@ -1009,7 +1015,7 @@
       (forward-char 7)
       (with-mock
        (mock (dumb-jump-goto-file-line * 31 6))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-react-test5 ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
@@ -1019,7 +1025,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 37 6))
-       (should (string= js-file (dumb-jump-go)))))))
+       (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 ;; c++ tests
 
@@ -1031,7 +1037,7 @@
       (forward-char 14)
       (with-mock
        (mock (dumb-jump-goto-file-line * 3 6))
-       (should (string= cpp-file (dumb-jump-go)))))))
+       (should (string= cpp-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-cpp-test2 ()
   (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "test.cpp")))
@@ -1041,7 +1047,7 @@
       (forward-char 9)
       (with-mock
        (mock (dumb-jump-goto-file-line * 1 6))
-       (should (string= cpp-file (dumb-jump-go)))))))
+       (should (string= cpp-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-cpp-issue87 ()
   (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "issue-87.cpp")))
@@ -1051,7 +1057,7 @@
       (forward-char 12)
       (with-mock
        (mock (dumb-jump-goto-file-line * 6 18))
-       (should (string= cpp-file (dumb-jump-go)))))))
+       (should (string= cpp-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-org-test1 ()
   (let ((org-file (f-join test-data-dir-proj1 "src" "org" "test.org"))
@@ -1063,7 +1069,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 9 6))
-       (should (string= org-file (dumb-jump-go)))))
+       (should (string= org-file (with-no-warnings (dumb-jump-go))))))
     (setq dumb-jump-force-searcher oldpar)))
 
 (ert-deftest dumb-jump-org-test2 ()
@@ -1076,7 +1082,7 @@
       (forward-char 10)
        (with-mock
        (mock (dumb-jump-goto-file-line * 21 2))
-       (should (string= org-file (dumb-jump-go)))))
+       (should (string= org-file (with-no-warnings (dumb-jump-go))))))
     (setq dumb-jump-force-searcher oldpar)))
 
 (ert-deftest dumb-jump-org-issue135 ()
@@ -1095,10 +1101,10 @@
      (goto-char (point-min))
       (forward-line 3)
       (forward-char 2)
-      (org-edit-src-code) 
+      (org-edit-src-code)
       (with-mock
        (mock (dumb-jump-goto-file-line * 9 6))
-       (should (string= org-file (dumb-jump-go)))))
+       (should (string= org-file (with-no-warnings (dumb-jump-go))))))
        (setq dumb-jump-force-searcher oldpar)
        (if (version< org-version "9")
            (setq dumb-jump-project oldproject))))
@@ -1118,7 +1124,7 @@
       (forward-char 18)
       (with-mock
        (mock (dumb-jump-goto-file-line * 6 6))
-       (should (string= header-file (dumb-jump-go)))))))
+       (should (string= header-file (with-no-warnings (dumb-jump-go))))))))
 
 ;; This test makes sure that even though there's a local match it will jump to the external file
 ;; match instead.
@@ -1132,7 +1138,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 4 6))
-       (should (string= header-file (dumb-jump-go-prefer-external)))))))
+       (should (string= header-file (with-no-warnings (dumb-jump-go-prefer-external))))))))
 
 (ert-deftest dumb-jump-prefer-only-external ()
   (let ((main-file (f-join test-data-dir-multiproj "subproj1" "main.cc"))
@@ -1143,7 +1149,7 @@
       (forward-char 18)
       (with-mock
        (mock (dumb-jump-goto-file-line * 6 6))
-       (should (string= header-file (dumb-jump-go-prefer-external)))))))
+       (should (string= header-file (with-no-warnings (dumb-jump-go-prefer-external))))))))
 
 (ert-deftest dumb-jump-prefer-external-only-current ()
   (let ((main-file (f-join test-data-dir-proj1 "src" "cpp" "only.cpp")))
@@ -1153,7 +1159,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 6 6))
-       (should (string= main-file (dumb-jump-go-prefer-external)))))))
+       (should (string= main-file (with-no-warnings (dumb-jump-go-prefer-external))))))))
 
 (ert-deftest dumb-jump-prefer-external-other-window ()
   (let ((dumb-jump-aggressive t)
@@ -1165,7 +1171,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 4 6))
-       (should (string= header-file (dumb-jump-go-prefer-external-other-window)))))))
+       (should (string= header-file (with-no-warnings (dumb-jump-go-prefer-external-other-window))))))))
 
 (ert-deftest dumb-jump-filter-no-start-comments ()
   (should (equal '((:context "yield me"))
@@ -1354,7 +1360,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 1 6))
-       (should (string= clj-to-file (dumb-jump-go)))))))
+       (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
 
 
 (ert-deftest dumb-jump-go-clojure-no-question-mark-test ()
@@ -1367,7 +1373,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 2 6))
-       (should (string= clj-to-file (dumb-jump-go)))))))
+       (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-clojure-no-asterisk-test ()
   (let ((clj-jump-file (f-join test-data-dir-proj3 "file3.clj"))
@@ -1379,7 +1385,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 4 9))
-       (should (string= clj-to-file (dumb-jump-go)))))))
+       (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
 
 (ert-deftest dumb-jump-go-clojure-asterisk-test ()
   (let ((clj-jump-file (f-join test-data-dir-proj3 "file3.clj"))
@@ -1391,7 +1397,7 @@
       (forward-char 2)
       (with-mock
        (mock (dumb-jump-goto-file-line * 5 7))
-       (should (string= clj-to-file (dumb-jump-go)))))))
+       (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
 
 
 (ert-deftest dumb-jump-format-files-as-ag-arg-test ()
