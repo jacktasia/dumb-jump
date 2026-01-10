@@ -16,6 +16,7 @@ jobs:
     strategy:
       matrix:
         emacs_version:
+          - '25.3'
           - '26.1'
           - '26.2'
           - '26.3'
