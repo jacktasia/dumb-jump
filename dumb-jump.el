@@ -1591,8 +1591,8 @@ If nil add also the language type of current src block"
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "jai"
            :regex "\\bJJJ\\s*::"
            :tests ("test ::"))
-    
-    ;; odin    
+
+    ;; odin
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "odin"
            :regex "\\s*\\bJJJ\\s*:\\s*([^=\\n]+\\s*:|:|[^=\\n]+\\s*=|=)"
            :tests ("test :: struct"
@@ -2227,7 +2227,7 @@ associated language or org when outside a src block."
 return a new proplist. The new proplis is PROPLIS
 where a NEWLANG plist(s) is (are) added to PROPLIST.
 The plist(s) value of NEWLANG is (are) copied from
-those of LANG and LANG is replaced by NEWLANG." 
+those of LANG and LANG is replaced by NEWLANG."
   (unless (--filter (string= newlang (plist-get it :language))
                    proplist)
       (--splice
@@ -2237,7 +2237,7 @@ those of LANG and LANG is replaced by NEWLANG."
 
 (defun dumb-jump-make-composite-language (mode lang extension agtype rgtype)
   "Concat one MODE  (usually the string org) with a LANG  (c or python or etc)
-to make a composite language of the form cPLUSorg or pythonPLUSorg or etc. 
+to make a composite language of the form cPLUSorg or pythonPLUSorg or etc.
 Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
 (using EXTENSION AGTYPE RGTYPE)"
   (let* ((complang (concat lang "PLUS" mode))
@@ -2729,8 +2729,7 @@ Ffrom the ROOT project CONFIG-FILE."
             :language lang))))
 
 (defun dumb-jump-file-modified-p (path)
-  "Check if PATH is currently open in Emacs and has a modified buffer."
-  (interactive)
+  "Return non-nil if file at PATH is open in Emacs and was modified in buffer."
   (--any?
    (and (buffer-modified-p it)
         (buffer-file-name it)
