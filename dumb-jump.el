@@ -2161,12 +2161,13 @@ for user to select.  Filters PROJ path from files for display."
       (funcall dumb-jump-ivy-jump-to-selected-function results choices proj))
      ((and (eq dumb-jump-selector 'helm) (fboundp 'helm))
       (helm :sources
-            (helm-make-source "Jump to: " 'helm-source-sync
-                                    :action '(("Jump to match" . dumb-jump-result-follow))
-                                    :candidates (-zip choices results)
-                                    :persistent-action 'dumb-jump-helm-persist-action)
+            (with-no-warnings
+              (helm-make-source "Jump to: " 'helm-source-sync
+                :action '(("Jump to match" . dumb-jump-result-follow))
+                :candidates (-zip choices results)
+                :persistent-action 'dumb-jump-helm-persist-action))
             :buffer "*helm dumb jump choices*"))
-     (t
+     (t ; or popup
       (dumb-jump-to-selected results choices (popup-menu* choices))))))
 
 (defun dumb-jump-get-project-root (filepath)
@@ -2197,10 +2198,12 @@ to keep looking for another root."
                                         ; src edit buffer ? org-edit-src-exit
     (if (and (fboundp 'org-src-edit-buffer-p)
              (org-src-edit-buffer-p))
-        (progn (setq language "org")
-               (org-edit-src-exit)
-               (if (version< org-version "9")
-                   (save-buffer))))
+        (progn
+          (setq language "org")
+          (with-no-warnings
+            (org-edit-src-exit))
+          (if (version< org-version "9")
+              (save-buffer))))
     (if (string= language "org")
         (setq language (dumb-jump-get-language-in-org)))
     (if (member language (-distinct
@@ -2210,16 +2213,19 @@ to keep looking for another root."
       (format ".%s file" (or (file-name-extension file) "")))))
 
 (defun dumb-jump-get-language-in-org ()
-  "In org mode, if inside a src block return
-associated language or org when outside a src block."
-  (let ((lang (nth 0 (org-babel-get-src-block-info))))
-;; if lang exists then create a composite language
+  "Return associated language in org mode src block or \"org\" if outside src.
+This assumes point is inside an org mode buffer."
+  (let ((lang (nth 0 (with-no-warnings (org-babel-get-src-block-info)))))
+    ;; if lang exists then create a composite language
     (if lang
         (dumb-jump-make-composite-language
          "org"
          (if (dumb-jump-get-language-from-aliases lang)
-             (dumb-jump-get-language-from-aliases lang) lang)
-         "org" "org" "org")
+             (dumb-jump-get-language-from-aliases lang)
+           lang)
+         "org"
+         "org"
+         "org")
       "org")))
 
 (defun dumb-jump-add-language-to-proplist (newlang proplist lang)
@@ -2239,7 +2245,7 @@ those of LANG and LANG is replaced by NEWLANG."
   "Concat one MODE  (usually the string org) with a LANG  (c or python or etc)
 to make a composite language of the form cPLUSorg or pythonPLUSorg or etc.
 Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
-(using EXTENSION AGTYPE RGTYPE)"
+\(using EXTENSION AGTYPE RGTYPE)"
   (let* ((complang (concat lang "PLUS" mode))
          (alreadyextension (--filter (and
                                       (string= complang (plist-get it :language))
@@ -2363,7 +2369,7 @@ Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
       (thing-at-point 'symbol t))))
 
 (defun dumb-jump--get-symbol-start ()
-  "Get the start of symbol at point"
+  "Get the start of symbol at point."
   (- (if (region-active-p)
          (region-beginning)
        (car (bounds-of-thing-at-point 'symbol)))
@@ -2433,42 +2439,56 @@ of project configuration."
 
 ;;;###autoload
 (defun dumb-jump-quick-look ()
-  "Run dumb-jump-go in quick look mode.  That is, show a tooltip of where it would jump instead."
+  "Run `dumb-jump-go' in quick look mode.
+That is, show a tooltip of where it would jump instead."
+  ;; Note: made obsolete by Emacs xref interface.
   (interactive)
-  (dumb-jump-go t))
+  (with-no-warnings
+    (dumb-jump-go t)))
 
 ;;;###autoload
 (defun dumb-jump-go-other-window ()
-  "Like 'dumb-jump-go' but use 'find-file-other-window' instead of 'find-file'."
+  "Like dumb-jump-go' but use `find-file-other-window' instead of `find-file'."
+  ;; Note: made obsolete by Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'other))
-    (dumb-jump-go)))
+    (with-no-warnings
+      (dumb-jump-go))))
 
 ;;;###autoload
 (defun dumb-jump-go-current-window ()
-  "Like dumb-jump-go but always use 'find-file'."
+  "Like `dumb-jump-go' but always use `find-file'."
+  ;; Note: made obsolete by Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'current))
-    (dumb-jump-go)))
+    (with-no-warnings
+      (dumb-jump-go))))
 
 ;;;###autoload
 (defun dumb-jump-go-prefer-external ()
-  "Like dumb-jump-go but prefer external matches from the current file."
+  "Like `dumb-jump-go' but prefer external matches from the current file."
+  ;; Note: made obsolete by Emacs xref interface.
   (interactive)
-  (dumb-jump-go nil t))
+  (with-no-warnings
+    (dumb-jump-go nil t)))
 
 ;;;###autoload
 (defun dumb-jump-go-prompt ()
-  "Like dumb-jump-go but prompts for function instead of using under point"
+  "Like `dumb-jump-go' but prompt for function instead of using under point."
+  ;; Note: made obsolete by Emacs xref interface.
   (interactive)
-  (dumb-jump-go nil nil (read-from-minibuffer "Jump to: ")))
+  (with-no-warnings
+    (dumb-jump-go nil nil (read-from-minibuffer "Jump to: "))))
 
 ;;;###autoload
 (defun dumb-jump-go-prefer-external-other-window ()
-  "Like dumb-jump-go-prefer-external but use 'find-file-other-window' instead of 'find-file'."
+  "Like `dumb-jump-go-prefer-external' but create another window.
+It uses `find-file-other-window' instead of `find-file'."
+  ;; Note: made obsolete by Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'other))
-    (dumb-jump-go-prefer-external)))
+    (with-no-warnings
+      (dumb-jump-go-prefer-external))))
 
 ;;;###autoload
 (defun dumb-jump-go (&optional use-tooltip prefer-external prompt)
@@ -2704,14 +2724,19 @@ dumb-jump-get-language-by-filename."
           :var-to-jump var-to-jump
           :match-cur-file-front match-cur-file-front)))
 
+(declare-function tramp-file-name-localname "tramp")
+(declare-function tramp-dissect-file-name "tramp")
+
 (defun dumb-jump-read-config (root config-file)
   "Load and return options (exclusions, inclusions, etc).
 Ffrom the ROOT project CONFIG-FILE."
   (with-temp-buffer
     (insert-file-contents (expand-file-name config-file root))
     (let ((local-root (if (file-remote-p root)
-                          (tramp-file-name-localname
-                           (tramp-dissect-file-name root))
+                          (progn
+                            (require 'tramp)
+                            (tramp-file-name-localname
+                             (tramp-dissect-file-name root)))
                         root))
           include exclude lang)
       (while (not (eobp))
@@ -3089,7 +3114,7 @@ searcher symbol."
   "Search for the literal SYMBOL in the PROJ-ROOT via git grep for a list of file matches."
   (let* ((cmd (format "git grep --full-name -F -c %s %s" (shell-quote-argument symbol) proj-root))
          (result (s-trim (shell-command-to-string cmd)))
-         (matched-files (--map (first (s-split ":" it))
+         (matched-files (--map (cl-first (s-split ":" it))
                                (s-split "\n" result))))
     matched-files))
 
@@ -3290,11 +3315,11 @@ Using ag to search only the files found via git-grep literal symbol search."
   (cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumb-jump)))
     (let ((bounds (bounds-of-thing-at-point 'symbol)))
       (and bounds (let* ((ident (dumb-jump-get-point-symbol))
-			             (start (car bounds))
-			             (col (- start (point-at-bol)))
-			             (line (dumb-jump-get-point-line))
-			             (ctx (dumb-jump-get-point-context line ident col)))
-		            (propertize ident :dumb-jump-ctx ctx)))))
+			 (start (car bounds))
+			 (col (- start (line-beginning-position)))
+			 (line (dumb-jump-get-point-line))
+			 (ctx (dumb-jump-get-point-context line ident col)))
+		    (propertize ident :dumb-jump-ctx ctx)))))
 
   (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump)) prompt)
     (let* ((info (dumb-jump-get-results prompt))
@@ -3355,7 +3380,7 @@ Using ag to search only the files found via git-grep literal symbol search."
 (defun dumb-jump-xref-activate ()
   "Function to activate xref backend.
 Add this function to `xref-backend-functions' to dumb jump to be
-activiated, whenever it finds a project. It is recommended to add
+activated, whenever it finds a project.  It is recommended to add
 it to the end, so that it only gets activated when no better
 option is found."
   (and (dumb-jump-get-project-root default-directory)
