@@ -48,6 +48,7 @@
 (require 'popup)
 (require 'cl-generic nil :noerror)
 (require 'cl-lib)
+(require 'project nil 'noerror)
 
 (defgroup dumb-jump nil
   "Easily jump to project function and variable definitions"
@@ -2170,14 +2171,30 @@ for user to select.  Filters PROJ path from files for display."
       (dumb-jump-to-selected results choices (popup-menu* choices))))))
 
 (defun dumb-jump-get-project-root (filepath)
-  "Keep looking at the parent dir of FILEPATH until a denoter file/dir is found."
-  (s-chop-suffix
-   "/"
-   (expand-file-name
-    (or
-     dumb-jump-project
-     (locate-dominating-file filepath #'dumb-jump-get-config)
-     dumb-jump-default-project))))
+  "Keep looking at the parent dir of FILEPATH until a denoter file/dir is found.
+Prefer project.el when no explicit Dumb Jump override is set."
+  (let* ((path (expand-file-name filepath))
+         ;; If FILEPATH is a file, start from its directory (matches locate-dominating-file behavior).
+         (dir  (if (file-directory-p path)
+                   (file-name-as-directory path)
+                 (file-name-directory path)))
+         ;; Only prefer project.el when no explicit override is set.
+         (project-el-root
+          (when (and (null dumb-jump-project)
+                     dir
+                     (fboundp 'project-current)
+                     (fboundp 'project-root))
+            (let ((default-directory dir))
+              (when-let ((proj (ignore-errors (project-current nil))))
+                (project-root proj))))))
+    (s-chop-suffix
+     "/"
+     (expand-file-name
+      (or dumb-jump-project
+          project-el-root
+          (locate-dominating-file path #'dumb-jump-get-config)
+          dumb-jump-default-project)))))
+
 
 (defun dumb-jump-get-config (dir)
   "If a project denoter is in DIR then return it, otherwise
