@@ -26,7 +26,7 @@
 ;; no stored indexes (TAGS) or persistent background processes.
 ;;
 ;; Dumb Jump provides a xref-based interface for jumping to
-;; definitions. It is based on tools such as grep, the silver searcher
+;; definitions.  It is based on tools such as grep, the silver searcher
 ;; (https://geoff.greer.fm/ag/), ripgrep
 ;; (https://github.com/BurntSushi/ripgrep) or git-grep
 ;; (https://git-scm.com/docs/git-grep).
@@ -35,8 +35,8 @@
 ;;
 ;;    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
 ;;
-;; Now pressing M-. on an identifier should open a buffer at the place
-;; where it is defined, or a list of candidates if uncertain. This
+;; Now pressing M-.  on an identifier should open a buffer at the place
+;; where it is defined, or a list of candidates if uncertain.  This
 ;; list can be navigated using M-g M-n (next-error) and M-g M-p
 ;; (previous-error).
 
@@ -50,7 +50,7 @@
 (require 'cl-lib)
 
 (defgroup dumb-jump nil
-  "Easily jump to project function and variable definitions"
+  "Easily jump to project function and variable definitions."
   :group 'tools
   :group 'convenience)
 
@@ -64,20 +64,29 @@
 
 (defcustom dumb-jump-window
   'current
-  "Which window to use when jumping.  Valid options are 'current (default) or 'other."
+  "Which window to use when jumping.
+Valid options are \\='current (default) or \\='other."
   :group 'dumb-jump
   :type '(choice (const :tag "Current window" current)
                  (const :tag "Other window" other)))
 
 (defcustom dumb-jump-use-visible-window
   t
-  "When true will jump in a visible window if that window already has the file open."
+  "If true will jump in a visible window that shows the opened file."
   :group 'dumb-jump
   :type 'boolean)
 
 (defcustom dumb-jump-selector
   'popup
-  "Which selector to use when there is multiple choices.  `ivy` and `helm' are also supported."
+  "Which selector to use when there is multiple choices.
+The available selectors are:
+- popup: https://github.com/auto-complete/popup-el
+- helm : https://emacs-helm.github.io/helm/
+- ivy  : https://github.com/abo-abo/swiper
+- Completing Read: Emacs default `completing-read'.
+
+When selecting helm or ivy, if the corresponding package is not installed,
+the selector defaults to popup."
   :group 'dumb-jump
   :type '(choice (const :tag "Popup" popup)
                  (const :tag "Helm" helm)
@@ -90,10 +99,20 @@
   :group 'dumb-jump
   :type 'function)
 
-(defcustom dumb-jump-prefer-searcher
-  nil
-  "The preferred searcher to use 'ag, 'rg, 'git-grep, 'gnu-grep,or 'grep.
-If nil then the most optimal searcher will be chosen at runtime."
+(defcustom dumb-jump-prefer-searcher nil
+  "The preferred searcher command line tool to use.
+The available choices are:
+- \\='ag              : https://github.com/ggreer/the_silver_searcher
+- \\='rg              : https://github.com/BurntSushi/ripgrep
+- \\='ugrep           : https://ugrep.com/
+- \\='gnu-grep        : https://www.gnu.org/software/grep/manual/grep.html
+- \\='git-grep        : https://git-scm.com/docs/git-grep
+- \\='git-grep-plus-ag
+
+If nil, select the most optimal searcher at runtime, looking for all
+tools listed above except for git-grep in the order of that list.
+However, the choice is overridden by `dumb-jump-force-searcher' selection
+unless that is nil."
   :group 'dumb-jump
   :type '(choice (const :tag "Best Available" nil)
                  (const :tag "ag" ag)
@@ -129,55 +148,83 @@ or most optimal searcher."
 
 (defcustom dumb-jump-ag-cmd
   "ag"
-  "The the path to the silver searcher.  By default assumes it is in path.  If not found fallbacks to grep."
+  "The path to the silver searcher.  By default assumes it is in path."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-rg-cmd
   "rg"
-  "The the path to ripgrep.  By default assumes it is in path.  If not found fallbacks to grep."
+  "The path to ripgrep.  By default assumes it is in path."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-git-grep-cmd
   "git grep"
-  "The the path to git grep.  By default assumes it is in path.  If not found fallbacks to grep."
+  "The path to git grep.  By default assumes it is in path."
   :group 'dumb-jump
   :type 'string)
 
+;; ---------------------------------------------------------------------------
+;; Dumb-jump generic regular expression meta-concepts
+;;
+;; - `JJJ` : searched text
+;; - `\\j` : word-boundary identifier.  Use this instead of `\\b` when word
+;;           boundary must not include '-'.
+;; - `\\s` : for a single white space character
+
+
+;; word-boundary regexps: they replace the "\\j" in dumb-jump regexes.
 (defcustom dumb-jump-ag-word-boundary
   "(?![a-zA-Z0-9\\?\\*-])"
-  "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and ag will use this value."
+  "Regexp that replaces `\\j` in dumb-jump regexes for ag search.
+`\\b` thinks `-` is a word boundary.
+When this matters use `\\j` instead and ag will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-rg-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
-  "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and rg will use this value."
+  "Regexp that replaces `\\j` in dumb-jump regexes for rg search.
+`\\b` thinks `-` is a word boundary.
+When this matters use `\\j` instead and rg will use this value."
+  :group 'dumb-jump
+  :type 'string)
+
+;; [:todo 2026-01-08, by Pierre Rouleau: check if this is OK as ugrep regexp]
+(defcustom dumb-jump-ugrep-word-boundary
+  "($|[^a-zA-Z0-9\\?\\*-])"
+  "Regexp that replaces `\\j` in dumb-jump regexes for rg search.
+`\\b` thinks `-` is a word boundary.
+When this matters use `\\j` instead and rg will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-git-grep-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
-  "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and git grep will use this value."
+  "Regexp that replaces `\\j` in dumb-jump regexes for git-grep search.
+`\\b` thinks `-` is a word boundary.
+When this matters use `\\j` instead and git grep will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-grep-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
-  "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and grep will use this value."
+  "Regexp that replaces `\\j` in dumb-jump regexes for grep search.
+`\\b` thinks `-` is a word boundary.
+When this matters use `\\j` instead and grep will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-fallback-regex
   "\\bJJJ\\j"
-  "When dumb-jump-fallback-search is t use this regex.  Defaults to boundary search of symbol under point."
+  "When `dumb-jump-fallback-search' is t use this regex.
+Defaults to boundary search of symbol under point."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-fallback-search
   t
-  "If nothing is found with normal search fallback to searching the fallback regex."
+  "If nothing is found with normal search fallback searching fallback regex."
   :group 'dumb-jump
   :type 'boolean)
 
@@ -189,7 +236,8 @@ or most optimal searcher."
 
 (defcustom dumb-jump-zgrep-cmd
   "zgrep"
-  "The path to grep to use for gzipped files.  By default assumes it is in path."
+  "The path to grep to use for gzipped files.
+By default assumes it is in path."
   :group 'dumb-jump
   :type 'string)
 
@@ -205,7 +253,8 @@ or most optimal searcher."
 
 (defcustom dumb-jump-max-find-time
   2
-  "Number of seconds a grep/find command can take before being warned to use ag and config."
+  "Number of seconds a grep/find command can take before issuing a warning.
+The warning recommend using a faster search tool and config."
   :group 'dumb-jump
   :type 'integer)
 
@@ -229,32 +278,42 @@ or most optimal searcher."
 
 (defcustom dumb-jump-git-grep-search-untracked
   t
-  "If non-nil Dumb Jump will also search untracked files when using searcher git-grep."
+  "If non-nil Dumb Jump will also search untracked files when using git-grep."
   :group 'dumb-jump
   :type 'boolean)
 
 (defcustom dumb-jump-git-grep-search-args
   ""
-  "Appends the passed arguments to the git-grep search function. Default: \"\""
+  "Appends the passed arguments to the git-grep search function.
+Default: \"\"."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-ag-search-args
   ""
-  "Appends the passed arguments to the ag search function. Default: \"\""
+  "Appends the passed arguments to the ag search function.
+Default: \"\"."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-rg-search-args
   "--pcre2"
-  "Appends the passed arguments to the rg search function. Default: \"--pcre2\""
+  "Appends the passed arguments to the rg search function.
+Default: \"--pcre2\"."
+  :group 'dumb-jump
+  :type 'string)
+
+(defcustom dumb-jump-ugrep-search-args
+  "--perl-regexp"
+  "Appends the passed arguments to the ugrep search function.
+Default: \"--perl-regexp\"."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-search-type-org-only-org
   t
   "If non nil restrict type ag/rg to org file.
-If nil add also the language type of current src block"
+If nil add also the language type of current src block."
   :group 'dumb-jump
   :type 'boolean)
 
