@@ -1700,7 +1700,17 @@ If nil add also the language type of current src block."
            :not ("        test.")))
 
 
-  "List of regex patttern templates organized by language and type to use for generating the grep command."
+    "List of search regex pattern templates organized by language and type.
+Used for generating the grep tool search commands.
+
+See relevant search tool command lines:
+
+- Ag:
+  https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t
+- rg:
+  https://github.com/BurntSushi/ripgrep/blob/master/crates/ignore/src/types.rs#L96
+
+More information using the search tool command line help."
   :group 'dumb-jump
   :type
   '(repeat
@@ -1712,8 +1722,6 @@ If nil add also the language type of current src block."
                (:tests (repeat string))
                (:not (repeat string))))))
 
-                                        ; https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t
-                                        ; https://github.com/BurntSushi/ripgrep/blob/master/ignore/src/types.rs#L99
 (defcustom dumb-jump-language-file-exts
   '((:language "elisp" :ext "el" :agtype "elisp" :rgtype "elisp")
     (:language "elisp" :ext "el.gz" :agtype "elisp" :rgtype "elisp")
@@ -1897,8 +1905,8 @@ If nil add also the language type of current src block."
 
   "List of under points contexts for each language.
 This helps limit the number of regular expressions we use
-if we know that if there's a '(' immediately to the right of
-a symbol then it's probably a function call"
+if we know that if there's a ( immediately to the right of
+a symbol then it's probably a function call."
   :group 'dumb-jump
   :type
   '(repeat
@@ -1912,30 +1920,40 @@ a symbol then it's probably a function call"
                                (string :tag "Regular expression")))))))
 
 (defcustom dumb-jump-project-denoters
-  '(".dumbjump" ".projectile" ".git" ".hg" ".fslckout" ".bzr" "_darcs" ".svn" "Makefile" "PkgInfo" "-pkg.el" "_FOSSIL_")
+  '(".dumbjump"
+    ".projectile"
+    ".git"
+    ".hg"
+    ".fslckout"
+    ".bzr"
+    "_darcs"
+    ".svn"
+    "Makefile"
+    "PkgInfo"
+    "-pkg.el"
+    "_FOSSIL_")
   "Files and directories that signify a directory is a project root."
   :group 'dumb-jump
   :type '(repeat (string  :tag "Name")))
 
 (defcustom dumb-jump-default-project "~"
-  "The default project to search within if a project root is not found."
+  "Directory of default project to search within if a project root is not found."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-project nil
-  "The project to search within if normal denoters will not work.  This should only be needed in the rarest of cases."
+  "Directory of project to search within if normal denoters will not work.
+This should only be needed in the rarest of cases."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-before-jump-hook nil
   "Hooks called before jumping."
-  :type 'hook
   :group 'dumb-jump
   :type 'hook)
 
 (defcustom dumb-jump-after-jump-hook nil
   "Hooks called after jumping."
-  :type 'hook
   :group 'dumb-jump
   :type 'hook)
 
@@ -1954,8 +1972,10 @@ If `nil` always show list of more than 1 match."
 
 (defcustom dumb-jump-confirm-jump-to-modified-file
   t
-  "If t, confirm before jumping to a modified file (which may lead to an
-inaccurate jump).  If nil, jump without confirmation but print a warning."
+  "Confirm before jumping to a modified file?
+If t, confirm before jumping to a modified file (which may lead to an
+inaccurate jump).
+If nil, jump without confirmation but print a warning."
   :group 'dumb-jump
   :type 'boolean)
 
@@ -1964,16 +1984,29 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
   :group 'dumb-jump
   :type 'boolean)
 
-(defun dumb-jump-message-prin1 (str &rest args)
-  "Helper function when debugging apply STR 'prin1-to-string' to all ARGS."
-  (apply 'message str (-map 'prin1-to-string args)))
+;; ---------------------------------------------------------------------------
+;; Debugging Utilities
+;; -------------------
+
+(defun dumb-jump-message-prin1 (format-str &rest args)
+  "Helper debugging function: generate a FORMAT-STR message with all ARGS."
+  ;; Fist transform each of ARGS to string with `prin1-to-string' then
+  ;; pass them as arguments to message by making a list used the third
+  ;; parameter to apply.
+  (apply 'message format-str (-map 'prin1-to-string args)))
+
+;; ---------------------------------------------------------------------------
+;; Search tool presence checkers
+;; -----------------------------
 
 (defvar dumb-jump--ag-installed? 'unset)
 (defun dumb-jump-ag-installed? ()
   "Return t if ag is installed."
   (if (eq dumb-jump--ag-installed? 'unset)
       (setq dumb-jump--ag-installed?
-            (s-contains? "ag version" (shell-command-to-string (concat dumb-jump-ag-cmd " --version"))))
+            (s-contains? "ag version"
+                         (shell-command-to-string
+                          (concat dumb-jump-ag-cmd " --version"))))
     dumb-jump--ag-installed?))
 
 (defvar dumb-jump--git-grep-plus-ag-installed? 'unset)
@@ -1981,22 +2014,24 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
   "Return t if git grep and ag is installed."
   (if (eq dumb-jump--git-grep-plus-ag-installed? 'unset)
       (setq dumb-jump--git-grep-plus-ag-installed?
-            (and (dumb-jump-git-grep-installed?) (dumb-jump-ag-installed?)))
+            (and (dumb-jump-git-grep-installed?)
+                 (dumb-jump-ag-installed?)))
     dumb-jump--git-grep-plus-ag-installed?))
 
 (defvar dumb-jump--rg-installed? 'unset)
 (defun dumb-jump-rg-installed? ()
-  "Return t if rg is installed."
+  "Return t if rg later than 0.10 is installed."
   (if (eq dumb-jump--rg-installed? 'unset)
       (setq dumb-jump--rg-installed?
             (let ((result (s-match "ripgrep \\([0-9]+\\)\\.\\([0-9]+\\).*"
-                                   (shell-command-to-string (concat dumb-jump-rg-cmd " --version")))))
+                                   (shell-command-to-string
+                                    (concat dumb-jump-rg-cmd " --version")))))
               (when (equal (length result) 3)
                 (let ((major (string-to-number (nth 1 result)))
                       (minor (string-to-number (nth 2 result))))
-                  (or
-                   (and (= major 0) (>= minor 10))
-                   (>= major 1))))))
+                  (or (and (= major 0)
+                           (>= minor 10))
+                      (>= major 1))))))
     dumb-jump--rg-installed?))
 
 (defvar dumb-jump--git-grep-installed? 'unset)
@@ -2005,14 +2040,17 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
   (if (eq dumb-jump--git-grep-installed? 'unset)
       (setq dumb-jump--git-grep-installed?
             (s-contains? "fatal: no pattern given"
-                         (shell-command-to-string (concat dumb-jump-git-grep-cmd))))
+                         (shell-command-to-string
+                          (concat dumb-jump-git-grep-cmd))))
     dumb-jump--git-grep-installed?))
 
 (defvar dumb-jump--grep-installed? 'unset)
 (defun dumb-jump-grep-installed? ()
-  "Return 'gnu if GNU grep is installed, 'bsd if BSD grep is installed, and nil otherwise."
+  "Return non-nil if a grep is installed, nil otherwise.
+Return \\='gnu if GNU grep is installed, \\='bsd if BSD grep is installed."
   (if (eq dumb-jump--grep-installed? 'unset)
-      (let* ((version (shell-command-to-string (concat dumb-jump-grep-cmd " --version")))
+      (let* ((version (shell-command-to-string
+                       (concat dumb-jump-grep-cmd " --version")))
              (variant (cond ((s-match "GNU grep" version) 'gnu)
                             ((s-match "[0-9]+\\.[0-9]+" version) 'bsd)
                             (t nil))))
@@ -2027,7 +2065,8 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
     (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun dumb-jump-run-test-temp-file (test thefile realcmd)
-  "Write content to the temporary file, run cmd on it, return result"
+  "Write TEST string to temporary file THEFILE, run shell REALCMD on it.
+Return resulting string."
   (with-temp-buffer
     (insert test)
     (write-file thefile nil)
@@ -2036,18 +2075,22 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
     (delete-file thefile)
     (buffer-substring-no-properties (point-min) (point-max))))
 
-(defun dumb-jump-run-git-grep-test (test cmd)
-  "Use string TEST as input through a local, temporary file for CMD.
-Because git grep must be given a file as input, not just a string."
+(defun dumb-jump-run-git-grep-test (test git-grep-cmd)
+  "Execute GIT-GREP-CMD on input TEST string written in temporary file.
+Necessary because git grep must be given a file as input, not just a string."
   (let ((thefile ".git.grep.test"))
-    (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
+    (dumb-jump-run-test-temp-file test
+                                  thefile
+                                  (concat git-grep-cmd " " thefile))))
 
-(defun dumb-jump-run-ag-test (test cmd)
-  "Use TEST as input, but first write it into temporary file
-and then run ag on it. The difference is that ag ignores multiline
-matches when passed input from stdin, which is a crucial feature."
+(defun dumb-jump-run-ag-test (test ag-cmd)
+  "Execute AG-CMD on input TEST written in temporary file.
+The difference is that ag ignores multiline matches when passed
+input from stdin, which is a crucial feature."
   (let ((thefile ".ag.test"))
-    (dumb-jump-run-test-temp-file test thefile (concat cmd " " thefile))))
+    (dumb-jump-run-test-temp-file test
+                                  thefile
+                                  (concat ag-cmd " " thefile))))
 
 (defun dumb-jump-test-grep-rules (&optional run-not-tests)
   "Test all the grep rules and return count of those that fail.
@@ -2977,12 +3020,25 @@ searcher symbol."
 
 (defconst dumb-jump--case-insensitive-languages
   '("commonlisp"
-    "cobol"))
+    "cobol")
+  "List of case insensitive languages.")
 
 ;; TODO: rename dumb-jump-run-definition-command
-(defun dumb-jump-run-command
-    (look-for proj regexes lang exclude-args cur-file line-num parse-fn generate-fn)
-  "Run the grep command based on the needle LOOK-FOR in the directory TOSEARCH"
+(defun dumb-jump-run-command (look-for proj regexes lang
+                                       exclude-args cur-file
+                                       line-num parse-fn generate-fn)
+  "Run the grep search command based on LOOK-FOR in the directory TOSEARCH.
+The parameters are:
+- LOOK-FOR: string: searched symbol
+- PROJ:     string: directory path
+- REGEXES: list of strings: each string is a dumb-jump generic regular
+                            expression.
+- LANG: string: handled language name specified in `dumb-jump-find-rules'.
+- EXCLUDE-ARGS:
+- CUR-FILE  string: current file name.
+- LINE-NUM: integer: current line number.
+- PARSE-FN: the parse function; something like `dumb-jump-parse-grep-response'.
+- GENERATE-FN: the generate function; something like `dumb-jump-generate-ag-command'."
   (let* ((proj-root (if (file-remote-p proj)
                         (directory-file-name
                          (tramp-file-name-localname (tramp-dissect-file-name proj)))
@@ -2994,7 +3050,10 @@ searcher symbol."
     (dumb-jump-debug-message cmd rawresults)
     (when (and (s-blank? rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
-      (setq cmd (funcall generate-fn look-for cur-file proj-root regexes lang exclude-args))
+      (setq cmd (funcall generate-fn
+                         look-for cur-file
+                         proj-root regexes
+                         lang exclude-args))
       (setq rawresults (shell-command-to-string cmd))
       (dumb-jump-debug-message cmd rawresults))
     (unless (s-blank? cmd)
@@ -3003,7 +3062,8 @@ searcher symbol."
         (--filter (s-contains? look-for (plist-get it :context) ignore-case) results)))))
 
 (defun dumb-jump-parse-response-line (resp-line cur-file)
-  "Parse a search program's single RESP-LINE for CUR-FILE into a list of (path line context)."
+  "Parse a search program's single RESP-LINE for CUR-FILE.
+Return a list of (path line context)."
   (let* ((parts (--remove (string= it "")
                           (s-split "\\(?:^\\|:\\)[0-9]+:"  resp-line)))
          (line-num-raw (s-match "\\(?:^\\|:\\)\\([0-9]+\\):" resp-line)))
@@ -3028,12 +3088,17 @@ searcher symbol."
               (nth 1 line-num-raw) (nth 0 parts)))))))
 
 (defun dumb-jump-parse-response-lines (parsed cur-file cur-line-num)
-  "Turn PARSED response lines into a list of property lists.  Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
-  (let* ((records (--mapcat (when it
-                              (let* ((line-num (string-to-number (nth 1 it)))
-                                     (diff (- cur-line-num line-num)))
-                                (list `(:path ,(nth 0 it) :line ,line-num :context ,(nth 2 it) :diff ,diff))))
-                            parsed))
+  "Turn PARSED response lines into a list of property lists.
+Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
+  (let* ((records (--mapcat
+                   (when it
+                     (let* ((line-num (string-to-number (nth 1 it)))
+                            (diff (- cur-line-num line-num)))
+                       (list `(:path ,(nth 0 it)
+                                     :line ,line-num
+                                     :context ,(nth 2 it)
+                                     :diff ,diff))))
+                   parsed))
          (results (-non-nil records)))
     (--filter
      (not (and
@@ -3042,29 +3107,42 @@ searcher symbol."
      results)))
 
 (defun dumb-jump-parse-grep-response (resp cur-file cur-line-num)
-  "Takes a grep response RESP and parses into a list of plists."
-  (let* ((resp-no-warnings (--filter (and (not (s-starts-with? "grep:" it))
-                                          (not (s-contains? "No such file or" it)))
-                                     (s-split "\n" (s-trim resp))))
-         (parsed (--map (dumb-jump-parse-response-line it cur-file) resp-no-warnings)))
+  "Parse raw grep search response RESP into a list of plists.
+- CUR-FILE:     current file.
+- CUR-LINE-NUM: current line number."
+  (let* ((resp-no-warnings
+          (--filter (and (not (string-prefix-p "grep:" it))
+                         (not (s-contains? "No such file or" it)))
+                    (s-split "\n" (s-trim resp))))
+         (parsed (--map (dumb-jump-parse-response-line it cur-file)
+                        resp-no-warnings)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
 
 (defun dumb-jump-parse-ag-response (resp cur-file cur-line-num)
-  "Takes a ag response RESP and parses into a list of plists."
+  "Parse raw ag search response RESP into a list of plists.
+- CUR-FILE:     current file.
+- CUR-LINE-NUM: current line number."
   (let* ((resp-lines (s-split "\n" (s-trim resp)))
-         (parsed (--map (dumb-jump-parse-response-line it cur-file) resp-lines)))
+         (parsed (--map (dumb-jump-parse-response-line it cur-file)
+                        resp-lines)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
 
 (defun dumb-jump-parse-rg-response (resp cur-file cur-line-num)
-  "Takes a rg response RESP and parses into a list of plists."
+  "Parse raw rg search response RESP into a list of plists.
+- CUR-FILE:     current file.
+- CUR-LINE-NUM: current line number."
   (let* ((resp-lines (s-split "\n" (s-trim resp)))
-         (parsed (--map (dumb-jump-parse-response-line it cur-file) resp-lines)))
+         (parsed (--map (dumb-jump-parse-response-line it cur-file)
+                        resp-lines)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
 
 (defun dumb-jump-parse-git-grep-response (resp cur-file cur-line-num)
-  "Takes a git grep response RESP and parses into a list of plists."
+  "Parse raw git grep response RESP into a list of plists.
+- CUR-FILE:     current file.
+- CUR-LINE-NUM: current line number."
   (let* ((resp-lines (s-split "\n" (s-trim resp)))
-         (parsed (--map (dumb-jump-parse-response-line it cur-file) resp-lines)))
+         (parsed (--map (dumb-jump-parse-response-line it cur-file)
+                        resp-lines)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
 
 (defun dumb-jump-re-match (re s)
@@ -3094,7 +3172,7 @@ searcher symbol."
       (plist-get (car usable-ctxs) :type))))
 
 (defun dumb-jump-get-ext-includes (language)
-  "Generate the --include grep argument of file extensions by LANGUAGE."
+  "Return the --include grep argument of file extensions by LANGUAGE."
   (let ((exts (dumb-jump-get-file-exts-by-language language)))
     (dumb-jump-arg-joiner
      "--include"
@@ -3170,11 +3248,16 @@ searcher symbol."
       (dumb-jump-concat-command cmd exclude-args regex-args proj))))
 
 (defun dumb-jump-get-git-grep-files-matching-symbol (symbol proj-root)
-  "Search for the literal SYMBOL in the PROJ-ROOT via git grep for a list of file matches."
-  (let* ((cmd (format "git grep --full-name -F -c %s %s" (shell-quote-argument symbol) proj-root))
+  "Return a list of file names in PROJ-ROOT holding the literal SYMBOL.
+Search for matching files using git grep."
+  (let* ((cmd (format "git grep --full-name -F -c %s %s"
+                      (shell-quote-argument symbol) proj-root))
          (result (s-trim (shell-command-to-string cmd)))
-         (matched-files (--map (cl-first (s-split ":" it))
-                               (s-split "\n" result))))
+         ;; result: '\n\ separated lines of: "path-name:count"
+         ;; extract the name of files and return them in a list.
+         (matched-files (--map
+                         (cl-first (s-split ":" it))
+                         (s-split "\n" result))))
     matched-files))
 
 (defun dumb-jump-format-files-as-ag-arg (files proj-root)
@@ -3184,7 +3267,10 @@ searcher symbol."
                                       files))))
 
 (defun dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg (symbol proj-root)
-  "Get the files matching the SYMBOL via `git grep` in the PROJ-ROOT and return them formatted for `ag -G`."
+  "Return optimized `ag -G` argument string to search for SYMBOL in PROJ-ROOT.
+Limit the ag search to files matching SYMBOL in PROJ-ROOT by first getting the
+list of files with `git grep`.
+The string does not contain the `ag -G`, just its argument."
   (dumb-jump-format-files-as-ag-arg
    (dumb-jump-get-git-grep-files-matching-symbol symbol proj-root)
    proj-root))
@@ -3344,7 +3430,8 @@ Using ag to search only the files found via git-grep literal symbol search."
 
 ;;;###autoload
 (define-minor-mode dumb-jump-mode
-  "Minor mode for jumping to variable and function definitions"
+  "Minor mode for jumping to variable and function definitions."
+  ;; Note: made obsolete by Emacs xref interface.
   :global t
   :keymap dumb-jump-mode-map)
 
