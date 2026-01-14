@@ -104,7 +104,6 @@ the selector defaults to popup."
 The available choices are:
 - \\='ag              : https://github.com/ggreer/the_silver_searcher
 - \\='rg              : https://github.com/BurntSushi/ripgrep
-- \\='ugrep           : https://ugrep.com/
 - \\='gnu-grep        : https://www.gnu.org/software/grep/manual/grep.html
 - \\='git-grep        : https://git-scm.com/docs/git-grep
 - \\='git-grep-plus-ag
@@ -123,7 +122,7 @@ unless that is nil."
 
 (defcustom dumb-jump-force-searcher
   nil
-  "Forcibly use searcher: 'ag, 'rg, 'git-grep, 'gnu-grep, or 'grep.
+  "Forcibly use searcher: \\='ag, \\='rg, \\='git-grep, \\='gnu-grep, or \\='grep.
 Set to nil to not force anything and use `dumb-jump-prefer-searcher'
 or most optimal searcher."
   :group 'dumb-jump
@@ -183,15 +182,6 @@ When this matters use `\\j` instead and ag will use this value."
   :type 'string)
 
 (defcustom dumb-jump-rg-word-boundary
-  "($|[^a-zA-Z0-9\\?\\*-])"
-  "Regexp that replaces `\\j` in dumb-jump regexes for rg search.
-`\\b` thinks `-` is a word boundary.
-When this matters use `\\j` instead and rg will use this value."
-  :group 'dumb-jump
-  :type 'string)
-
-;; [:todo 2026-01-08, by Pierre Rouleau: check if this is OK as ugrep regexp]
-(defcustom dumb-jump-ugrep-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
   "Regexp that replaces `\\j` in dumb-jump regexes for rg search.
 `\\b` thinks `-` is a word boundary.
@@ -300,13 +290,6 @@ Default: \"\"."
   "--pcre2"
   "Appends the passed arguments to the rg search function.
 Default: \"--pcre2\"."
-  :group 'dumb-jump
-  :type 'string)
-
-(defcustom dumb-jump-ugrep-search-args
-  "--perl-regexp"
-  "Appends the passed arguments to the ugrep search function.
-Default: \"--perl-regexp\"."
   :group 'dumb-jump
   :type 'string)
 
