@@ -1322,45 +1322,52 @@
 (ert-deftest dumb-jump-selected-grep-variant-tests ()
   (let ((dumb-jump-prefer-searcher nil)
         (dumb-jump-force-searcher nil))
-    (dolist (dumb-jump-prefer-searcher '(ag rg grep gnu-grep
-                                            git-grep git-grep-plus-ag))
-      ;;
-      ;; When there is no overriding, the preference is honoured.
-      (setq dumb-jump-force-searcher nil)
-      (should (eq (dumb-jump-selected-grep-variant)
-                  dumb-jump-prefer-searcher))
-      ;;
-      ;; when there is an overriding of the old/deprecated style,
-      ;; the preference is ignored.
-      (dolist (dumb-jump-force-searcher '(ag rg grep gnu-grep
-                                             git-grep git-grep-plus-ag))
+    (with-mock
+      (mock (dumb-jump-ag-installed?) => t)
+      (mock (dumb-jump-rg-installed?) => t)
+      (mock (dumb-jump-grep-installed?) => 'gnu)
+      (mock (dumb-jump-git-grep-installed?) => t)
+      ;; [:todo 2026-01-14, by Pierre Rouleau: the next one is never called.  Why?]
+      ;; (mock (dumb-jump--git-grep-plus-ag-installed?) => t)
+
+      (dolist (dumb-jump-prefer-searcher '(ag rg grep gnu-grep
+                                              git-grep git-grep-plus-ag))
+        ;;
+        ;; When there is no overriding, the preference is honoured.
+        (setq dumb-jump-force-searcher nil)
         (should (eq (dumb-jump-selected-grep-variant)
-                    dumb-jump-force-searcher)))
-      ;;
-      ;; When the overriding is provided by a user-specified function, that
-      ;; function determines the selection. Drive user selection via the
-      ;; `dumb-jump-search-selector-tester-choice' variable in this test:
-      (setq dumb-jump-force-searcher #'dumb-jump-search-selector-tester)
-      (dolist (dumb-jump-search-selector-tester-choice '(ag rg grep gnu-grep
-                                                            git-grep
-                                                            git-grep-plus-ag))
-        (should (eq (dumb-jump-selected-grep-variant)
-                    dumb-jump-search-selector-tester-choice)))
-      ;;
-      ;; When the provided overriding is based on directories: the identified
-      ;; directories in the list are requesting the use of git-grep but only
-      ;; inside those directories
-      (setq dumb-jump-force-searcher (list (f-expand ".")))
-      (should (eq (dumb-jump-selected-grep-variant (f-expand "."))
-                  'git-grep))
-      ;;
-      ;; When overriding for a directory that is not the current directory,
-      ;; then this overriding does not take effect and the
-      ;; `dumb-jump-prefer-searcher'  value is used.
-      (setq dumb-jump-force-searcher '("/some/non/existing/directory"))
-      (should (eq (dumb-jump-selected-grep-variant (f-expand "."))
-                  dumb-jump-prefer-searcher))
-      )))
+                    dumb-jump-prefer-searcher))
+        ;;
+        ;; when there is an overriding of the old/deprecated style,
+        ;; the preference is ignored.
+        (dolist (dumb-jump-force-searcher '(ag rg grep gnu-grep
+                                               git-grep git-grep-plus-ag))
+          (should (eq (dumb-jump-selected-grep-variant)
+                      dumb-jump-force-searcher)))
+        ;;
+        ;; When the overriding is provided by a user-specified function, that
+        ;; function determines the selection. Drive user selection via the
+        ;; `dumb-jump-search-selector-tester-choice' variable in this test:
+        (setq dumb-jump-force-searcher #'dumb-jump-search-selector-tester)
+        (dolist (dumb-jump-search-selector-tester-choice '(ag rg grep gnu-grep
+                                                              git-grep
+                                                              git-grep-plus-ag))
+          (should (eq (dumb-jump-selected-grep-variant)
+                      dumb-jump-search-selector-tester-choice)))
+        ;;
+        ;; When the provided overriding is based on directories: the identified
+        ;; directories in the list are requesting the use of git-grep but only
+        ;; inside those directories
+        (setq dumb-jump-force-searcher (list (f-expand ".")))
+        (should (eq (dumb-jump-selected-grep-variant (f-expand "."))
+                    'git-grep))
+        ;;
+        ;; When overriding for a directory that is not the current directory,
+        ;; then this overriding does not take effect and the
+        ;; `dumb-jump-prefer-searcher'  value is used.
+        (setq dumb-jump-force-searcher '("/some/non/existing/directory"))
+        (should (eq (dumb-jump-selected-grep-variant (f-expand "."))
+                    dumb-jump-prefer-searcher))))))
 
 ;; --
 (ert-deftest dumb-jump-pick-grep-variant-force ()
