@@ -401,28 +401,44 @@
       (should (= (length rule-failures) 0)))))
 
 (ert-deftest dumb-jump-test-grep-rules-fail-test ()
-  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+  (let* ((bad-rule '(:type "variable"
+                           :supports ("ag" "grep" "rg" "git-grep")
+                           :language "elisp"
+                           :regex "\\\(defvarJJJ\\b\\s*"
+                           :tests ("(defvar test ")))
          (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
          (rule-failures (dumb-jump-test-grep-rules)))
     (should (= (length rule-failures) 1))))
 
 (when (dumb-jump-ag-installed?)
   (ert-deftest dumb-jump-test-ag-rules-fail-test ()
-    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+    (let* ((bad-rule '(:type "variable"
+                             :supports ("ag" "grep" "rg" "git-grep")
+                             :language "elisp"
+                             :regex "\\\(defvarJJJ\\b\\s*"
+                             :tests ("(defvar test ")))
            (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
            (rule-failures (dumb-jump-test-ag-rules)))
       (should (= (length rule-failures) 1)))))
 
 (when (dumb-jump-rg-installed?)
   (ert-deftest dumb-jump-test-rg-rules-fail-test ()
-    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+    (let* ((bad-rule '(:type "variable"
+                             :supports ("ag" "grep" "rg" "git-grep")
+                             :language "elisp"
+                             :regex "\\\(defvarJJJ\\b\\s*"
+                             :tests ("(defvar test ")))
 	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
 	   (rule-failures (dumb-jump-test-rg-rules)))
       (should (= (length rule-failures) 1)))))
 
 (when (dumb-jump-git-grep-installed?)
   (ert-deftest dumb-jump-test-git-grep-rules-fail-test ()
-    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+    (let* ((bad-rule '(:type "variable"
+                             :supports ("ag" "grep" "rg" "git-grep")
+                             :language "elisp"
+                             :regex "\\\(defvarJJJ\\b\\s*"
+                             :tests ("(defvar test ")))
 	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
 	   (rule-failures (dumb-jump-test-git-grep-rules)))
       (should (= (length rule-failures) 1)))))
@@ -718,7 +734,7 @@
         (dumb-jump-max-find-time 0.2))
     (with-current-buffer (find-file-noselect txt-file t)
       (goto-char (point-min))
-      (noflet ((dumb-jump-fetch-file-results (&optional prompt)
+      (noflet ((dumb-jump-fetch-file-results (&optional _prompt)
                  (with-no-warnings
                    (if (version< emacs-version "29.1")
                        (sleep-for 0 300)
@@ -1229,17 +1245,113 @@
        (eq (plist-get pl1 :searcher)
            (plist-get pl2 :searcher))))
 
+;; Test the search tool selection based on the 2 user-options:
+;; - `dumb-jump-prefer-searcher'
+;; - `dumb-jump-force-searcher' acting as an override
+;; First run  simple tests that only check one combination.
+(ert-deftest dumb-jump-selected-grep-variant-test-nil-nil ()
+  (let ((dumb-jump-prefer-searcher nil)
+        (dumb-jump-force-searcher nil))
+    (should (eq (dumb-jump-selected-grep-variant) 'ag))))
+
+(ert-deftest dumb-jump-selected-grep-variant-test-ag-nil ()
+  (let ((dumb-jump-prefer-searcher 'ag)
+        (dumb-jump-force-searcher nil))
+    (should (eq (dumb-jump-selected-grep-variant) 'ag))))
+
+(ert-deftest dumb-jump-selected-grep-variant-test-rg-nil ()
+  (let ((dumb-jump-prefer-searcher 'rg)
+        (dumb-jump-force-searcher nil))
+    (should (eq (dumb-jump-selected-grep-variant) 'rg))))
+
+(ert-deftest dumb-jump-selected-grep-variant-test-rg-grep ()
+  (let ((dumb-jump-prefer-searcher 'rg)
+        (dumb-jump-force-searcher 'grep))
+    (should (eq (dumb-jump-selected-grep-variant) 'grep))))
+
+(ert-deftest dumb-jump-selected-grep-variant-test-grep-nil ()
+  (let ((dumb-jump-prefer-searcher 'grep)
+        (dumb-jump-force-searcher nil))
+    (should (eq (dumb-jump-selected-grep-variant) 'grep))))
+
+(ert-deftest dumb-jump-selected-grep-variant-test-gnu-grep-nil ()
+  (let ((dumb-jump-prefer-searcher 'gnu-grep)
+        (dumb-jump-force-searcher nil))
+    (should (eq (dumb-jump-selected-grep-variant) 'gnu-grep))))
+
+;; Run a test that go through all combinations
+
+(defvar dumb-jump-search-selector-tester-choice nil
+  "What `dumb-jump-search-selector-tester' returns.")
+(defun dumb-jump-search-selector-tester (_dir)
+  "Mocker for a user-supplied selector as override. Ignore DIR."
+  dumb-jump-search-selector-tester-choice)
+
+(ert-deftest dumb-jump-selected-grep-variant-tests ()
+  (let ((dumb-jump-prefer-searcher nil)
+        (dumb-jump-force-searcher nil))
+    (dolist (dumb-jump-prefer-searcher '(ag rg grep gnu-grep
+                                            git-grep git-grep-plus-ag))
+      ;;
+      ;; When there is no overriding, the preference is honoured.
+      (setq dumb-jump-force-searcher nil)
+      (should (eq (dumb-jump-selected-grep-variant)
+                  dumb-jump-prefer-searcher))
+      ;;
+      ;; when there is an overriding of the old/deprecated style,
+      ;; the preference is ignored.
+      (dolist (dumb-jump-force-searcher '(ag rg grep gnu-grep
+                                             git-grep git-grep-plus-ag))
+        (should (eq (dumb-jump-selected-grep-variant)
+                    dumb-jump-force-searcher)))
+      ;;
+      ;; When the overriding is provided by a user-specified function, that
+      ;; function determines the selection. Drive user selection via the
+      ;; `dumb-jump-search-selector-tester-choice' variable in this test:
+      (setq dumb-jump-force-searcher #'dumb-jump-search-selector-tester)
+      (dolist (dumb-jump-search-selector-tester-choice '(ag rg grep gnu-grep
+                                                            git-grep
+                                                            git-grep-plus-ag))
+        (should (eq (dumb-jump-selected-grep-variant)
+                    dumb-jump-search-selector-tester-choice)))
+      ;;
+      ;; When the provided overriding is based on directories: the identified
+      ;; directories in the list are requesting the use of git-grep but only
+      ;; inside those directories
+      (setq dumb-jump-force-searcher (list (f-expand ".")))
+      (should (eq (dumb-jump-selected-grep-variant (f-expand "."))
+                  'git-grep))
+      ;;
+      ;; When overriding for a directory that is not the current directory,
+      ;; then this overriding does not take effect and the
+      ;; `dumb-jump-prefer-searcher'  value is used.
+      (setq dumb-jump-force-searcher '("/some/non/existing/directory"))
+      (should (eq (dumb-jump-selected-grep-variant (f-expand "."))
+                  dumb-jump-prefer-searcher))
+      )))
+
+;; --
 (ert-deftest dumb-jump-pick-grep-variant-force ()
   (let* ((dumb-jump-force-searcher 'grep)
          (gen-funcs (dumb-jump-generators-by-searcher 'grep))
          (variant (dumb-jump-pick-grep-variant)))
     (should (generator-plist-equal gen-funcs variant))))
 
-(ert-deftest dumb-jump-pick-grep-variant-git-grep-in-git-repo ()
-  (let* ((dumb-jump-force-searcher nil)
-         (gen-funcs (dumb-jump-generators-by-searcher 'git-grep))
-         (variant (dumb-jump-pick-grep-variant (f-expand "."))))
-    (should (generator-plist-equal gen-funcs variant))))
+;; The following test no longer represents what the searcher selection logic
+;; does but what it used to do: always select git-grep when the project
+;; directory is a Git repo even when `dumb-jump-force-searcher' was nil.
+;; With the new logic, `dumb-jump-force-searcher' must be set to a user
+;; function that selects Git Grep or the project directory is identified to
+;; override it to Git Grep.
+;; Therefore, the following test should be removed.
+;; - For now I keep it to show the evolution.
+;; The real test is now done by `dumb-jump-selected-grep-variant-tests' above.
+;;
+;; (ert-deftest dumb-jump-pick-grep-variant-git-grep-in-git-repo ()
+;;   (let* ((dumb-jump-force-searcher nil)
+;;          (gen-funcs (dumb-jump-generators-by-searcher 'git-grep))
+;;          (variant (dumb-jump-pick-grep-variant (f-expand "."))))
+;;     (should (generator-plist-equal gen-funcs variant))))
 
 (ert-deftest dumb-jump-pick-grep-variant-prefer ()
   (let* ((dumb-jump-force-searcher nil)
