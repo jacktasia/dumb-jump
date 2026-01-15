@@ -1249,15 +1249,47 @@
 ;; - `dumb-jump-prefer-searcher'
 ;; - `dumb-jump-force-searcher' acting as an override
 ;; First run  simple tests that only check one combination.
-(ert-deftest dumb-jump-selected-grep-variant-test-nil-nil ()
+(ert-deftest dumb-jump-selected-grep-variant-test-nil-nil-with-nothing ()
   (let ((dumb-jump-prefer-searcher nil)
         (dumb-jump-force-searcher nil))
-    (should (eq (dumb-jump-selected-grep-variant) 'ag))))
+    (with-mock
+      (mock (dumb-jump-ag-installed?) => nil)
+      (mock (dumb-jump-rg-installed?) => nil)
+      (mock (dumb-jump-grep-installed?) => 'bsd)
+      (should (eq (dumb-jump-selected-grep-variant) 'grep)))))
+
+(ert-deftest dumb-jump-selected-grep-variant-test-nil-nil-with-really-nothing ()
+  (let ((dumb-jump-prefer-searcher nil)
+        (dumb-jump-force-searcher nil))
+    (with-mock
+      (mock (dumb-jump-ag-installed?) => nil)
+      (mock (dumb-jump-rg-installed?) => nil)
+      (mock (dumb-jump-grep-installed?) => nil)
+      ;; [:todo 2026-01-14, by Pierre Rouleau: When dumb-jump-grep-installed?
+      ;;                    returns nil the selection is still 'grep. Is this OK??]
+      (should (eq (dumb-jump-selected-grep-variant) 'grep)))))
+
+(ert-deftest dumb-jump-selected-grep-variant-test-nil-nil-with-ag ()
+  (let ((dumb-jump-prefer-searcher nil)
+        (dumb-jump-force-searcher nil))
+    (with-mock
+      (mock (dumb-jump-ag-installed?) => t)
+      (should (eq (dumb-jump-selected-grep-variant) 'ag)))))
+
+(ert-deftest dumb-jump-selected-grep-variant-test-nil-nil-with-rg ()
+  (let ((dumb-jump-prefer-searcher nil)
+        (dumb-jump-force-searcher nil))
+    (with-mock
+      (mock (dumb-jump-ag-installed?) => nil)
+      (mock (dumb-jump-rg-installed?) => t)
+      (should (eq (dumb-jump-selected-grep-variant) 'rg)))))
 
 (ert-deftest dumb-jump-selected-grep-variant-test-ag-nil ()
   (let ((dumb-jump-prefer-searcher 'ag)
         (dumb-jump-force-searcher nil))
-    (should (eq (dumb-jump-selected-grep-variant) 'ag))))
+    (with-mock
+      (mock (dumb-jump-ag-installed?) => t)
+      (should (eq (dumb-jump-selected-grep-variant) 'ag)))))
 
 (ert-deftest dumb-jump-selected-grep-variant-test-rg-nil ()
   (let ((dumb-jump-prefer-searcher 'rg)
