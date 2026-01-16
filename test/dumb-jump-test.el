@@ -422,7 +422,8 @@
       (dumb-jump-output-rule-test-failures rule-failures)
       (should (= (length rule-failures) 0)))))
 
-(when (dumb-jump-git-grep-installed?)
+(when (and (not (eq system-type 'darwin))   ; git grep is broken on macOS as of Jan 2026.
+           (dumb-jump-git-grep-installed?))
   (ert-deftest dumb-jump-test-git-grep-rules-test ()
     (let ((rule-failures (dumb-jump-test-git-grep-rules)))
       (dumb-jump-output-rule-test-failures rule-failures)
@@ -488,7 +489,8 @@
 	   (rule-failures (dumb-jump-test-rg-rules)))
       (should (= (length rule-failures) 1)))))
 
-(when (dumb-jump-git-grep-installed?)
+(when (and (not (eq system-type 'darwin))   ; git grep is broken on macOS as of Jan 2026.
+           (dumb-jump-git-grep-installed?))
   (ert-deftest dumb-jump-test-git-grep-rules-fail-test ()
     (let* ((bad-rule '(:type "variable"
                              :supports ("ag" "grep" "rg" "git-grep")
@@ -499,7 +501,8 @@
 	   (rule-failures (dumb-jump-test-git-grep-rules)))
       (should (= (length rule-failures) 1)))))
 
-(when (dumb-jump-git-grep-installed?)
+(when (and (not (eq system-type 'darwin))  ; git grep is broken on macOS as of Jan 2026.
+           (dumb-jump-git-grep-installed?))
   (ert-deftest dumb-jump-test-git-grep-rules-not-test () ;; :not tests
     (let ((rule-failures (dumb-jump-test-git-grep-rules t)))
     (dumb-jump-output-rule-test-failures rule-failures)
