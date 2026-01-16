@@ -9,6 +9,6 @@
 
 (require 'el-mock)
 (eval-when-compile
-  (require 'cl-lib))
+  (require 'cl))
 
 ;;; test-helper.el ends here

@@ -2737,7 +2737,6 @@ Return resulting string."
     (write-file thefile nil)
     (delete-region (point-min) (point-max))
     (shell-command realcmd t)
-    (set-buffer-modified-p nil) ; prevent prompt on file deletion during test
     (delete-file thefile)
     (buffer-substring-no-properties (point-min) (point-max))))
 

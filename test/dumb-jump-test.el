@@ -12,46 +12,16 @@
 (defun dumb-jump-output-rule-test-failures (failures)
   (--each failures (princ (format "\t%s\n" it))))
 
-;; The test data directory path is adjusted to the location of the
-;; current working directory being either inside the top directory
-;; where dumb-jump.el and test directory are located or inside the test
-;; sub-directory where the test file and the data sub-directory are
-;; located. Anywhere else is invalid.
-(defconst test-data-dir (if (and (f-exists? "./dumb-jump.el")
-                                 (f-dir? "./test/data"))
-                            (f-expand "./test/data")
-                          (if (and (f-exists? "./dumb-jump-test.el")
-                                   (f-dir? "./data"))
-                              (f-expand "./data")
-                            "INVALID-Current-Working-Directory-for-ERT-Tests!"))
+(defvar test-data-dir (f-expand "./test/data")
   "Test directory.")
-(defconst test-dumb-jump-root-dir (if (and (f-exists? "./dumb-jump.el")
-                                           (f-dir? "./test/data"))
-                                      (f-expand ".")
-                          (if (and (f-exists? "./dumb-jump-test.el")
-                                   (f-dir? "./data"))
-                              (f-expand "..")
-                            "INVALID-Current-Working-Directory-for-ERT-Tests!"))
+(defvar test-data-dir-elisp (f-join test-data-dir "proj2-elisp")
   "Test directory.")
-
-(defconst test-data-dir-elisp (f-join test-data-dir "proj2-elisp")
+(defvar test-data-dir-proj1 (f-join test-data-dir "proj1")
   "Test directory.")
-
-(defconst test-data-dir-proj1 (f-join test-data-dir "proj1")
+(defvar test-data-dir-proj3 (f-join test-data-dir "proj3-clj")
   "Test directory.")
-(defconst test-data-dir-proj3 (f-join test-data-dir "proj3-clj")
+(defvar test-data-dir-multiproj (f-join test-data-dir "multiproj")
   "Test directory.")
-(defconst test-data-dir-multiproj (f-join test-data-dir "multiproj")
-  "Test directory.")
-
-(defconst test-dumb-jump-file-path (if (and (f-exists? "./dumb-jump.el")
-                                            (f-dir? "./test/data"))
-                                       "dumb-jump.el"
-                                     (if (and (f-exists? "./dumb-jump-test.el")
-                                              (f-dir? "./data"))
-                                         "../dumb-jump.el"
-                                       "INVALID-Current-Working-Directory-for-dumb-jump!"))
-  "Relative path of dumb-jump.el ")
 
 (ert-deftest data-dir-exists-test ()
   (should (f-dir? test-data-dir)))
@@ -395,26 +365,11 @@
     (dumb-jump-output-rule-test-failures rule-failures)
     (should (= (length rule-failures) 0))))
 
-(defun dumb-jump--noop (&rest _args)
-  "Do nothing, return nil."
-  nil)
-
 (when (dumb-jump-ag-installed?)
   (ert-deftest dumb-jump-test-ag-rules-test ()
-    ;; Some of the tests write text inside a temporary buffer and save the
-    ;; text to a file to perform testing. That will work as long as Emacs is
-    ;; not setup to execute `delete-trailing-whitespace' in the
-    ;; `before-save-hook' which might be the case for users systems.
-    ;; To prevent that from happening advice the `delete-trailing-whitespace'
-    ;; function into something that does nothing for the duration of the test.
-    (unwind-protect
-        (progn
-          (advice-add 'delete-trailing-whitespace :override 'dumb-jump--noop)
-          (let ((rule-failures (dumb-jump-test-ag-rules)))
-            (dumb-jump-output-rule-test-failures rule-failures)
-            (should (= (length rule-failures) 0))))
-      ;; restore `delete-trailing-whitespace'
-      (advice-remove 'delete-trailing-whitespace 'dumb-jump--noop))))
+    (let ((rule-failures (dumb-jump-test-ag-rules)))
+      (dumb-jump-output-rule-test-failures rule-failures)
+      (should (= (length rule-failures) 0)))))
 
 (when (dumb-jump-rg-installed?)
   (ert-deftest dumb-jump-test-rg-rules-test ()
@@ -446,55 +401,28 @@
       (should (= (length rule-failures) 0)))))
 
 (ert-deftest dumb-jump-test-grep-rules-fail-test ()
-  (let* ((bad-rule '(:type "variable"
-                           :supports ("ag" "grep" "rg" "git-grep")
-                           :language "elisp"
-                           :regex "\\\(defvarJJJ\\b\\s*"
-                           :tests ("(defvar test ")))
+  (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
          (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
          (rule-failures (dumb-jump-test-grep-rules)))
     (should (= (length rule-failures) 1))))
 
 (when (dumb-jump-ag-installed?)
   (ert-deftest dumb-jump-test-ag-rules-fail-test ()
-    ;; Some of the tests write text inside a temporary buffer and save the
-    ;; text to a file to perform testing. That will work as long as Emacs is
-    ;; not setup to execute `delete-trailing-whitespace' in the
-    ;; `before-save-hook' which might be the case for users systems.
-    ;; To prevent that from happening advice the `delete-trailing-whitespace'
-    ;; function into something that does nothing for the duration of the test.
-    (unwind-protect
-        (progn
-          (advice-add 'delete-trailing-whitespace :override 'dumb-jump--noop)
-          (let* ((bad-rule '(:type "variable"
-                                   :supports ("ag" "grep" "rg" "git-grep")
-                                   :language "elisp"
-                                   :regex "\\\(defvarJJJ\\b\\s*"
-                                   :tests ("(defvar test ")))
-                 (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
-                 (rule-failures (dumb-jump-test-ag-rules)))
-            (should (= (length rule-failures) 1))))
-      ;; restore `delete-trailing-whitespace'
-      (advice-remove 'delete-trailing-whitespace 'dumb-jump--noop))))
+    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
+           (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
+           (rule-failures (dumb-jump-test-ag-rules)))
+      (should (= (length rule-failures) 1)))))
 
 (when (dumb-jump-rg-installed?)
   (ert-deftest dumb-jump-test-rg-rules-fail-test ()
-    (let* ((bad-rule '(:type "variable"
-                             :supports ("ag" "grep" "rg" "git-grep")
-                             :language "elisp"
-                             :regex "\\\(defvarJJJ\\b\\s*"
-                             :tests ("(defvar test ")))
+    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
 	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
 	   (rule-failures (dumb-jump-test-rg-rules)))
       (should (= (length rule-failures) 1)))))
 
 (when (dumb-jump-git-grep-installed?)
   (ert-deftest dumb-jump-test-git-grep-rules-fail-test ()
-    (let* ((bad-rule '(:type "variable"
-                             :supports ("ag" "grep" "rg" "git-grep")
-                             :language "elisp"
-                             :regex "\\\(defvarJJJ\\b\\s*"
-                             :tests ("(defvar test ")))
+    (let* ((bad-rule '(:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "elisp" :regex "\\\(defvarJJJ\\b\\s*" :tests ("(defvar test ")))
 	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
 	   (rule-failures (dumb-jump-test-git-grep-rules)))
       (should (= (length rule-failures) 1)))))
@@ -542,10 +470,7 @@
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-helm-persistent-action-test ()
-  (dumb-jump-helm-persist-action (list
-                                  :path test-dumb-jump-file-path
-                                  :line 1
-                                  :context " (defn status"))
+  (dumb-jump-helm-persist-action '(:path "dumb-jump.el" :line 1 :context " (defn status"))
   (should (get-buffer " *helm dumb jump persistent*")))
 
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-ivy-test ()
