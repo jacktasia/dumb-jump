@@ -2963,7 +2963,7 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
   "Offer CHOICES as candidates through `ivy-read'.
 Then execute dumb-jump-result-follow' on the selected choice RESULTS.
 Ignore _PROJ."
-  (ivy-read "Jump to: " (-zip choices results)
+  (ivy-read "Jump to: " (-zip-pair choices results)
             :action (lambda (cand)
                       (dumb-jump-result-follow (cdr cand)))
             :caller 'dumb-jump-ivy-jump-to-selected))
