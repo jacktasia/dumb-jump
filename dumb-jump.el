@@ -123,7 +123,7 @@ unless that is nil."
                  (const :tag "git grep + ag" git-grep-plus-ag)))
 
 (defcustom dumb-jump-force-searcher nil
-  "Search tool override of `dumb-jump-force-searcher' selection.
+  "Search tool override of `dumb-jump-prefer-searcher' selection.
 
 By default this is nil to honour the choice made by `dumb-jump-prefer-searcher'.
 
