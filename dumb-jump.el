@@ -3,7 +3,7 @@
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/jacktasia/dumb-jump
 ;; Version: 0.5.4
-;; Package-Requires: ((emacs "24.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
+;; Package-Requires: ((emacs "24.4") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
 ;; Dumb Jump is free software; you can redistribute it and/or modify it
@@ -104,6 +104,7 @@ the selector defaults to popup."
 The available choices are:
 - \\='ag              : https://github.com/ggreer/the_silver_searcher
 - \\='rg              : https://github.com/BurntSushi/ripgrep
+- \\='grep
 - \\='gnu-grep        : https://www.gnu.org/software/grep/manual/grep.html
 - \\='git-grep        : https://git-scm.com/docs/git-grep
 - \\='git-grep-plus-ag
@@ -116,20 +117,41 @@ unless that is nil."
   :type '(choice (const :tag "Best Available" nil)
                  (const :tag "ag" ag)
                  (const :tag "rg" rg)
-                 (const :tag "grep" gnu-grep)
+                 (const :tag "grep" grep)
+                 (const :tag "gnu-grep" gnu-grep)
                  (const :tag "git grep" git-grep)
                  (const :tag "git grep + ag" git-grep-plus-ag)))
 
-(defcustom dumb-jump-force-searcher
-  nil
-  "Forcibly use searcher: \\='ag, \\='rg, \\='git-grep, \\='gnu-grep, or \\='grep.
-Set to nil to not force anything and use `dumb-jump-prefer-searcher'
-or most optimal searcher."
+(defcustom dumb-jump-force-searcher nil
+  "Search tool override of `dumb-jump-prefer-searcher' selection.
+
+By default this is nil to honour the choice made by `dumb-jump-prefer-searcher'.
+
+However, you may want to override that choice for some projects by identifying
+one of two preferred choice overriding methods:
+- Override preferred via user-specified function:
+   Enter the name of a function that takes the current directory and return the
+   search tool symbol to use for this project or nil if the choice made in
+   `dumb-jump-prefer-searcher' must be honoured.
+- Override preferred for directories needing git-grep:
+   Specify one or more project directories where the git-grep search tool must
+   be used.
+- Override to a specific tool.  That is mostly useful to set the overriding
+  inside the .dir-locals.el of the directory.
+  The choices are: \\='ag, \\='rg, \\='grep, \\='gnu-grep, \\='git-grep, or
+                   \\='git-grep-plus-ag."
   :group 'dumb-jump
-  :type '(choice (const :tag "Best Available" nil)
+  :type '(choice (const
+                  :tag "nil: honour `dumb-jump-prefer-searcher' choice." nil)
+                 (function
+                  :tag "Override preferred via user-specified function")
+                 (repeat
+                  :tag "Override preferred for directories needing git-grep"
+                  (directory :tag "Repo root"))
                  (const :tag "ag" ag)
                  (const :tag "rg" rg)
-                 (const :tag "grep" gnu-grep)
+                 (const :tag "grep" grep)
+                 (const :tag "gnu grep" gnu-grep)
                  (const :tag "git grep" git-grep)
                  (const :tag "git grep + ag" git-grep-plus-ag)))
 
@@ -3850,36 +3872,72 @@ The returned plist has:
                   :installed ,'dumb-jump-grep-installed?
                   :searcher ,searcher))))
 
+(defun dumb-jump-selected-grep-variant (&optional proj-root)
+  "Return search tool for current project or specified PROJ-ROOT.
+Select search tool according to `dumb-jump-prefer-searcher' choice and its
+possible `dumb-jump-force-searcher' overriding."
+  (let ((searcher-found nil))
+    (cond
+     ;; If `dumb-jump-force-searcher' is not nil then use the searcher
+     ;; identified by that user-option if possible.
+     (dumb-jump-force-searcher
+      (cond
+       ;; For now, honour original choices.
+       ;;  Eventually, these choices should eventually be deprecated,
+       ;;  and this code removed.
+       ((member dumb-jump-force-searcher '(ag
+                                           rg
+                                           grep
+                                           gnu-grep
+                                           git-grep
+                                           git-grep-plus-ag))
+        (setq searcher-found dumb-jump-force-searcher))
+       ;; Select search tool identified by calling the user-specified function
+       ;; which takes the directory.
+       ((and (symbolp dumb-jump-force-searcher)
+             (fboundp dumb-jump-force-searcher))
+        (let ((user-selected-search-tool
+               (funcall dumb-jump-force-searcher (or proj-root
+                                                     (buffer-file-name)))))
+          (when user-selected-search-tool
+            (setq searcher-found user-selected-search-tool))))
+       ;; Check if project root or current directory is inside one of the
+       ;; project roots specified
+       ((and (listp dumb-jump-force-searcher)
+             proj-root
+             (dumb-jump-git-grep-installed?)
+             (member (dumb-jump-get-project-root proj-root)
+                     dumb-jump-force-searcher)
+             (file-exists-p (expand-file-name ".git" proj-root)))
+        ;; [:todo 2026-01-07, by Pierre Rouleau: add support for git grep + ag??]
+        (setq searcher-found 'git-grep)))))
+
+    (unless searcher-found
+      ;; When `dumb-jump-force-searcher' does not override the selection, then
+      ;; select the searcher based on the value of `dumb-jump-force-searcher'.
+      (cond
+       ;; If `dumb-jump-prefer-searcher' identifies a searcher use it if it's
+       ;; installed.
+       ((and dumb-jump-prefer-searcher
+             (funcall (plist-get (dumb-jump-generators-by-searcher
+                                  dumb-jump-prefer-searcher)
+                                 :installed)))
+        (setq searcher-found dumb-jump-prefer-searcher))
+
+       ;; Fallback searcher order.
+       ((dumb-jump-ag-installed?)             (setq searcher-found 'ag))
+       ((dumb-jump-rg-installed?)             (setq searcher-found 'rg))
+       ((eq (dumb-jump-grep-installed?) 'gnu) (setq searcher-found 'gnu-grep))
+       (t                                     (setq searcher-found 'grep))))
+    ;; return the symbol identifying the selected search tool
+    searcher-found))
+
 (defun dumb-jump-pick-grep-variant (&optional proj-root)
   "Get action search property list for current project or specified PROJ-ROOT.
 Select search tool according to `dumb-jump-prefer-searcher' choice and its
 possible `dumb-jump-force-searcher' overriding."
-  (cond
-   ;; If `dumb-jump-force-searcher' is not nil then use that searcher.
-   (dumb-jump-force-searcher
-    (dumb-jump-generators-by-searcher dumb-jump-force-searcher))
-
-   ;; If project root has a .git then use git-grep if installed.
-   ((and proj-root
-         (dumb-jump-git-grep-installed?)
-         (file-exists-p (expand-file-name ".git" proj-root)))
-    (dumb-jump-generators-by-searcher 'git-grep))
-
-   ;; If `dumb-jump-prefer-searcher' is not nil then use if installed.
-   ((and dumb-jump-prefer-searcher
-         (funcall (plist-get (dumb-jump-generators-by-searcher dumb-jump-prefer-searcher)
-                             :installed)))
-    (dumb-jump-generators-by-searcher dumb-jump-prefer-searcher))
-
-   ;; Fallback searcher order.
-   ((dumb-jump-ag-installed?)
-    (dumb-jump-generators-by-searcher 'ag))
-   ((dumb-jump-rg-installed?)
-    (dumb-jump-generators-by-searcher 'rg))
-   ((eq (dumb-jump-grep-installed?) 'gnu)
-    (dumb-jump-generators-by-searcher 'gnu-grep))
-   (t
-    (dumb-jump-generators-by-searcher 'grep))))
+  (dumb-jump-generators-by-searcher
+   (dumb-jump-selected-grep-variant proj-root)))
 
 (defun dumb-jump-shell-command-switch ()
   "Return current shell command switch prevent loading shell profile/RC.
@@ -4553,8 +4611,8 @@ The arguments are:
 
   (cl-defmethod xref-backend-apropos ((_backend (eql dumb-jump)) pattern)
     (xref-backend-definitions 'dumb-jump pattern))
-
-  (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql dumb-jump)))
+  (cl-defmethod xref-backend-identifier-completion-table
+    ((_backend (eql dumb-jump)))
     nil))
 
 ;;;###autoload
