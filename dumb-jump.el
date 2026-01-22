@@ -2986,10 +2986,12 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
   "Offer CHOICES as candidates through `ivy-read'.
 Then execute dumb-jump-result-follow' on the selected choice RESULTS.
 Ignore _PROJ."
-  (ivy-read "Jump to: " (-zip-pair choices results)
-            :action (lambda (cand)
-                      (dumb-jump-result-follow (cdr cand)))
-            :caller 'dumb-jump-ivy-jump-to-selected))
+  (if (fboundp 'ivy-read)
+      (ivy-read "Jump to: " (-zip-pair choices results)
+                :action (lambda (cand)
+                          (dumb-jump-result-follow (cdr cand)))
+                :caller 'dumb-jump-ivy-jump-to-selected)
+    (error "ivy-read is unknown.  Is it loaded?")))
 
 (defun dumb-jump-prompt-user-for-choice (proj results)
   "Put a PROJ list of RESULTS in menu for user selection.
@@ -3048,8 +3050,9 @@ looking for another root."
           (setq language "org")
           (with-no-warnings
             (org-edit-src-exit))
-          (if (version< org-version "9")
-              (save-buffer))))
+          (if (and (boundp 'org-version)
+                   (version< org-version "9"))
+            (save-buffer))))
     (if (string= language "org")
         (setq language (dumb-jump-get-language-in-org)))
     (if (member language (-distinct
@@ -4599,12 +4602,13 @@ The arguments are:
                                   lang)
                                 (plist-get info :ctx-type)))
             (t (mapcar (lambda (res)
-                         (xref-make
-                          (plist-get res :context)
-                          (xref-make-file-location
-                           (expand-file-name (plist-get res :path))
-                           (plist-get res :line)
-                           0)))
+                         (with-no-warnings
+                           (xref-make
+                            (plist-get res :context)
+                            (xref-make-file-location
+                             (expand-file-name (plist-get res :path))
+                             (plist-get res :line)
+                             0))))
                        (if do-var-jump
                            (list var-to-jump)
                          match-cur-file-front))))))
