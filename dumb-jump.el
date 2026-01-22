@@ -3,7 +3,7 @@
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/jacktasia/dumb-jump
 ;; Version: 0.5.4
-;; Package-Requires: ((emacs "24.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
+;; Package-Requires: ((emacs "24.4") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
 ;; Dumb Jump is free software; you can redistribute it and/or modify it
@@ -136,15 +136,10 @@ one of two preferred choice overriding methods:
 - Override preferred for directories needing git-grep:
    Specify one or more project directories where the git-grep search tool must
    be used.
-
-Note:
-This currently continue to support the now deprecated original choices
-of tools: \\='ag, \\='rg, \\='grep, \\='gnu-grep, \\='git-grep, or
-\\='git-grep-plus-ag.
-Please do not use those, as they will no longer be supported in a future
-version of dumb-jump.  Select these in `dumb-jump-prefer-searcher' instead and
-set `dumb-jump-force-searcher' to nil to honour `dumb-jump-prefer-searcher'
-choice."
+- Override to a specific tool.  That is mostly useful to set the overriding
+  inside the .dir-locals.el of the directory.
+  The choices are: \\='ag, \\='rg, \\='grep, \\='gnu-grep, \\='git-grep, or
+                   \\='git-grep-plus-ag."
   :group 'dumb-jump
   :type '(choice (const
                   :tag "nil: honour `dumb-jump-prefer-searcher' choice." nil)
@@ -153,12 +148,12 @@ choice."
                  (repeat
                   :tag "Override preferred for directories needing git-grep"
                   (directory :tag "Repo root"))
-                 (const :tag "ag : deprecated" ag)
-                 (const :tag "rg : deprecated" rg)
-                 (const :tag "grep : deprecated" grep)
-                 (const :tag "gnu grep : deprecated" gnu-grep)
-                 (const :tag "git grep : deprecated" git-grep)
-                 (const :tag "git grep + ag : deprecated" git-grep-plus-ag)))
+                 (const :tag "ag" ag)
+                 (const :tag "rg" rg)
+                 (const :tag "grep" grep)
+                 (const :tag "gnu grep" gnu-grep)
+                 (const :tag "git grep" git-grep)
+                 (const :tag "git grep + ag" git-grep-plus-ag)))
 
 (defcustom dumb-jump-grep-prefix
   "LANG=C"
