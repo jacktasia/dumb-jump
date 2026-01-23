@@ -1378,9 +1378,10 @@ If nil add also the language type of current src block."
 
     (:language "php" :type "interface"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "interface\\s*JJJ\\s*\\\{"
+           :regex "interface\\s*JJJ\\s*(extends|\\\{)"
            :tests ("interface test{"
-                   "interface test {"))
+                   "interface test {")
+                   "interface test extends test2")
 
     (:language "php" :type "class"
            :supports ("ag" "grep" "rg" "git-grep")
