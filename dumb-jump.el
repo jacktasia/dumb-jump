@@ -242,12 +242,6 @@ Defaults to boundary search of symbol under point."
   :group 'dumb-jump
   :type 'boolean)
 
-(defcustom dumb-jump-force-grep
-  nil
-  "When t will use grep even if ag is available."
-  :group 'dumb-jump
-  :type 'boolean)
-
 (defcustom dumb-jump-zgrep-cmd
   "zgrep"
   "The path to grep to use for gzipped files.

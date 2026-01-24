@@ -343,14 +343,6 @@
     (should (s-contains? "/fake.el" (plist-get first-result :path)))
     (should (= (plist-get first-result :line) 6))))
 
-;; (ert-deftest dumb-jump-run-grep-cmd-test ()
-;;   (let* ((dumb-jump-force-grep t)
-;;          (regexes (dumb-jump-get-contextual-regexes "elisp" nil))
-;;          (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""  "blah.el" 3))
-;;         (first-result (car results)))
-;;     (should (s-contains? "/fake.el" (plist-get first-result :path)))
-;;     (should (= (plist-get first-result :line) 6))))
-
 (ert-deftest dumb-jump-run-cmd-fail-test ()
   (let* ((gen-funcs (dumb-jump-pick-grep-variant test-data-dir-elisp))
          (parse-fn (plist-get gen-funcs :parse))
@@ -764,17 +756,6 @@
 
 (ert-deftest dumb-jump-go-no-result-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
-    (with-current-buffer (find-file-noselect js-file t)
-      (goto-char (point-min))
-      (forward-line 1)
-      (forward-char 4)
-      (with-mock
-       (mock (dumb-jump-message "'%s' %s %s declaration not found." "nothing" * *))
-       (with-no-warnings (dumb-jump-go))))))
-
-(ert-deftest dumb-jump-go-no-result-force-grep-test ()
-  (let ((dumb-jump-force-grep t)
-        (js-file (f-join test-data-dir-proj1 "src" "js" "fake2.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 1)
