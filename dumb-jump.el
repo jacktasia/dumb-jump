@@ -2233,7 +2233,7 @@ If nil add also the language type of current src block."
            :tests ("type test = 1234")
            :not ("type testnot = 1234"))
 
-    ;; kotlin
+    ;;-- kotlin
     (:language "kotlin" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
            :regex "fun\\s*(<[^>]*>)?\\s*JJJ\\s*\\("
@@ -2254,7 +2254,7 @@ If nil add also the language type of current src block."
                    "class test : SomeInterface"
                    "interface test"))
 
-    ;; zig
+    ;;-- zig
     (:language "zig" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
            :regex "fn\\s+JJJ\\b"
@@ -2900,7 +2900,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
 
 (defun dumb-jump-message (str &rest args)
   "Log message STR with ARGS to *Messages* if not using `dumb-jump-quiet'."
-  (when (not dumb-jump-quiet)
+  (unless dumb-jump-quiet
     (apply 'message str args))
   nil)
 
@@ -3473,7 +3473,7 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
      ((= result-count 0)
       (dumb-jump-message "'%s' %s %s declaration not found."
                          look-for
-                         (if (s-blank? lang) "with unknown language so" lang)
+                         (if (string-blank-p lang) "with unknown language so" lang)
                          (plist-get info :ctx-type))))))
 
 (defcustom dumb-jump-language-comments
@@ -3985,7 +3985,7 @@ The parameters are:
          (rawresults (shell-command-to-string cmd)))
 
     (dumb-jump-debug-message cmd rawresults)
-    (when (and (s-blank? rawresults) dumb-jump-fallback-search)
+    (when (and (string-blank-p rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn
                          look-for cur-file
@@ -3993,7 +3993,7 @@ The parameters are:
                          lang exclude-args))
       (setq rawresults (shell-command-to-string cmd))
       (dumb-jump-debug-message cmd rawresults))
-    (unless (s-blank? cmd)
+    (unless (string-blank-p cmd)
       (let ((results (funcall parse-fn rawresults cur-file line-num))
             (ignore-case (member lang dumb-jump--case-insensitive-languages)))
         (--filter (s-contains? look-for
@@ -4222,7 +4222,7 @@ The arguments are:
                       (if (string-suffix-p ".gz" cur-file)
                           " --search-zip"
                         "")
-                      (when (not (s-blank? dumb-jump-ag-search-args))
+                      (unless (string-blank-p dumb-jump-ag-search-args)
                         (concat " " dumb-jump-ag-search-args))
                       (if agtypes
                           (s-join "" (--map (format " --%s" it) agtypes))
@@ -4334,7 +4334,7 @@ The arguments are:
                       (if (member lang dumb-jump--case-insensitive-languages)
                           " --ignore-case"
                         "")
-                      (when (not (s-blank? dumb-jump-rg-search-args))
+                      (unless (string-blank-p dumb-jump-rg-search-args)
                         (concat " " dumb-jump-rg-search-args))
                       (s-join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
@@ -4372,7 +4372,7 @@ The arguments are:
                         "")
                       (when dumb-jump-git-grep-search-untracked
                         " --untracked")
-                      (when (not (s-blank? dumb-jump-git-grep-search-args))
+                      (unless (string-blank-p dumb-jump-git-grep-search-args)
                         (concat " " dumb-jump-git-grep-search-args))
                       " -E"))
          (fileexps (s-join " "
@@ -4592,7 +4592,7 @@ The arguments are:
             ((= (length results) 0)
              (dumb-jump-message "'%s' %s %s declaration not found."
                                 look-for
-                                (if (s-blank? lang)
+                                (if (string-blank-p lang)
                                     "with unknown language so"
                                   lang)
                                 (plist-get info :ctx-type)))
