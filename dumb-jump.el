@@ -48,6 +48,7 @@
 (require 'popup)
 (require 'cl-generic nil :noerror)
 (require 'cl-lib)
+(require 'subr-x)                       ; use: `string-blank-p'
 
 (defgroup dumb-jump nil
   "Easily jump to project function and variable definitions."
