@@ -3474,7 +3474,9 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
      ((= result-count 0)
       (dumb-jump-message "'%s' %s %s declaration not found."
                          look-for
-                         (if (string-blank-p lang) "with unknown language so" lang)
+                         (if (string-blank-p (or lang ""))
+                             "with unknown language so"
+                           lang)
                          (plist-get info :ctx-type))))))
 
 (defcustom dumb-jump-language-comments
@@ -3994,7 +3996,7 @@ The parameters are:
                          lang exclude-args))
       (setq rawresults (shell-command-to-string cmd))
       (dumb-jump-debug-message cmd rawresults))
-    (unless (string-blank-p cmd)
+    (unless (string-blank-p (or cmd ""))
       (let ((results (funcall parse-fn rawresults cur-file line-num))
             (ignore-case (member lang dumb-jump--case-insensitive-languages)))
         (--filter (s-contains? look-for
@@ -4593,7 +4595,7 @@ The arguments are:
             ((= (length results) 0)
              (dumb-jump-message "'%s' %s %s declaration not found."
                                 look-for
-                                (if (string-blank-p lang)
+                                (if (string-blank-p (or lang ""))
                                     "with unknown language so"
                                   lang)
                                 (plist-get info :ctx-type)))
