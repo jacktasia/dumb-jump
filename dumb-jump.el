@@ -2677,6 +2677,31 @@ If nil, jump without confirmation but print a warning."
 ;; ---------------------------------------------------------------------------
 ;; Search tool presence checkers
 ;; -----------------------------
+(defvar dumb-jump--detected-env-problems nil
+  "List of detected environment problems.
+Last detected problem is first in the list.")
+
+(defun dumb-jump-env-problem (problem)
+  "Add PROBLEM string to `dumb-jump--detected-env-problems' list."
+  (unless (member problem dumb-jump--detected-env-problems)
+    (push problem dumb-jump--detected-env-problems)))
+
+;;;###autoload
+(defun dumb-jump-show-detected-problems (keep)
+  "Print all problems detected by dumb-jump environment in *Message*.
+Erase the accumulated list unless the command is issued with any prefix
+key (such as `\\[universal-argument]')."
+  (interactive "P")
+  (if dumb-jump--detected-env-problems
+      (progn
+        (message "-- Dumb-Jump Detected Environment Problems:")
+        (dolist (problem (reverse dumb-jump--detected-env-problems))
+          (message problem))
+        (unless keep
+          (setq dumb-jump--detected-env-problems nil)))
+    (message "No problem recorded yet.")))
+
+;; --
 
 (defvar dumb-jump--ag-installed? 'unset)
 (defun dumb-jump-ag-installed? ()
@@ -2699,18 +2724,38 @@ If nil, jump without confirmation but print a warning."
 
 (defvar dumb-jump--rg-installed? 'unset)
 (defun dumb-jump-rg-installed? ()
-  "Return t if rg later than 0.10 is installed."
+  "Return t if rg 0.10 or later with PCRE2 support is installed.
+Return nil otherwise.  In that case store diagnostics information in the
+variable `dumb-jump--detected-env-problems'."
   (if (eq dumb-jump--rg-installed? 'unset)
-      (setq dumb-jump--rg-installed?
-            (let ((result (s-match "ripgrep \\([0-9]+\\)\\.\\([0-9]+\\).*"
-                                   (shell-command-to-string
-                                    (concat dumb-jump-rg-cmd " --version")))))
-              (when (equal (length result) 3)
-                (let ((major (string-to-number (nth 1 result)))
-                      (minor (string-to-number (nth 2 result))))
-                  (or (and (= major 0)
-                           (>= minor 10))
-                      (>= major 1))))))
+      (if (executable-find dumb-jump-rg-cmd)
+          (let* ((ok nil)
+                 (stdout (shell-command-to-string
+                          (concat dumb-jump-rg-cmd " --version")))
+                 (has-version (string-match
+                               "ripgrep \\([0-9]+\\)\\.\\([0-9]+\\).*"
+                               stdout)))
+            (if has-version
+                (let ((major (string-to-number
+                              (match-string-no-properties 1 stdout)))
+                      (minor (string-to-number
+                              (match-string-no-properties 2 stdout)))
+                      (has-pcre2 (string-match "features:.*pcre2"
+                                               stdout)))
+                  (if (or (and (= major 0)
+                               (>= minor 10))
+                          (>= major 1))
+                      (if has-pcre2
+                          (setq ok t)
+                        (dumb-jump-env-problem
+                         "Ripgrep does not support PCRE2."))
+                    (dumb-jump-env-problem
+                     "Ripgrep >= 0.10 is not available."))))
+            (setq dumb-jump--rg-installed? ok))
+        (dumb-jump-env-problem
+         (format "Ripgrep not found as specified in `dumb-jump-rg-cmd': %s"
+                 dumb-jump-rg-cmd))
+        (setq dumb-jump--rg-installed? nil))
     dumb-jump--rg-installed?))
 
 (defvar dumb-jump--git-grep-installed? 'unset)
