@@ -855,6 +855,14 @@
      ;; confirm memoization of the previous result
      (should (eq (dumb-jump-rg-installed?) t)))))
 
+(ert-deftest dumb-jump-rg-installed?-test-yes-2 ()
+  (let ((dumb-jump--rg-installed? 'unset))
+    (with-mock
+      (mock (shell-command-to-string *) => "ripgrep 0.09.0\n\nfeatures:+pcre2\n\n" :times 1)
+      (should (eq (dumb-jump-rg-installed?) nil))
+      ;; confirm memoization of the previous result
+      (should (eq (dumb-jump-rg-installed?) nil)))))
+
 (ert-deftest dumb-jump-rg-installed?-test-yes-no-pcre2 ()
   (let ((dumb-jump--rg-installed? 'unset))
     (with-mock

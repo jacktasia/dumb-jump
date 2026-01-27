@@ -2728,34 +2728,28 @@ key (such as `\\[universal-argument]')."
 Return nil otherwise.  In that case store diagnostics information in the
 variable `dumb-jump--detected-env-problems'."
   (if (eq dumb-jump--rg-installed? 'unset)
-      (if (executable-find dumb-jump-rg-cmd)
-          (let* ((ok nil)
-                 (stdout (shell-command-to-string
-                          (concat dumb-jump-rg-cmd " --version")))
-                 (has-version (string-match
-                               "ripgrep \\([0-9]+\\)\\.\\([0-9]+\\).*"
-                               stdout)))
-            (if has-version
-                (let ((major (string-to-number
-                              (match-string-no-properties 1 stdout)))
-                      (minor (string-to-number
-                              (match-string-no-properties 2 stdout)))
-                      (has-pcre2 (string-match "features:.*pcre2"
-                                               stdout)))
-                  (if (or (and (= major 0)
-                               (>= minor 10))
-                          (>= major 1))
-                      (if has-pcre2
-                          (setq ok t)
-                        (dumb-jump-env-problem
-                         "Ripgrep does not support PCRE2."))
-                    (dumb-jump-env-problem
-                     "Ripgrep >= 0.10 is not available."))))
-            (setq dumb-jump--rg-installed? ok))
-        (dumb-jump-env-problem
-         (format "Ripgrep not found as specified in `dumb-jump-rg-cmd': %s"
-                 dumb-jump-rg-cmd))
-        (setq dumb-jump--rg-installed? nil))
+      (setq
+       dumb-jump--rg-installed?
+       (catch 'test-fail
+         (unless (executable-find dumb-jump-rg-cmd)
+           (dumb-jump-env-problem
+            (format "Ripgrep not found as specified in `dumb-jump-rg-cmd': %s"
+                    dumb-jump-rg-cmd))
+           (throw 'test-fail nil))
+         (let* ((stdout (shell-command-to-string
+                         (concat dumb-jump-rg-cmd " --version")))
+                (has-version (string-match "ripgrep \\([0-9]+\\.[0-9]+\\).*"
+                                           stdout)))
+           (unless has-version
+             (dumb-jump-env-problem "Can't detect Ripgrep version.")
+             (throw 'test-fail nil))
+           (unless (version<= "0.10" (match-string-no-properties 1 stdout))
+             (dumb-jump-env-problem "Ripgrep >= 0.10 is not available.")
+             (throw 'test-fail nil))
+           (unless (string-match "features:.*pcre2" stdout)
+             (dumb-jump-env-problem "Ripgrep does not support PCRE2.")
+             (throw 'test-fail nil))
+           t)))
     dumb-jump--rg-installed?))
 
 (defvar dumb-jump--git-grep-installed? 'unset)
