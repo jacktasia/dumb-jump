@@ -1,5 +1,7 @@
 # dumb-jump
 
+test change
+
 ![CI](https://github.com/jacktasia/dumb-jump/workflows/CI/badge.svg) [![Coverage Status](https://coveralls.io/repos/jacktasia/dumb-jump/badge.svg?branch=master&service=github&x=1)](https://coveralls.io/github/jacktasia/dumb-jump?branch=master) [![MELPA](http://melpa.org/packages/dumb-jump-badge.svg?x=6)](http://melpa.org/#/dumb-jump) [![MELPA Stable](https://stable.melpa.org/packages/dumb-jump-badge.svg?x=1)](https://stable.melpa.org/#/dumb-jump)
 
 ![Dumb Jump GIF](media/dumb-jump-example-v2.gif?raw=true)
