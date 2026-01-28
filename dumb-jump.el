@@ -3046,7 +3046,7 @@ Filters PROJ path from files for display."
             (with-no-warnings
               (helm-make-source "Jump to: " 'helm-source-sync
                 :action '(("Jump to match" . dumb-jump-result-follow))
-                :candidates (-zip choices results)
+                :candidates (-zip-pair choices results)
                 :persistent-action 'dumb-jump-helm-persist-action))
             :buffer "*helm dumb jump choices*"))
      (t ; or popup
