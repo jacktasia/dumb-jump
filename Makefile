@@ -12,6 +12,7 @@ unit:
 unit-debug:
 	${CASK} --version && ${CASK} list
 	timeout 1m ${CASK} exec emacs -Q --batch --eval "(message \"emacs started\")"
+	timeout 5m ${CASK} exec emacs -Q --batch -l ert -l test/test-helper.el -l test/your-tests.el -f ert-run-tests-batch-and-exit
 	${CASK} exec ert-runner -l test/ci-ert-settings.el
 
 install:
