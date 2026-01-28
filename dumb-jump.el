@@ -2730,25 +2730,25 @@ variable `dumb-jump--detected-env-problems'."
   (if (eq dumb-jump--rg-installed? 'unset)
       (setq
        dumb-jump--rg-installed?
-       (catch 'test-fail
+       (catch 'rg-problem
          (unless (executable-find dumb-jump-rg-cmd)
            (dumb-jump-env-problem
             (format "Ripgrep not found as specified in `dumb-jump-rg-cmd': %s"
                     dumb-jump-rg-cmd))
-           (throw 'test-fail nil))
+           (throw 'rg-problem nil))
          (let* ((stdout (shell-command-to-string
                          (concat dumb-jump-rg-cmd " --version")))
                 (has-version (string-match "ripgrep \\([0-9]+\\.[0-9]+\\).*"
                                            stdout)))
            (unless has-version
              (dumb-jump-env-problem "Can't detect Ripgrep version.")
-             (throw 'test-fail nil))
+             (throw 'rg-problem nil))
            (unless (version<= "0.10" (match-string-no-properties 1 stdout))
              (dumb-jump-env-problem "Ripgrep >= 0.10 is not available.")
-             (throw 'test-fail nil))
+             (throw 'rg-problem nil))
            (unless (string-match "features:.*pcre2" stdout)
              (dumb-jump-env-problem "Ripgrep does not support PCRE2.")
-             (throw 'test-fail nil))
+             (throw 'rg-problem nil))
            t)))
     dumb-jump--rg-installed?))
 
@@ -3922,9 +3922,7 @@ possible `dumb-jump-force-searcher' overriding."
      ;; identified by that user-option if possible.
      (dumb-jump-force-searcher
       (cond
-       ;; For now, honour original choices.
-       ;;  Eventually, these choices should eventually be deprecated,
-       ;;  and this code removed.
+       ;; Honour forced choices, they might be identified in dir-local file
        ((member dumb-jump-force-searcher '(ag
                                            rg
                                            grep
