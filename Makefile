@@ -10,6 +10,8 @@ unit:
 	${CASK} exec ert-runner 
 
 unit-debug:
+	${CASK} --version && ${CASK} list
+	timeout 1m ${CASK} exec emacs -Q --batch --eval "(message \"emacs started\")"
 	${CASK} exec ert-runner -l test/ci-ert-settings.el
 
 install:
