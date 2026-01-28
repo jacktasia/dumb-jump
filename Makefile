@@ -1,12 +1,16 @@
 CASK ?= cask
 EMACS ?= emacs
+ERT_EVAL := (setq ert-batch-print-level 10 ert-batch-print-length 120)
 
 all: test
 
 test: unit
 
 unit:
-	${CASK} exec ert-runner
+	${CASK} exec ert-runner -- --eval "$(ERT_EVAL)"
+
+unit-debug:
+	${CASK} exec ert-runner -- --eval "$(ERT_EVAL)"
 
 install:
 	${CASK} install
@@ -33,4 +37,4 @@ test-in-docker:
 setup:
 	@bash test/github-actions-setup.sh
 
-actions-test: install setup unit
+actions-test: install setup unit-debug
