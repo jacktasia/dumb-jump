@@ -7,10 +7,10 @@ all: test
 test: unit
 
 unit:
-	${CASK} exec ert-runner -- --eval "$(ERT_EVAL)"
+	${CASK} exec ert-runner 
 
 unit-debug:
-	${CASK} exec ert-runner -- --eval "$(ERT_EVAL)"
+	${CASK} exec ert-runner -l test/ci-ert-settings.el
 
 install:
 	${CASK} install
