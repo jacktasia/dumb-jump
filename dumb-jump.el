@@ -956,10 +956,15 @@ If nil add also the language type of current src block."
     ;;-- python
     (:language "python" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\s*\\bJJJ\\s*=[^=\\n]+"
-           :tests ("test = 1234")
+           :regex "\\s*\\bJJJ(\\s*:.+)?\\s*=[^=\\n]+"
+           :tests ("test = 1234"
+                   "test: int = 1234"
+                   "test: int | None = 1234"
+                   "test: List[Optional[int]] = [1234, None]")
            :not ("if test == 1234:"
-                 "_test = 1234"))
+                 "_test = 1234"
+                 "if (test := 3):"
+                 "while test:"))
 
     (:language "python" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
