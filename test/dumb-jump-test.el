@@ -333,7 +333,7 @@
 
 (ert-deftest dumb-jump-run-cmd-test ()
   (with-mock
-    (mock (dumb-jump-rg-installed?) => t)
+    (stub dumb-jump-rg-installed? => t)
     (let* ((gen-funcs (dumb-jump-pick-grep-variant test-data-dir-elisp))
            (parse-fn (plist-get gen-funcs :parse))
            (generate-fn (plist-get gen-funcs :generate))
@@ -347,7 +347,7 @@
 
 (ert-deftest dumb-jump-run-cmd-fail-test ()
   (with-mock
-    (mock (dumb-jump-rg-installed?) => t)
+    (stub dumb-jump-rg-installed? => t)
     (let* ((gen-funcs (dumb-jump-pick-grep-variant test-data-dir-elisp))
            (parse-fn (plist-get gen-funcs :parse))
            (generate-fn (plist-get gen-funcs :generate))
@@ -564,7 +564,7 @@
       (forward-char 13)
       (with-mock
         (mock (pop-tag-mark))
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (with-no-warnings (dumb-jump-go))
         (with-no-warnings (dumb-jump-back))))))
 
@@ -575,7 +575,7 @@
       (forward-line 2)
       (forward-char 10)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (let ((results (dumb-jump-fetch-file-results)))
           (should (string= "doSomeStuff" (plist-get results :symbol)))
           (should (string= "javascript" (plist-get results :lang))))))))
@@ -586,7 +586,7 @@
     (goto-char (point-min))
     (forward-char 6)
     (with-mock
-      (mock (dumb-jump-rg-installed?) => t)
+      (stub dumb-jump-rg-installed? => t)
       (let ((results (dumb-jump-get-results)))
         (should (string= "doSomeStuff" (plist-get results :symbol)))
         (should (string= "javascript" (plist-get results :lang)))))))
@@ -598,7 +598,7 @@
       (goto-char (point-min))
       (forward-char 13)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 9))
         (should (string= go-js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -609,7 +609,7 @@
       (goto-char (point-min))
       (forward-char 13)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 9))
         (should (string= go-js-file (with-no-warnings (dumb-jump-go-other-window))))))))
 
@@ -620,7 +620,7 @@
       (goto-char (point-min))
       (forward-char 13)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 9))
         (should (string= go-js-file (with-no-warnings (dumb-jump-go-current-window))))))))
 
@@ -631,7 +631,7 @@
       (goto-char (point-min))
       (forward-char 13)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (popup-tip "/src/js/fake.js:3: function doSomeStuff() {"))
         (should (string= go-js-file (with-no-warnings (dumb-jump-quick-look))))))))
 
@@ -642,7 +642,7 @@
       (forward-line 11)
       (forward-char 76)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 7 35))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -652,7 +652,7 @@
       (goto-char (point-min))
       (forward-line 20)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 1 4))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -662,7 +662,7 @@
       (goto-char (point-min))
       (forward-line 21)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -672,7 +672,7 @@
       (goto-char (point-min))
       (forward-line 22)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 5 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -682,7 +682,7 @@
       (goto-char (point-min))
       (forward-line 23)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 10 2))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -692,7 +692,7 @@
       (goto-char (point-min))
       (forward-line 24)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 16 2))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -703,7 +703,7 @@
       (forward-line 36)
       (forward-char 12)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 28 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -716,7 +716,7 @@
       (forward-line 7)
       (forward-char 35)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 6 25))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -728,7 +728,7 @@
       (forward-line 13)
       (forward-char 35)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 12 32))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -740,7 +740,7 @@
       (forward-line 20)
       (forward-char 35)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 19 32))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -752,7 +752,7 @@
       (forward-line 13)
       (forward-char 33)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 11 10))
         (should (string= el-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -764,7 +764,7 @@
       (forward-line 21)
       (forward-char 33)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 18 10))
         (should (string= el-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -776,7 +776,7 @@
       (forward-line 4)
       (forward-char 12)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 27))
         (should (string= el-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -787,7 +787,7 @@
       (forward-line 1)
       (forward-char 4)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-message "'%s' %s %s declaration not found." "nothing" * *))
         (with-no-warnings (dumb-jump-go))))))
 
@@ -796,7 +796,7 @@
     (with-current-buffer (find-file-noselect txt-file t)
       (goto-char (point-min))
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-message "Could not find rules for '%s'." ".txt file"))
         (with-no-warnings (dumb-jump-go))))))
 
@@ -812,7 +812,7 @@
                      (sleep-for 0.3)))
                  '(:results (:result))))
         (with-mock
-          (mock (dumb-jump-rg-installed?) => t)
+          (stub dumb-jump-rg-installed? => t)
           (mock (dumb-jump-message "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions" * * *))
           (mock (dumb-jump-result-follow * * *))
           (with-no-warnings (dumb-jump-go)))))))
@@ -950,7 +950,7 @@
       (goto-char (point-min))
       (forward-line 1)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-message "No symbol under point."))
         (with-no-warnings (dumb-jump-go))))))
 
@@ -1063,7 +1063,7 @@
       (forward-line 23)
       (forward-char 3)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 7))
         (should (string= (with-no-warnings (dumb-jump-go)) lib-file))))))
 
@@ -1105,7 +1105,7 @@
       (forward-line 8)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1116,7 +1116,7 @@
       (forward-line 22)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 13 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1128,7 +1128,7 @@
       (forward-line 27)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 26 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1139,7 +1139,7 @@
       (forward-line 32)
       (forward-char 7)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 31 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1150,7 +1150,7 @@
       (forward-line 39)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 37 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1163,7 +1163,7 @@
       (forward-line 8)
       (forward-char 14)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 6))
         (should (string= cpp-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1174,7 +1174,7 @@
       (forward-line 8)
       (forward-char 9)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 1 6))
         (should (string= cpp-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1185,7 +1185,7 @@
       (forward-line 16)
       (forward-char 12)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 6 18))
         (should (string= cpp-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1198,7 +1198,7 @@
       (forward-line 3)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 9 6))
         (should (string= org-file (with-no-warnings (dumb-jump-go))))))
     (setq dumb-jump-force-searcher oldpar)))
@@ -1212,7 +1212,7 @@
       (forward-line 14)
       (forward-char 10)
        (with-mock
-         (mock (dumb-jump-rg-installed?) => t)
+         (stub dumb-jump-rg-installed? => t)
          (mock (dumb-jump-goto-file-line * 21 2))
          (should (string= org-file (with-no-warnings (dumb-jump-go))))))
     (setq dumb-jump-force-searcher oldpar)))
@@ -1235,7 +1235,7 @@
       (forward-char 2)
       (org-edit-src-code)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 9 6))
         (should (string= org-file (with-no-warnings (dumb-jump-go))))))
     (setq dumb-jump-force-searcher oldpar)
@@ -1256,7 +1256,7 @@
       (forward-line 3)
       (forward-char 18)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 6 6))
         (should (string= header-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1271,7 +1271,7 @@
       (forward-line 10)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 6))
         (should (string= header-file (with-no-warnings (dumb-jump-go-prefer-external))))))))
 
@@ -1283,7 +1283,7 @@
       (forward-line 3)
       (forward-char 18)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 6 6))
         (should (string= header-file (with-no-warnings (dumb-jump-go-prefer-external))))))))
 
@@ -1294,7 +1294,7 @@
       (forward-line 1)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 6 6))
         (should (string= main-file (with-no-warnings (dumb-jump-go-prefer-external))))))))
 
@@ -1307,7 +1307,7 @@
       (forward-line 10)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 6))
         (should (string= header-file (with-no-warnings (dumb-jump-go-prefer-external-other-window))))))))
 
@@ -1638,7 +1638,7 @@
       (forward-line 2)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 1 6))
         (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1652,7 +1652,7 @@
       (forward-line 3)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 2 6))
         (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1665,7 +1665,7 @@
       (forward-line 4)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 9))
         (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
 
@@ -1678,7 +1678,7 @@
       (forward-line 5)
       (forward-char 2)
       (with-mock
-        (mock (dumb-jump-rg-installed?) => t)
+        (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 5 7))
         (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
 
