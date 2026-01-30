@@ -1,0 +1,88 @@
+* Named Block Tests
+:PROPERTIES:
+:CUSTOM_ID: named-block-tests
+:END:
+
+This file tests dumb-jump's ability to find org constructs.
+
+** Named Blocks Section
+
+Reference to myblock: <<myblock>>
+
+#+name: myblock
+#+begin_src python
+def test_function():
+    return 42
+#+end_src
+
+Another reference: <<UPPERCASE>>
+
+#+NAME: UPPERCASE
+#+begin_src elisp
+(message "test")
+#+end_src
+
+Mixed case: <<MixedCase>>
+
+#+Name: MixedCase
+#+begin_src shell
+echo "hello"
+#+end_src
+
+Indented block reference: <<indented>>
+
+  #+name: indented
+  #+begin_src python
+  pass
+  #+end_src
+
+Test for uniqueblock lookup: uniqueblock
+
+#+name: uniqueblock
+#+begin_src elisp
+(message "unique")
+#+end_src
+
+Test for nospace lookup: nospace
+
+#+name:nospace
+#+begin_src elisp
+(message "no space after colon")
+#+end_src
+
+** Call References Section
+:PROPERTIES:
+:CUSTOM_ID: call-section
+:END:
+
+See also the section with ID call-section for more info.
+
+#+call: myblock()
+
+#+CALL: UPPERCASE()
+
+** Headings Section
+
+Reference to MainTopic heading: MainTopic
+
+*** MainTopic
+
+Some content here with MainTopic mentioned again.
+
+*** SubHeading One
+
+Some content here.
+
+*** SubHeading Two
+:PROPERTIES:
+:CUSTOM_ID: subheading-two
+:END:
+
+More content here.
+
+*** NoSpaceID Section
+:PROPERTIES:
+:CUSTOM_ID:nospace-id
+:END:
+
+Reference to nospace-id custom ID: nospace-id
