@@ -3,7 +3,7 @@
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/jacktasia/dumb-jump
 ;; Version: 0.5.4
-;; Package-Requires: ((emacs "24.3") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
+;; Package-Requires: ((emacs "24.4") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
 
 ;; Dumb Jump is free software; you can redistribute it and/or modify it
@@ -48,6 +48,7 @@
 (require 'popup)
 (require 'cl-generic nil :noerror)
 (require 'cl-lib)
+(require 'subr-x)                       ; use: `string-blank-p'
 
 (defgroup dumb-jump nil
   "Easily jump to project function and variable definitions."
@@ -104,6 +105,7 @@ the selector defaults to popup."
 The available choices are:
 - \\='ag              : https://github.com/ggreer/the_silver_searcher
 - \\='rg              : https://github.com/BurntSushi/ripgrep
+- \\='grep
 - \\='gnu-grep        : https://www.gnu.org/software/grep/manual/grep.html
 - \\='git-grep        : https://git-scm.com/docs/git-grep
 - \\='git-grep-plus-ag
@@ -116,20 +118,41 @@ unless that is nil."
   :type '(choice (const :tag "Best Available" nil)
                  (const :tag "ag" ag)
                  (const :tag "rg" rg)
-                 (const :tag "grep" gnu-grep)
+                 (const :tag "grep" grep)
+                 (const :tag "gnu-grep" gnu-grep)
                  (const :tag "git grep" git-grep)
                  (const :tag "git grep + ag" git-grep-plus-ag)))
 
-(defcustom dumb-jump-force-searcher
-  nil
-  "Forcibly use searcher: \\='ag, \\='rg, \\='git-grep, \\='gnu-grep, or \\='grep.
-Set to nil to not force anything and use `dumb-jump-prefer-searcher'
-or most optimal searcher."
+(defcustom dumb-jump-force-searcher nil
+  "Search tool override of `dumb-jump-prefer-searcher' selection.
+
+By default this is nil to honour the choice made by `dumb-jump-prefer-searcher'.
+
+However, you may want to override that choice for some projects by identifying
+one of two preferred choice overriding methods:
+- Override preferred via user-specified function:
+   Enter the name of a function that takes the current directory and return the
+   search tool symbol to use for this project or nil if the choice made in
+   `dumb-jump-prefer-searcher' must be honoured.
+- Override preferred for directories needing git-grep:
+   Specify one or more project directories where the git-grep search tool must
+   be used.
+- Override to a specific tool.  That is mostly useful to set the overriding
+  inside the .dir-locals.el of the directory.
+  The choices are: \\='ag, \\='rg, \\='grep, \\='gnu-grep, \\='git-grep, or
+                   \\='git-grep-plus-ag."
   :group 'dumb-jump
-  :type '(choice (const :tag "Best Available" nil)
+  :type '(choice (const
+                  :tag "nil: honour `dumb-jump-prefer-searcher' choice." nil)
+                 (function
+                  :tag "Override preferred via user-specified function")
+                 (repeat
+                  :tag "Override preferred for directories needing git-grep"
+                  (directory :tag "Repo root"))
                  (const :tag "ag" ag)
                  (const :tag "rg" rg)
-                 (const :tag "grep" gnu-grep)
+                 (const :tag "grep" grep)
+                 (const :tag "gnu grep" gnu-grep)
                  (const :tag "git grep" git-grep)
                  (const :tag "git grep + ag" git-grep-plus-ag)))
 
@@ -220,12 +243,6 @@ Defaults to boundary search of symbol under point."
   :group 'dumb-jump
   :type 'boolean)
 
-(defcustom dumb-jump-force-grep
-  nil
-  "When t will use grep even if ag is available."
-  :group 'dumb-jump
-  :type 'boolean)
-
 (defcustom dumb-jump-zgrep-cmd
   "zgrep"
   "The path to grep to use for gzipped files.
@@ -258,7 +275,8 @@ The warning recommend using a faster search tool and config."
 
 (defcustom dumb-jump-quiet
   nil
-  "If non-nil Dumb Jump will not log anything to *Messages*."
+  "If non-nil Dumb Jump will not log anything to *Messages*.
+Note that it prevents printing when `dumb-jump-debug' is non-nil."
   :group 'dumb-jump
   :type 'boolean)
 
@@ -657,7 +675,8 @@ If nil add also the language type of current src block."
                  "if( test() ) {"
                  "else test();"))
 
-    ;; (:type "variable" :supports ("grep") :language "c++"
+    ;; (:language "c++" :type "variable"
+    ;;        :supports ("grep")
     ;;        :regex "(\\b\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[([0-9]|\\s)*\\])*\\s*([=,){;]|:\\s*[0-9])|#define\\s+JJJ\\b"
     ;;        :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "unsigned int test:2;"))
 
@@ -1361,9 +1380,10 @@ If nil add also the language type of current src block."
 
     (:language "php" :type "interface"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "interface\\s*JJJ\\s*\\\{"
+           :regex "interface\\s*JJJ\\s*(extends|\\\{)"
            :tests ("interface test{"
-                   "interface test {"))
+                   "interface test {")
+                   "interface test extends test2")
 
     (:language "php" :type "class"
            :supports ("ag" "grep" "rg" "git-grep")
@@ -2221,7 +2241,7 @@ If nil add also the language type of current src block."
            :tests ("type test = 1234")
            :not ("type testnot = 1234"))
 
-    ;; kotlin
+    ;;-- kotlin
     (:language "kotlin" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
            :regex "fun\\s*(<[^>]*>)?\\s*JJJ\\s*\\("
@@ -2242,7 +2262,7 @@ If nil add also the language type of current src block."
                    "class test : SomeInterface"
                    "interface test"))
 
-    ;; zig
+    ;;-- zig
     (:language "zig" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
            :regex "fn\\s+JJJ\\b"
@@ -2536,7 +2556,7 @@ More information using the search tool command line help."
     (:language "cobol" :ext "cob" :agtype nil :rgtype nil)
     (:language "cobol" :ext "cpy" :agtype nil :rgtype nil))
 
-  "Mapping of programming language(s) to file extensions."
+  "Mapping of programming language(s) to file extensions by search tool."
   :group 'dumb-jump
   :type
   '(repeat
@@ -2598,7 +2618,10 @@ a symbol then it's probably a function call."
     "PkgInfo"
     "-pkg.el"
     "_FOSSIL_")
-  "Files and directories that signify a directory is a project root."
+  "Files and directories that signify a directory is a project root.
+If any of these denoting files are present in project sub-directories
+(like Makefile) then you can either remove the culprit denoter from the
+list or create a .dumbjumpignore file in the project sub-directory."
   :group 'dumb-jump
   :type '(repeat (string  :tag "Name")))
 
@@ -2632,7 +2655,8 @@ If `nil` always show list of more than 1 match."
 
 (defcustom dumb-jump-debug
   nil
-  "If `t` will print helpful debug information."
+  "If `t` will print helpful debug information.
+Also ensure that `dumb-jump-quiet' is nil for debugging!"
   :group 'dumb-jump
   :type 'boolean)
 
@@ -2664,6 +2688,31 @@ If nil, jump without confirmation but print a warning."
 ;; ---------------------------------------------------------------------------
 ;; Search tool presence checkers
 ;; -----------------------------
+(defvar dumb-jump--detected-env-problems nil
+  "List of detected environment problems.
+Last detected problem is first in the list.")
+
+(defun dumb-jump-env-problem (problem)
+  "Add PROBLEM string to `dumb-jump--detected-env-problems' list."
+  (unless (member problem dumb-jump--detected-env-problems)
+    (push problem dumb-jump--detected-env-problems)))
+
+;;;###autoload
+(defun dumb-jump-show-detected-problems (keep)
+  "Print all problems detected by dumb-jump environment in *Message*.
+Erase the accumulated list unless the command is issued with any prefix
+key (such as `\\[universal-argument]')."
+  (interactive "P")
+  (if dumb-jump--detected-env-problems
+      (progn
+        (message "-- Dumb-Jump Detected Environment Problems:")
+        (dolist (problem (reverse dumb-jump--detected-env-problems))
+          (message problem))
+        (unless keep
+          (setq dumb-jump--detected-env-problems nil)))
+    (message "No problem recorded yet.")))
+
+;; --
 
 (defvar dumb-jump--ag-installed? 'unset)
 (defun dumb-jump-ag-installed? ()
@@ -2686,18 +2735,32 @@ If nil, jump without confirmation but print a warning."
 
 (defvar dumb-jump--rg-installed? 'unset)
 (defun dumb-jump-rg-installed? ()
-  "Return t if rg later than 0.10 is installed."
+  "Return t if rg 0.10 or later with PCRE2 support is installed.
+Return nil otherwise.  In that case store diagnostics information in the
+variable `dumb-jump--detected-env-problems'."
   (if (eq dumb-jump--rg-installed? 'unset)
-      (setq dumb-jump--rg-installed?
-            (let ((result (s-match "ripgrep \\([0-9]+\\)\\.\\([0-9]+\\).*"
-                                   (shell-command-to-string
-                                    (concat dumb-jump-rg-cmd " --version")))))
-              (when (equal (length result) 3)
-                (let ((major (string-to-number (nth 1 result)))
-                      (minor (string-to-number (nth 2 result))))
-                  (or (and (= major 0)
-                           (>= minor 10))
-                      (>= major 1))))))
+      (setq
+       dumb-jump--rg-installed?
+       (catch 'rg-problem
+         (unless (executable-find dumb-jump-rg-cmd)
+           (dumb-jump-env-problem
+            (format "Ripgrep not found as specified in `dumb-jump-rg-cmd': %s"
+                    dumb-jump-rg-cmd))
+           (throw 'rg-problem nil))
+         (let* ((stdout (shell-command-to-string
+                         (concat dumb-jump-rg-cmd " --version")))
+                (has-version (string-match "ripgrep \\([0-9]+\\.[0-9]+\\).*"
+                                           stdout)))
+           (unless has-version
+             (dumb-jump-env-problem "Can't detect Ripgrep version.")
+             (throw 'rg-problem nil))
+           (unless (version<= "0.10" (match-string-no-properties 1 stdout))
+             (dumb-jump-env-problem "Ripgrep >= 0.10 is not available.")
+             (throw 'rg-problem nil))
+           (unless (string-match "features:.*pcre2" stdout)
+             (dumb-jump-env-problem "Ripgrep does not support PCRE2.")
+             (throw 'rg-problem nil))
+           t)))
     dumb-jump--rg-installed?))
 
 (defvar dumb-jump--git-grep-installed? 'unset)
@@ -2742,6 +2805,7 @@ Return resulting string."
     (write-file thefile nil)
     (delete-region (point-min) (point-max))
     (shell-command realcmd t)
+    (set-buffer-modified-p nil) ; prevent prompt on file deletion during test
     (delete-file thefile)
     (buffer-substring-no-properties (point-min) (point-max))))
 
@@ -2887,7 +2951,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
 
 (defun dumb-jump-message (str &rest args)
   "Log message STR with ARGS to *Messages* if not using `dumb-jump-quiet'."
-  (when (not dumb-jump-quiet)
+  (unless dumb-jump-quiet
     (apply 'message str args))
   nil)
 
@@ -2968,10 +3032,12 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
   "Offer CHOICES as candidates through `ivy-read'.
 Then execute dumb-jump-result-follow' on the selected choice RESULTS.
 Ignore _PROJ."
-  (ivy-read "Jump to: " (-zip choices results)
-            :action (lambda (cand)
-                      (dumb-jump-result-follow (cdr cand)))
-            :caller 'dumb-jump-ivy-jump-to-selected))
+  (if (fboundp 'ivy-read)
+      (ivy-read "Jump to: " (-zip-pair choices results)
+                :action (lambda (cand)
+                          (dumb-jump-result-follow (cdr cand)))
+                :caller 'dumb-jump-ivy-jump-to-selected)
+    (error "ivy-read is unknown.  Is it loaded?")))
 
 (defun dumb-jump-prompt-user-for-choice (proj results)
   "Put a PROJ list of RESULTS in menu for user selection.
@@ -2991,7 +3057,7 @@ Filters PROJ path from files for display."
             (with-no-warnings
               (helm-make-source "Jump to: " 'helm-source-sync
                 :action '(("Jump to match" . dumb-jump-result-follow))
-                :candidates (-zip choices results)
+                :candidates (-zip-pair choices results)
                 :persistent-action 'dumb-jump-helm-persist-action))
             :buffer "*helm dumb jump choices*"))
      (t ; or popup
@@ -3030,8 +3096,9 @@ looking for another root."
           (setq language "org")
           (with-no-warnings
             (org-edit-src-exit))
-          (if (version< org-version "9")
-              (save-buffer))))
+          (if (and (boundp 'org-version)
+                   (version< org-version "9"))
+            (save-buffer))))
     (if (string= language "org")
         (setq language (dumb-jump-get-language-in-org)))
     (if (member language (-distinct
@@ -3085,11 +3152,11 @@ Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
          (newfileexts (dumb-jump-add-language-to-proplist complang dumb-jump-language-file-exts lang)))
     ;; add (if needed) composite language to dumb-jump-find-rules
     (when newfindrule
-        (set-default 'dumb-jump-find-rules newfindrule))
+      (set-default 'dumb-jump-find-rules newfindrule))
     ;; add (if needed) composite language to dumb-jump-language-file-exts
     (unless dumb-jump-search-type-org-only-org
-        (when newfileexts
-            (set-default 'dumb-jump-language-file-exts newfileexts)))
+      (when newfileexts
+        (set-default 'dumb-jump-language-file-exts newfileexts)))
     ;; add (if needed) a new extension to dumb-jump-language-file-exts
     (unless alreadyextension
         (set-default 'dumb-jump-language-file-exts
@@ -3457,11 +3524,14 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
      ((= result-count 0)
       (dumb-jump-message "'%s' %s %s declaration not found."
                          look-for
-                         (if (s-blank? lang) "with unknown language so" lang)
+                         (if (string-blank-p (or lang ""))
+                             "with unknown language so"
+                           lang)
                          (plist-get info :ctx-type))))))
 
 (defcustom dumb-jump-language-comments
   '((:comment "//" :language "c++")
+    (:comment "/*" :language "c++")
     (:comment ";" :language "elisp")
     (:comment ";" :language "commonlisp")
     (:comment "//" :language "javascript")
@@ -3509,7 +3579,8 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "#" :language "hcl")
     (:comment "//" :language "apex")
     (:comment "*>" :language "cobol"))
-  "List of one-line comments organized by language."
+  "List of one-line comments organized by language.
+A language may have more than 1 comment string."
   :group 'dumb-jump
   :type
   '(repeat
@@ -3518,21 +3589,34 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
                (:language string)))))
 
 (defun dumb-jump-get-comment-by-language (lang)
-  "Yields the one-line comment for the given LANG."
+  "Return a list of the one-line comment or comments for the given LANG."
   (let* ((entries (-distinct
                    (--filter (string= (plist-get it :language) lang)
                              dumb-jump-language-comments))))
-    (if (= 1 (length entries))
-        (plist-get (car entries) :comment)
+    (if (> (length entries) 0)
+        (mapcar (lambda (pl) (plist-get pl :comment)) entries)
       nil)))
+
+(defun dumb-jump--context-startswith-comment (context-string comments)
+  "Return t when CONTEXT-STRING starts with any COMMENTS string."
+  (let ((startswith-comment nil)
+        ;; trim leading white-space from context-string
+        (context-str (replace-regexp-in-string "^\\s-+" "" context-string)))
+    (catch 'found-one
+      (dolist (comment comments)
+        (when (string-prefix-p comment context-str)
+          (setq startswith-comment t)
+          (throw 'found-one nil))))
+    startswith-comment))
 
 (defun dumb-jump-filter-no-start-comments (results lang)
   "Filter out RESULTS with a :context starting with a LANG comment in file."
-  (let ((comment (dumb-jump-get-comment-by-language lang)))
-    (if comment
+  (let ((comments (dumb-jump-get-comment-by-language lang)))
+    (if comments
         (-concat
-         (--filter (not (string-prefix-p comment
-                                         (s-trim (plist-get it :context))))
+         (--filter (not (dumb-jump--context-startswith-comment
+                         (plist-get it :context)
+                         comments))
                    results))
       results)))
 
@@ -3854,36 +3938,70 @@ The returned plist has:
                   :installed ,'dumb-jump-grep-installed?
                   :searcher ,searcher))))
 
+(defun dumb-jump-selected-grep-variant (&optional proj-root)
+  "Return search tool for current project or specified PROJ-ROOT.
+Select search tool according to `dumb-jump-prefer-searcher' choice and its
+possible `dumb-jump-force-searcher' overriding."
+  (let ((searcher-found nil))
+    (cond
+     ;; If `dumb-jump-force-searcher' is not nil then use the searcher
+     ;; identified by that user-option if possible.
+     (dumb-jump-force-searcher
+      (cond
+       ;; Honour forced choices, they might be identified in dir-local file
+       ((member dumb-jump-force-searcher '(ag
+                                           rg
+                                           grep
+                                           gnu-grep
+                                           git-grep
+                                           git-grep-plus-ag))
+        (setq searcher-found dumb-jump-force-searcher))
+       ;; Select search tool identified by calling the user-specified function
+       ;; which takes the directory.
+       ((and (symbolp dumb-jump-force-searcher)
+             (fboundp dumb-jump-force-searcher))
+        (let ((user-selected-search-tool
+               (funcall dumb-jump-force-searcher (or proj-root
+                                                     (buffer-file-name)))))
+          (when user-selected-search-tool
+            (setq searcher-found user-selected-search-tool))))
+       ;; Check if project root or current directory is inside one of the
+       ;; project roots specified
+       ((and (listp dumb-jump-force-searcher)
+             proj-root
+             (dumb-jump-git-grep-installed?)
+             (member (dumb-jump-get-project-root proj-root)
+                     dumb-jump-force-searcher)
+             (file-exists-p (expand-file-name ".git" proj-root)))
+        ;; [:todo 2026-01-07, by Pierre Rouleau: add support for git grep + ag??]
+        (setq searcher-found 'git-grep)))))
+
+    (unless searcher-found
+      ;; When `dumb-jump-force-searcher' does not override the selection, then
+      ;; select the searcher based on the value of `dumb-jump-force-searcher'.
+      (cond
+       ;; If `dumb-jump-prefer-searcher' identifies a searcher use it if it's
+       ;; installed.
+       ((and dumb-jump-prefer-searcher
+             (funcall (plist-get (dumb-jump-generators-by-searcher
+                                  dumb-jump-prefer-searcher)
+                                 :installed)))
+        (setq searcher-found dumb-jump-prefer-searcher))
+
+       ;; Fallback searcher order.
+       ((dumb-jump-ag-installed?)             (setq searcher-found 'ag))
+       ((dumb-jump-rg-installed?)             (setq searcher-found 'rg))
+       ((eq (dumb-jump-grep-installed?) 'gnu) (setq searcher-found 'gnu-grep))
+       (t                                     (setq searcher-found 'grep))))
+    ;; return the symbol identifying the selected search tool
+    searcher-found))
+
 (defun dumb-jump-pick-grep-variant (&optional proj-root)
   "Get action search property list for current project or specified PROJ-ROOT.
 Select search tool according to `dumb-jump-prefer-searcher' choice and its
 possible `dumb-jump-force-searcher' overriding."
-  (cond
-   ;; If `dumb-jump-force-searcher' is not nil then use that searcher.
-   (dumb-jump-force-searcher
-    (dumb-jump-generators-by-searcher dumb-jump-force-searcher))
-
-   ;; If project root has a .git then use git-grep if installed.
-   ((and proj-root
-         (dumb-jump-git-grep-installed?)
-         (file-exists-p (expand-file-name ".git" proj-root)))
-    (dumb-jump-generators-by-searcher 'git-grep))
-
-   ;; If `dumb-jump-prefer-searcher' is not nil then use if installed.
-   ((and dumb-jump-prefer-searcher
-         (funcall (plist-get (dumb-jump-generators-by-searcher dumb-jump-prefer-searcher)
-                             :installed)))
-    (dumb-jump-generators-by-searcher dumb-jump-prefer-searcher))
-
-   ;; Fallback searcher order.
-   ((dumb-jump-ag-installed?)
-    (dumb-jump-generators-by-searcher 'ag))
-   ((dumb-jump-rg-installed?)
-    (dumb-jump-generators-by-searcher 'rg))
-   ((eq (dumb-jump-grep-installed?) 'gnu)
-    (dumb-jump-generators-by-searcher 'gnu-grep))
-   (t
-    (dumb-jump-generators-by-searcher 'grep))))
+  (dumb-jump-generators-by-searcher
+   (dumb-jump-selected-grep-variant proj-root)))
 
 (defun dumb-jump-shell-command-switch ()
   "Return current shell command switch prevent loading shell profile/RC.
@@ -3933,7 +4051,7 @@ The parameters are:
          (rawresults (shell-command-to-string cmd)))
 
     (dumb-jump-debug-message cmd rawresults)
-    (when (and (s-blank? rawresults) dumb-jump-fallback-search)
+    (when (and (string-blank-p rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn
                          look-for cur-file
@@ -3941,7 +4059,7 @@ The parameters are:
                          lang exclude-args))
       (setq rawresults (shell-command-to-string cmd))
       (dumb-jump-debug-message cmd rawresults))
-    (unless (s-blank? cmd)
+    (unless (string-blank-p (or cmd ""))
       (let ((results (funcall parse-fn rawresults cur-file line-num))
             (ignore-case (member lang dumb-jump--case-insensitive-languages)))
         (--filter (s-contains? look-for
@@ -4074,7 +4192,7 @@ that are both strings."
       (plist-get (car usable-ctxs) :type))))
 
 (defun dumb-jump-get-ext-includes (language)
-  "Return the --include grep argument of file extensions by LANGUAGE."
+  "Return the --include grep argument of file extensions for LANGUAGE."
   (let ((exts (dumb-jump-get-file-exts-by-language language)))
     (dumb-jump-arg-joiner
      "--include"
@@ -4170,7 +4288,7 @@ The arguments are:
                       (if (string-suffix-p ".gz" cur-file)
                           " --search-zip"
                         "")
-                      (when (not (s-blank? dumb-jump-ag-search-args))
+                      (unless (string-blank-p dumb-jump-ag-search-args)
                         (concat " " dumb-jump-ag-search-args))
                       (if agtypes
                           (s-join "" (--map (format " --%s" it) agtypes))
@@ -4282,7 +4400,7 @@ The arguments are:
                       (if (member lang dumb-jump--case-insensitive-languages)
                           " --ignore-case"
                         "")
-                      (when (not (s-blank? dumb-jump-rg-search-args))
+                      (unless (string-blank-p dumb-jump-rg-search-args)
                         (concat " " dumb-jump-rg-search-args))
                       (s-join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
@@ -4320,7 +4438,7 @@ The arguments are:
                         "")
                       (when dumb-jump-git-grep-search-untracked
                         " --untracked")
-                      (when (not (s-blank? dumb-jump-git-grep-search-args))
+                      (unless (string-blank-p dumb-jump-git-grep-search-args)
                         (concat " " dumb-jump-git-grep-search-args))
                       " -E"))
          (fileexps (s-join " "
@@ -4540,25 +4658,26 @@ The arguments are:
             ((= (length results) 0)
              (dumb-jump-message "'%s' %s %s declaration not found."
                                 look-for
-                                (if (s-blank? lang)
+                                (if (string-blank-p (or lang ""))
                                     "with unknown language so"
                                   lang)
                                 (plist-get info :ctx-type)))
             (t (mapcar (lambda (res)
-                         (xref-make
-                          (plist-get res :context)
-                          (xref-make-file-location
-                           (expand-file-name (plist-get res :path))
-                           (plist-get res :line)
-                           0)))
+                         (with-no-warnings
+                           (xref-make
+                            (plist-get res :context)
+                            (xref-make-file-location
+                             (expand-file-name (plist-get res :path))
+                             (plist-get res :line)
+                             0))))
                        (if do-var-jump
                            (list var-to-jump)
                          match-cur-file-front))))))
 
   (cl-defmethod xref-backend-apropos ((_backend (eql dumb-jump)) pattern)
     (xref-backend-definitions 'dumb-jump pattern))
-
-  (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql dumb-jump)))
+  (cl-defmethod xref-backend-identifier-completion-table
+    ((_backend (eql dumb-jump)))
     nil))
 
 ;;;###autoload
