@@ -4241,6 +4241,9 @@ The arguments are:
       (setq text (s-replace "\\j" boundary text))
       (when (eq variant 'gnu-grep)
         (setq text (s-replace "\\s" "[[:space:]]" text)))
+      (when (memq variant '(gnu-grep git-grep))
+        ;; grep treats "\n" as backslash and "n" not as newline
+        (setq text (s-replace "\\n" "" text)))
       (setq text (s-replace "JJJ" (regexp-quote look-for) text))
       (when (and (eq variant 'rg)
                  (string-prefix-p "-" text))
