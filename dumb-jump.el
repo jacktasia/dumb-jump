@@ -105,7 +105,7 @@ the selector defaults to popup."
 The available choices are:
 - \\='ag              : https://github.com/ggreer/the_silver_searcher
 - \\='rg              : https://github.com/BurntSushi/ripgrep
-- \\='grep
+- \\='grep            : https://en.wikipedia.org/wiki/Grep
 - \\='gnu-grep        : https://www.gnu.org/software/grep/manual/grep.html
 - \\='git-grep        : https://git-scm.com/docs/git-grep
 - \\='git-grep-plus-ag
@@ -196,6 +196,7 @@ one of two preferred choice overriding methods:
 
 
 ;; word-boundary regexps: they replace the "\\j" in dumb-jump regexes.
+;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-ag-word-boundary
   "(?![a-zA-Z0-9\\?\\*-])"
   "Regexp that replaces `\\j` in dumb-jump regexes for ag search.
@@ -204,6 +205,7 @@ When this matters use `\\j` instead and ag will use this value."
   :group 'dumb-jump
   :type 'string)
 
+;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-rg-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
   "Regexp that replaces `\\j` in dumb-jump regexes for rg search.
@@ -212,6 +214,7 @@ When this matters use `\\j` instead and rg will use this value."
   :group 'dumb-jump
   :type 'string)
 
+;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-git-grep-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
   "Regexp that replaces `\\j` in dumb-jump regexes for git-grep search.
@@ -220,6 +223,7 @@ When this matters use `\\j` instead and git grep will use this value."
   :group 'dumb-jump
   :type 'string)
 
+;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-grep-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
   "Regexp that replaces `\\j` in dumb-jump regexes for grep search.
@@ -320,11 +324,12 @@ If nil add also the language type of current src block."
   :group 'dumb-jump
   :type 'boolean)
 
+;; [:todo 2026-01-29, by Pierre Rouleau: Why 3 backslashes in front of '('? ]
 (defcustom dumb-jump-find-rules
   ;;-- elisp
   '((:language "elisp" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\((defun|cl-defun)\\s+JJJ\\j"
+           :regex "\\((defun|cl-defun)\\s+JJJ\\j"
            ;; \\j usage see `dumb-jump-ag-word-boundary`
            :tests ("(defun test (blah)"
                    "(defun test\n"
@@ -340,7 +345,7 @@ If nil add also the language type of current src block."
 
     (:language "elisp" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\(defmacro\\s+JJJ\\j"
+           :regex "\\(defmacro\\s+JJJ\\j"
            :tests ("(defmacro test (blah)"
                    "(defmacro test\n")
            :not ("(defmacro test-asdf (blah)"
@@ -351,16 +356,25 @@ If nil add also the language type of current src block."
 
     (:language "elisp" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\(defvar\\b\\s*JJJ\\j"
+           :regex "\\(defvar\\b\\s*JJJ\\j"
            :tests ("(defvar test "
                    "(defvar test\n")
            :not ("(defvar tester"
                  "(defvar test?"
                  "(defvar test-"))
 
+    ;; (:language "elisp" :type "variable"
+    ;;        :supports ("ag" "grep" "rg" "ugrep" "git-grep")
+    ;;        :regex "\\(defconst\\b\\s*JJJ\\j"
+    ;;        :tests ("(defconst test "
+    ;;                "(defconst test\n")
+    ;;        :not ("(defconst tester"
+    ;;              "(defconst test?"
+    ;;              "(defconst test-"))
+
     (:language "elisp" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\(defcustom\\b\\s*JJJ\\j"
+           :regex "\\(defcustom\\b\\s*JJJ\\j"
            :tests ("(defcustom test "
                    "(defcustom test\n")
            :not ("(defcustom tester"
@@ -369,7 +383,7 @@ If nil add also the language type of current src block."
 
     (:language "elisp" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\(setq\\b\\s*JJJ\\j"
+           :regex "\\(setq\\b\\s*JJJ\\j"
            :tests ("(setq test 123)")
            :not ("setq test-blah 123)"
                  "(setq tester"
@@ -377,14 +391,14 @@ If nil add also the language type of current src block."
 
     (:language "elisp" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\(JJJ\\s+"
+           :regex "\\(JJJ\\s+"
            :tests ("(let ((test 123)))")
            :not ("(let ((test-2 123)))"))
 
     ;; variable in method signature
     (:language "elisp" :type "variable"
            :supports ("ag" "rg" "git-grep")
-           :regex "\\((defun|cl-defun)\\s*.+\\\(?\\s*JJJ\\j\\s*\\\)?"
+           :regex "\\((defun|cl-defun)\\s*.+\\(?\\s*JJJ\\j\\s*\\)?"
            :tests ("(defun blah (test)"
                    "(defun blah (test blah)"
                    "(defun (blah test)")
