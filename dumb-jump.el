@@ -1943,6 +1943,20 @@ If nil add also the language type of current src block."
            :regex "mod\\s+JJJ\\s*[{]?"
            :tests ("mod test;" "pub mod test {"))
 
+    ;; enum definitions
+    (:language "rust" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\benum\\s+JJJ\\b\\s*[{]?"
+           :tests ("enum test { A, B, C }"
+                   "enum test {"
+                   "pub enum test<T> {"
+                   "pub enum test<T> { A, B }"
+                   "pub enum test<T: Clone + Debug> {"
+                   "enum test { Variant1, Variant2(Type) }"
+                   "pub(crate) enum test { Variant }")
+           :not ("enum testing { A, B }"
+                 "enum Foo { test, Bar }"))
+
     ;;-- elixir
     (:language "elixir" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
