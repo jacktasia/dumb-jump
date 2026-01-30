@@ -275,7 +275,8 @@ The warning recommend using a faster search tool and config."
 
 (defcustom dumb-jump-quiet
   nil
-  "If non-nil Dumb Jump will not log anything to *Messages*."
+  "If non-nil Dumb Jump will not log anything to *Messages*.
+Note that it prevents printing when `dumb-jump-debug' is non-nil."
   :group 'dumb-jump
   :type 'boolean)
 
@@ -674,7 +675,8 @@ If nil add also the language type of current src block."
                  "if( test() ) {"
                  "else test();"))
 
-    ;; (:type "variable" :supports ("grep") :language "c++"
+    ;; (:language "c++" :type "variable"
+    ;;        :supports ("grep")
     ;;        :regex "(\\b\\w+|[,>])([*&]|\\s)+JJJ\\s*(\\[([0-9]|\\s)*\\])*\\s*([=,){;]|:\\s*[0-9])|#define\\s+JJJ\\b"
     ;;        :tests ("int test=2;" "char *test;" "int x = 1, test = 2" "int test[20];" "#define test" "unsigned int test:2;"))
 
@@ -2549,7 +2551,7 @@ More information using the search tool command line help."
     (:language "cobol" :ext "cob" :agtype nil :rgtype nil)
     (:language "cobol" :ext "cpy" :agtype nil :rgtype nil))
 
-  "Mapping of programming language(s) to file extensions."
+  "Mapping of programming language(s) to file extensions by search tool."
   :group 'dumb-jump
   :type
   '(repeat
@@ -2611,7 +2613,10 @@ a symbol then it's probably a function call."
     "PkgInfo"
     "-pkg.el"
     "_FOSSIL_")
-  "Files and directories that signify a directory is a project root."
+  "Files and directories that signify a directory is a project root.
+If any of these denoting files are present in project sub-directories
+(like Makefile) then you can either remove the culprit denoter from the
+list or create a .dumbjumpignore file in the project sub-directory."
   :group 'dumb-jump
   :type '(repeat (string  :tag "Name")))
 
@@ -2645,7 +2650,8 @@ If `nil` always show list of more than 1 match."
 
 (defcustom dumb-jump-debug
   nil
-  "If `t` will print helpful debug information."
+  "If `t` will print helpful debug information.
+Also ensure that `dumb-jump-quiet' is nil for debugging!"
   :group 'dumb-jump
   :type 'boolean)
 
@@ -3141,11 +3147,11 @@ Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
          (newfileexts (dumb-jump-add-language-to-proplist complang dumb-jump-language-file-exts lang)))
     ;; add (if needed) composite language to dumb-jump-find-rules
     (when newfindrule
-        (set-default 'dumb-jump-find-rules newfindrule))
+      (set-default 'dumb-jump-find-rules newfindrule))
     ;; add (if needed) composite language to dumb-jump-language-file-exts
     (unless dumb-jump-search-type-org-only-org
-        (when newfileexts
-            (set-default 'dumb-jump-language-file-exts newfileexts)))
+      (when newfileexts
+        (set-default 'dumb-jump-language-file-exts newfileexts)))
     ;; add (if needed) a new extension to dumb-jump-language-file-exts
     (unless alreadyextension
         (set-default 'dumb-jump-language-file-exts
@@ -3520,6 +3526,7 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
 
 (defcustom dumb-jump-language-comments
   '((:comment "//" :language "c++")
+    (:comment "/*" :language "c++")
     (:comment ";" :language "elisp")
     (:comment ";" :language "commonlisp")
     (:comment "//" :language "javascript")
@@ -3567,7 +3574,8 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "#" :language "hcl")
     (:comment "//" :language "apex")
     (:comment "*>" :language "cobol"))
-  "List of one-line comments organized by language."
+  "List of one-line comments organized by language.
+A language may have more than 1 comment string."
   :group 'dumb-jump
   :type
   '(repeat
@@ -3576,21 +3584,34 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
                (:language string)))))
 
 (defun dumb-jump-get-comment-by-language (lang)
-  "Yields the one-line comment for the given LANG."
+  "Return a list of the one-line comment or comments for the given LANG."
   (let* ((entries (-distinct
                    (--filter (string= (plist-get it :language) lang)
                              dumb-jump-language-comments))))
-    (if (= 1 (length entries))
-        (plist-get (car entries) :comment)
+    (if (> (length entries) 0)
+        (mapcar (lambda (pl) (plist-get pl :comment)) entries)
       nil)))
+
+(defun dumb-jump--context-startswith-comment (context-string comments)
+  "Return t when CONTEXT-STRING starts with any COMMENTS string."
+  (let ((startswith-comment nil)
+        ;; trim leading white-space from context-string
+        (context-str (replace-regexp-in-string "^\\s-+" "" context-string)))
+    (catch 'found-one
+      (dolist (comment comments)
+        (when (string-prefix-p comment context-str)
+          (setq startswith-comment t)
+          (throw 'found-one nil))))
+    startswith-comment))
 
 (defun dumb-jump-filter-no-start-comments (results lang)
   "Filter out RESULTS with a :context starting with a LANG comment in file."
-  (let ((comment (dumb-jump-get-comment-by-language lang)))
-    (if comment
+  (let ((comments (dumb-jump-get-comment-by-language lang)))
+    (if comments
         (-concat
-         (--filter (not (string-prefix-p comment
-                                         (s-trim (plist-get it :context))))
+         (--filter (not (dumb-jump--context-startswith-comment
+                         (plist-get it :context)
+                         comments))
                    results))
       results)))
 
@@ -4166,7 +4187,7 @@ that are both strings."
       (plist-get (car usable-ctxs) :type))))
 
 (defun dumb-jump-get-ext-includes (language)
-  "Return the --include grep argument of file extensions by LANGUAGE."
+  "Return the --include grep argument of file extensions for LANGUAGE."
   (let ((exts (dumb-jump-get-file-exts-by-language language)))
     (dumb-jump-arg-joiner
      "--include"
