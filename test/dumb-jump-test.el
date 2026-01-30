@@ -112,52 +112,76 @@
         (expected " --include \\*.js --include \\*.jsx --include \\*.vue --include \\*.html --include \\*.css "))
     (should (string= expected args))))
 
-;; (defconst dumb-jump--elisp-expected-regexp-base
-;;   '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-;;     "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-;;     "\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-;;     "\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-;;     "\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-;;     "\\(tester\\s+"))
+(defun dumb-jump--elisp-expected-regexps (variant)
+  "Return a list of elisp regexps adjusted with word boundary of VARIANT.
+VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
+  (let ((regexes '("\\((defun|cl-defun)\\s+JJJ\\j"
+                   "\\(defmacro\\s+JJJ\\j"
+                   "\\(defvar\\b\\s*JJJ\\j"
+                   "\\(defcustom\\b\\s*JJJ\\j"
+                   "\\(setq\\b\\s*JJJ\\j"
+                   "\\(JJJ\\s+"
+                   "\\((defun|cl-defun)\\s*.+\\(?\\s*JJJ\\j\\s*\\)?"
+                   ))
+        (word-boundary-regexp
+         (symbol-value
+          (intern
+           (format "dumb-jump-%s-word-boundary"
+                   (if (eq variant 'git-grep-plus-ag)
+                       'git-grep
+                     variant)))))
+        (formatted-regexps '()))
+    ;; perform translation of each regexp template
+    (dolist (r regexes (reverse formatted-regexps))
+      (setq r (s-replace "JJJ" "tester" r))
+      (setq r (s-replace "\\j" word-boundary-regexp r))
+      (when (dumb-jump-use-space-bracket-exp-for variant)
+        (setq r (s-replace "\\s" "[[:space:]]" r)))
+      (push r formatted-regexps))))
 
+;; 1
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-test ()
   (let* ((system-type 'darwin)
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'grep))
+         ;; The grep command built by dumb-jump places each regexp inside its
+         ;; own -e string.  Each of those strings following -e must be
+         ;; shell-quoted.
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
-                                  '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(tester\\s+")))
-         (expected (concat "LANG=C grep -REn --include \\*.el --include \\*.el.gz" (s-join "" expected-regexes) " .")))
+                                  (dumb-jump--elisp-expected-regexps 'grep)))
+
+         (expected (concat
+                    "LANG=C grep -REn --include \\*.el --include \\*.el.gz"
+                    (s-join "" expected-regexes)
+                    " .")))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
+;; 2.txt
 (ert-deftest dumb-jump-generate-gnu-grep-command-no-ctx-test ()
   (let* ((system-type 'darwin)
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'gnu-grep))
+         ;; The gnu grep command built by dumb-jump places each regexp inside
+         ;; its own -e string. Each of those strings following -e must be
+         ;; shell-quoted.
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
-                                  '("\\((defun|cl-defun)[[:space:]]+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defmacro[[:space:]]+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defvar\\b[[:space:]]*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defcustom\\b[[:space:]]*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(setq\\b[[:space:]]*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(tester[[:space:]]+")))
+                                  (dumb-jump--elisp-expected-regexps 'gnu-grep)))
          (expected (concat "LANG=C grep -rEn" (s-join "" expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-gnu-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
-
+;; a.txt
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
-         (expected-regexes "\
-\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "ag --nocolor --nogroup --elisp " (shell-quote-argument expected-regexes) " .")))
-    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+         (base-regexes (dumb-jump--elisp-expected-regexps 'ag))
+         ;; The ag tool accepts a list of regexps separated by "\\|".
+         ;; Each of the regexp must be shell-quoted (but not "\\|").
+         (expected-regexes
+          (append (-map (lambda (elem)
+                          (concat (shell-quote-argument elem) "\\|"))
+                        (-butlast base-regexes))
+                  (list (shell-quote-argument (-last-item base-regexes)))))
+         (expected (concat "ag --nocolor --nogroup --elisp "
+                           (mapconcat #'identity expected-regexes)
+                           " .")))
+    (should (string= expected
+                     (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-ag-command-exclude-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
@@ -349,12 +373,7 @@
          (dumb-jump-ignore-context t)
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type nil))
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
-                                  '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(tester\\s+")))
+                                  (dumb-jump--elisp-expected-regexps 'grep)))
          (expected (concat "LANG=C grep -REn" (s-join "" expected-regexes) " .")))
 
     ;; the point context being passed is ignored so ALL should return

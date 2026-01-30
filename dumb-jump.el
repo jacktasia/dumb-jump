@@ -192,8 +192,26 @@ one of two preferred choice overriding methods:
 ;; - `JJJ` : searched text
 ;; - `\\j` : word-boundary identifier.  Use this instead of `\\b` when word
 ;;           boundary must not include '-'.
-;; - `\\s` : for a single white space character
+;; - `\\s` : for a single white space character.
+;;           Replaced by `[[:space:]]` when `dumb-jump-use-space-bracket-exp-for`
+;;           returns t.
 
+(defcustom dumb-jump-force-using-space-bracket-exp
+  (eq system-type 'windows-nt)
+  "When t the `\\\\s` in regexp code strings is replaced by `[[:space:]]`.
+Otherwise it is left in the regular expression.
+Defaults to t under Windows because older gnu grep versions have problem
+dealing with `\\\\s` to match end of words due to the 2 bytes used to
+identify the end of line."
+  :group 'dumb-jump
+  :type 'boolean)
+
+(defun dumb-jump-use-space-bracket-exp-for (variant)
+  "Return t when `\\\\s` must be replaced by `[[:space]]` for VARIANT.
+VARIANT must be a one of the following symbols: ag, rg, grep, gnu-grep,
+git-grep or git-grep-plus-ag."
+  (and dumb-jump-force-using-space-bracket-exp
+       (memq variant '(grep gnu-grep git-grep git-grep-plus-ag))))
 
 ;; word-boundary regexps: they replace the "\\j" in dumb-jump regexes.
 ;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
@@ -225,6 +243,14 @@ When this matters use `\\j` instead and git grep will use this value."
 
 ;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-grep-word-boundary
+  "($|[^a-zA-Z0-9\\?\\*-])"
+  "Regexp that replaces `\\j` in dumb-jump regexes for grep search.
+`\\b` thinks `-` is a word boundary.
+When this matters use `\\j` instead and grep will use this value."
+  :group 'dumb-jump
+  :type 'string)
+
+(defcustom dumb-jump-gnu-grep-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
   "Regexp that replaces `\\j` in dumb-jump regexes for grep search.
 `\\b` thinks `-` is a word boundary.
@@ -397,7 +423,7 @@ If nil add also the language type of current src block."
 
     ;; variable in method signature
     (:language "elisp" :type "variable"
-           :supports ("ag" "rg" "git-grep")
+           :supports ("ag" "grep" "rg" "git-grep")
            :regex "\\((defun|cl-defun)\\s*.+\\(?\\s*JJJ\\j\\s*\\)?"
            :tests ("(defun blah (test)"
                    "(defun blah (test blah)"
@@ -4256,7 +4282,7 @@ The arguments are:
 - IT      : string: the dumb-jump generic regular expression.
 - LOOK-FOR: string: the searched item.
 - VARIANT : symbol: the search tool variant,
-                    one of: ag, rg, git-grep-plus-ag, git-grep."
+                    one of: ag, rg, grep, gnu-grep, git-grep-plus-ag, git-grep."
   (let ((boundary
          (cond ((eq variant 'rg) dumb-jump-rg-word-boundary)
                ((eq variant 'ag) dumb-jump-ag-word-boundary)
@@ -4265,7 +4291,7 @@ The arguments are:
                (t dumb-jump-grep-word-boundary))))
     (let ((text it))
       (setq text (s-replace "\\j" boundary text))
-      (when (eq variant 'gnu-grep)
+      (when (dumb-jump-use-space-bracket-exp-for variant)
         (setq text (s-replace "\\s" "[[:space:]]" text)))
       (setq text (s-replace "JJJ" (regexp-quote look-for) text))
       (when (and (eq variant 'rg)
