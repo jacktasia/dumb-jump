@@ -139,7 +139,6 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         (setq r (s-replace "\\s" "[[:space:]]" r)))
       (push r formatted-regexps))))
 
-;; 1
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-test ()
   (let* ((system-type 'darwin)
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'grep))
@@ -155,7 +154,6 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                     " .")))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
-;; 2.txt
 (ert-deftest dumb-jump-generate-gnu-grep-command-no-ctx-test ()
   (let* ((system-type 'darwin)
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'gnu-grep))
@@ -166,7 +164,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                                   (dumb-jump--elisp-expected-regexps 'gnu-grep)))
          (expected (concat "LANG=C grep -rEn" (s-join "" expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-gnu-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
-;; a.txt
+
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
          (base-regexes (dumb-jump--elisp-expected-regexps 'ag))
@@ -178,7 +176,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                         (-butlast base-regexes))
                   (list (shell-quote-argument (-last-item base-regexes)))))
          (expected (concat "ag --nocolor --nogroup --elisp "
-                           (mapconcat #'identity expected-regexes)
+                           (mapconcat #'identity expected-regexes "")
                            " .")))
     (should (string= expected
                      (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
