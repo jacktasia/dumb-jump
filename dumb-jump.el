@@ -1443,6 +1443,123 @@ If nil add also the language type of current src block."
                    "class test extends foo"
                    "class test implements foo"))
 
+    ;; PHP 8.1+ enum definition
+    (:language "php" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\benum\\s+JJJ\\b\\s*(:\\s*(int|string))?\\s*(implements[^{]+)?\\{"
+           :tests ("enum test {"
+                   "enum test: int {"
+                   "enum test: string {"
+                   "enum test implements Stringable {"
+                   "enum test: int implements JsonSerializable {")
+           :not ("// enum test" "$enum = 'test'"))
+
+    ;; PHP 8.1+ enum case
+    (:language "php" :type "constant"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*case\\s+JJJ\\s*(;|=)"
+           :tests ("    case test;"
+                   "case test = 1;"
+                   "case test = 'value';")
+           :not ("case 'test':" "case \"test\":" "default:"))
+
+    ;; PHP abstract class
+    (:language "php" :type "class"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\babstract\\s+class\\s+JJJ\\s*(extends|implements|\\\{)"
+           :tests ("abstract class test {"
+                   "abstract class test extends Base {"
+                   "abstract class test implements Foo {")
+           :not ("// abstract class test"))
+
+    ;; PHP final class (including final readonly)
+    (:language "php" :type "class"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\bfinal\\s+(readonly\\s+)?class\\s+JJJ\\s*(extends|implements|\\\{)"
+           :tests ("final class test {"
+                   "final readonly class test {"
+                   "final class test extends Base {")
+           :not ("// final class test"))
+
+    ;; PHP readonly class (including readonly final)
+    (:language "php" :type "class"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\breadonly\\s+(final\\s+)?class\\s+JJJ\\s*(extends|implements|\\\{)"
+           :tests ("readonly class test {"
+                   "readonly final class test {"
+                   "readonly class test implements Serializable {")
+           :not ("// readonly class test"))
+
+    ;; PHP class constant with optional visibility/final
+    (:language "php" :type "constant"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(final\\s+)?(public|protected|private)?\\s*const\\s+JJJ\\s*="
+           :tests ("const test = 'value';"
+                   "public const test = 100;"
+                   "private const test = 'secret';"
+                   "protected const test = [];"
+                   "final public const test = 42;"
+                   "final const test = true;")
+           :not ("$const = 'test'" "// const test"))
+
+    ;; PHP global const (outside class)
+    (:language "php" :type "constant"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^const\\s+JJJ\\s*="
+           :tests ("const test = 'app_name';"
+                   "const test = 42;"
+                   "const test = [];")
+           :not ("    const test =" "public const test ="))
+
+    ;; PHP define() function
+    (:language "php" :type "constant"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*define\\s*\\(\\s*['\"]JJJ['\"]"
+           :tests ("define('test', 100);"
+                   "define(\"test\", 'value');"
+                   "define('test',")
+           :not ("// define('test'" "$define = 'test'"))
+
+    ;; PHP typed property declaration
+    (:language "php" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(public|protected|private)\\s+(static\\s+)?(readonly\\s+)?\\??[A-Za-z_][A-Za-z0-9_\\\\|&]*\\s+\\$JJJ\\s*(;|=|,)"
+           :tests ("public int $test;"
+                   "private string $test = '';"
+                   "protected ?array $test = null;"
+                   "public readonly string $test;"
+                   "private static int $test = 0;"
+                   "public DateTime $test;")
+           :not ("public function foo(int $test)" "return $test;"))
+
+    ;; PHP static property (without explicit type)
+    (:language "php" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(public|protected|private)?\\s*static\\s+\\$JJJ\\s*(;|=)"
+           :tests ("static $test;"
+                   "public static $test = [];"
+                   "private static $test = null;")
+           :not ("static function test()" "static::$test"))
+
+    ;; PHP namespace declaration
+    (:language "php" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\bnamespace\\s+([A-Za-z_][A-Za-z0-9_]*\\\\)*JJJ\\s*[;{]"
+           :tests ("namespace test;"
+                   "namespace App\\test;"
+                   "namespace App\\Services\\test {")
+           :not ("// namespace test" "use App\\test;"))
+
+    ;; PHP use statement for class imports
+    (:language "php" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\buse\\s+([A-Za-z_][A-Za-z0-9_]*\\\\)*JJJ\\s*(;|,|\\s+as\\s+)"
+           :tests ("use test;"
+                   "use App\\test;"
+                   "use App\\Models\\test as TestModel;"
+                   "use App\\test, App\\Other;")
+           :not ("use function test;" "use const test;"))
+
     ;;-- dart
     (:language "dart" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
@@ -3618,6 +3735,7 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "#" :language "perl")
     (:comment "#" :language "tcl")
     (:comment "//" :language "php")
+    (:comment "#" :language "php")
     (:comment "#" :language "python")
     (:comment "%" :language "matlab")
     (:comment "#" :language "r")
