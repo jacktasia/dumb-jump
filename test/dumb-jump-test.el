@@ -117,7 +117,8 @@
 VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
   (let ((regexes '("\\((defun|cl-defun)\\s+JJJ\\j"
                    "\\(defmacro\\s+JJJ\\j"
-                   "\\(defvar\\b\\s*JJJ\\j"
+                   "\\(defvar(-local)?\\b\\s*JJJ\\j"
+                   "\\(defconst\\b\\s*JJJ\\j"
                    "\\(defcustom\\b\\s*JJJ\\j"
                    "\\(setq\\b\\s*JJJ\\j"
                    "\\(JJJ\\s+"
@@ -128,7 +129,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
           (intern
            (format "dumb-jump-%s-word-boundary"
                    (if (eq variant 'git-grep-plus-ag)
-                       'git-grep
+                       'ag
                      variant)))))
         (formatted-regexps '()))
     ;; perform translation of each regexp template
@@ -183,150 +184,161 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
 
 (ert-deftest dumb-jump-generate-ag-command-exclude-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
-         (expected-regexes
-          "\
-\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "ag --nocolor --nogroup --elisp --ignore-dir this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root")))
-    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded"))))))
+         (expected-regexes (mapconcat #'identity
+                                      (dumb-jump--elisp-expected-regexps 'ag)
+                                      "|"))
+         (expected
+          (concat
+           "ag --nocolor --nogroup --elisp --ignore-dir this/is/excluded "
+           (shell-quote-argument expected-regexes)
+           " /path/to/proj-root")))
+    (should (string= expected
+                     (dumb-jump-generate-ag-command
+                      "tester" "blah.el" "/path/to/proj-root"
+                      regexes "elisp"
+                      '("/path/to/proj-root/this/is/excluded"))))))
 
 (ert-deftest dumb-jump-generate-git-grep-plus-ag-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
-         (expected-regexes "\
-\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' " (shell-quote-argument expected-regexes) " /path/to/proj-root"))) ;; NOTE no "--elisp" and the `-G` arg is new
+         (expected-regexes (mapconcat #'identity
+                                      (dumb-jump--elisp-expected-regexps 'git-grep-plus-ag)
+                                      "|"))
+         (expected
+          ;; NOTE no "--elisp" and the `-G` arg is new
+          (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' "
+                  (shell-quote-argument expected-regexes)
+                  " /path/to/proj-root")))
   (with-mock
-   (mock (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
-    (should (string= expected  (dumb-jump-generate-git-grep-plus-ag-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" nil))))))
+   (mock
+    (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
+    (should (string= expected
+                     (dumb-jump-generate-git-grep-plus-ag-command
+                      "tester" "blah.el" "/path/to/proj-root"
+                      regexes "elisp" nil))))))
 
 
 (ert-deftest dumb-jump-generate-git-grep-plus-ag-command-exclude-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
-         (expected-regexes "\
-\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' --ignore-dir this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root"))) ;; NOTE no "--elisp" and the `-G` arg is new
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'git-grep-plus-ag)
+                     "|"))
+         (expected
+          ;; NOTE no "--elisp" and the `-G` arg is new
+          (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' --ignore-dir this/is/excluded "
+                  (shell-quote-argument expected-regexes)
+                  " /path/to/proj-root")))
   (with-mock
    (mock (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
-    (should (string= expected  (dumb-jump-generate-git-grep-plus-ag-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded")))))))
+    (should (string= expected
+                     (dumb-jump-generate-git-grep-plus-ag-command
+                      "tester" "blah.el" "/path/to/proj-root" regexes "elisp"
+                      '("/path/to/proj-root/this/is/excluded")))))))
 
 
 (ert-deftest dumb-jump-generate-rg-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
-         (expected-regexes "\
-\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp " (shell-quote-argument expected-regexes) " .")))
-    (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'rg)
+                     "|"))
+         (expected (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp "
+                           (shell-quote-argument expected-regexes) " .")))
+    (should (string= expected  (dumb-jump-generate-rg-command
+                                "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-rg-command-remote-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
-         (expected-regexes "\
-\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -g \\!this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root")))
-    (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded"))))))
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'rg)
+                     "|"))
+         (expected
+          (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -g \\!this/is/excluded "
+                  (shell-quote-argument expected-regexes)
+                  " /path/to/proj-root")))
+    (should (string= expected
+                     (dumb-jump-generate-rg-command
+                      "tester" "blah.el" "/path/to/proj-root" regexes "elisp"
+                      '("/path/to/proj-root/this/is/excluded"))))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
-         (expected-regexes "\
-\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'git-grep)
+                     "|"))
          (excludes '("one" "two" "three"))
-         (expected (concat "git grep --color=never --line-number --untracked -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
-    (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
+         (expected
+          (concat "git grep --color=never --line-number --untracked -E "
+                  (shell-quote-argument expected-regexes)
+                  " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
+    (should (string= expected
+                     (dumb-jump-generate-git-grep-command
+                      "tester" "blah.el" "." regexes "elisp" excludes)))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-extra-args ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
-         (expected-regexes "\
-\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'git-grep)
+                     "|"))
          (excludes '("one" "two" "three"))
          (dumb-jump-git-grep-search-args "--recurse-submodules")
-         (expected (concat "git grep --color=never --line-number --untracked --recurse-submodules -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
-    (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
+         (expected
+          (concat
+           "git grep --color=never --line-number --untracked --recurse-submodules -E "
+           (shell-quote-argument expected-regexes)
+           " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
+    (should (string= expected
+                     (dumb-jump-generate-git-grep-command
+                      "tester" "blah.el" "." regexes "elisp" excludes)))))
 
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-extra-args ()
   ;; ag args
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
-         (expected-regexes "\
-\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'ag)
+                     "|"))
          (dumb-jump-ag-search-args "--follow")
-         (expected (concat "ag --nocolor --nogroup --follow --elisp " (shell-quote-argument expected-regexes) " .")))
-    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+         (expected
+          (concat "ag --nocolor --nogroup --follow --elisp "
+                  (shell-quote-argument expected-regexes) " .")))
+    (should (string= expected
+                     (dumb-jump-generate-ag-command
+                      "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-rg-command-no-ctx-extra-args ()
   ;; rg-args
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
-         (expected-regexes "\
-\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected-regexes (mapconcat #'identity
+                                      (dumb-jump--elisp-expected-regexps 'rg)
+                                      "|"))
          (dumb-jump-rg-search-args "--no-pcre2 --follow")
-         (expected (concat "rg --color never --no-heading --line-number -U --no-pcre2 --follow --type elisp " (shell-quote-argument expected-regexes) " .")))
-    (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+         (expected
+          (concat "rg --color never --no-heading --line-number -U --no-pcre2 --follow --type elisp "
+                  (shell-quote-argument expected-regexes)
+                  " .")))
+    (should (string= expected
+                     (dumb-jump-generate-rg-command
+                      "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-not-search-untracked-test ()
   (let* ((dumb-jump-git-grep-search-args "")
          (dumb-jump-git-grep-search-untracked nil)
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
-         (expected-regexes "\
-\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\
-\\(tester\\s+|\
-\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected-regexes (mapconcat #'identity
+                                      (dumb-jump--elisp-expected-regexps 'git-grep)
+                                      "|"))
          (excludes '("one" "two" "three"))
-         (expected (concat "git grep --color=never --line-number -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
-    (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
+         (expected
+          (concat "git grep --color=never --line-number -E "
+                  (shell-quote-argument expected-regexes)
+                  " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
+    (should (string= expected
+                     (dumb-jump-generate-git-grep-command
+                      "tester" "blah.el" "." regexes "elisp" excludes)))))
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
   (let* ((system-type 'darwin)

@@ -382,21 +382,26 @@ If nil add also the language type of current src block."
 
     (:language "elisp" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\(defvar\\b\\s*JJJ\\j"
+           :regex "\\(defvar(-local)?\\b\\s*JJJ\\j"
            :tests ("(defvar test "
-                   "(defvar test\n")
+                   "(defvar test\n"
+                   "(defvar-local test"
+                   "(defvar-local test\n")
            :not ("(defvar tester"
                  "(defvar test?"
-                 "(defvar test-"))
+                 "(defvar test-"
+                 "(defvar-local tester"
+                 "(defvar-local test?"
+                 "(defvar-local test-"))
 
-    ;; (:language "elisp" :type "variable"
-    ;;        :supports ("ag" "grep" "rg" "ugrep" "git-grep")
-    ;;        :regex "\\(defconst\\b\\s*JJJ\\j"
-    ;;        :tests ("(defconst test "
-    ;;                "(defconst test\n")
-    ;;        :not ("(defconst tester"
-    ;;              "(defconst test?"
-    ;;              "(defconst test-"))
+    (:language "elisp" :type "variable"
+           :supports ("ag" "grep" "rg" "ugrep" "git-grep")
+           :regex "\\(defconst\\b\\s*JJJ\\j"
+           :tests ("(defconst test "
+                   "(defconst test\n")
+           :not ("(defconst tester"
+                 "(defconst test?"
+                 "(defconst test-"))
 
     (:language "elisp" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
