@@ -1061,6 +1061,61 @@ If nil add also the language type of current src block."
                  "Nottest = 1234;"
                  "AtestNot = 1234;"))
 
+    ;;-- org
+    ;; org named blocks
+    (:language "org" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*#\\+[nN][aA][mM][eE]:\\s*JJJ\\j"
+           :tests ("#+name: test"
+                   "#+NAME: test"
+                   "#+Name: test"
+                   "  #+name: test"
+                   "#+name:test")
+           :not ("#+name: tester"
+                 "#+name: test-block"
+                 "some #+name: test"))
+
+    ;; org call references (#+call: block-name)
+    (:language "org" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*#\\+[cC][aA][lL][lL]:\\s*JJJ\\j"
+           :tests ("#+call: test"
+                   "#+CALL: test"
+                   "#+Call: test"
+                   "  #+call: test"
+                   "#+call: test()"
+                   "#+call: test(x=1)")
+           :not ("#+call: tester"
+                 "#+call: test-other"
+                 "some #+call: test"))
+
+    ;; org headings (* Heading text)
+    (:language "org" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\*+\\s+JJJ\\j"
+           :tests ("* test"
+                   "** test"
+                   "*** test"
+                   "**** test"
+                   "* test heading"
+                   "** test with more words")
+           :not ("* tester"
+                 "** testing"
+                 "* test-other"
+                 "not a * test heading"))
+
+    ;; org custom ID (:CUSTOM_ID: value in property drawers)
+    (:language "org" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*:CUSTOM_ID:\\s*JJJ\\j"
+           :tests (":CUSTOM_ID: test"
+                   ":CUSTOM_ID:  test"
+                   "  :CUSTOM_ID: test"
+                   ":CUSTOM_ID:test")
+           :not (":CUSTOM_ID: tester"
+                 ":CUSTOM_ID: test-other"
+                 "inline :CUSTOM_ID: test text"))
+
     ;;-- ruby
     (:language "ruby" :type "variable"
            :supports ("ag" "rg" "git-grep")
