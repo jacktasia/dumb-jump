@@ -1242,6 +1242,113 @@
     (if (version< org-version "9")
         (setq dumb-jump-project oldproject))))
 
+(ert-deftest dumb-jump-org-named-block-test ()
+  "Test jumping to org named block definition"
+  (let ((org-file (f-join test-data-dir-proj1 "src" "org" "named-blocks.org"))
+        (oldpar dumb-jump-force-searcher)
+        (old-rg-installed dumb-jump--rg-installed?))
+    (setq dumb-jump-force-searcher 'rg)
+    (setq dumb-jump--rg-installed? 'unset)
+    (with-current-buffer (find-file-noselect org-file t)
+      (goto-char (point-min))
+      (forward-line 38)  ; Line 39: "Test for uniqueblock lookup: uniqueblock"
+      (forward-char 34)  ; Position cursor on "uniqueblock" at end of line
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        (mock (dumb-jump-goto-file-line * 41 8))  ; Line 41 is #+name: uniqueblock (col 8)
+        (should (string= org-file (with-no-warnings (dumb-jump-go))))))
+    (setq dumb-jump-force-searcher oldpar)
+    (setq dumb-jump--rg-installed? old-rg-installed)))
+
+(ert-deftest dumb-jump-org-heading-test ()
+  "Test jumping to org heading"
+  (let ((org-file (f-join test-data-dir-proj1 "src" "org" "named-blocks.org"))
+        (oldpar dumb-jump-force-searcher)
+        (old-rg-installed dumb-jump--rg-installed?))
+    (setq dumb-jump-force-searcher 'rg)
+    (setq dumb-jump--rg-installed? 'unset)
+    (with-current-buffer (find-file-noselect org-file t)
+      (goto-char (point-min))
+      (forward-line 65)  ; Line 66: "Reference to MainTopic heading: MainTopic"
+      (forward-char 35)  ; Position cursor on "MainTopic" at end of line
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        (mock (dumb-jump-goto-file-line * 68 4))  ; Line 68 is *** MainTopic (col 4)
+        (should (string= org-file (with-no-warnings (dumb-jump-go))))))
+    (setq dumb-jump-force-searcher oldpar)
+    (setq dumb-jump--rg-installed? old-rg-installed)))
+
+(ert-deftest dumb-jump-org-custom-id-test ()
+  "Test jumping to org CUSTOM_ID"
+  (let ((org-file (f-join test-data-dir-proj1 "src" "org" "named-blocks.org"))
+        (oldpar dumb-jump-force-searcher)
+        (old-rg-installed dumb-jump--rg-installed?))
+    (setq dumb-jump-force-searcher 'rg)
+    (setq dumb-jump--rg-installed? 'unset)
+    (with-current-buffer (find-file-noselect org-file t)
+      (goto-char (point-min))
+      (forward-line 57)  ; Line 58: "See also the section with ID call-section for more info."
+      (forward-char 34)  ; Position cursor on "call-section"
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        (mock (dumb-jump-goto-file-line * 55 12))  ; Line 55 is :CUSTOM_ID: call-section (col 12)
+        (should (string= org-file (with-no-warnings (dumb-jump-go))))))
+    (setq dumb-jump-force-searcher oldpar)
+    (setq dumb-jump--rg-installed? old-rg-installed)))
+
+(ert-deftest dumb-jump-org-call-test ()
+  "Test jumping from #+call reference to named block definition"
+  (let ((org-file (f-join test-data-dir-proj1 "src" "org" "named-blocks.org"))
+        (oldpar dumb-jump-force-searcher)
+        (old-rg-installed dumb-jump--rg-installed?))
+    (setq dumb-jump-force-searcher 'rg)
+    (setq dumb-jump--rg-installed? 'unset)
+    (with-current-buffer (find-file-noselect org-file t)
+      (goto-char (point-min))
+      (forward-line 61)  ; Line 62: "#+CALL: UPPERCASE()"
+      (forward-char 8)   ; Position cursor on "UPPERCASE"
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        (mock (dumb-jump-goto-file-line * 20 8))  ; Line 20 is #+NAME: UPPERCASE (col 8)
+        (should (string= org-file (with-no-warnings (dumb-jump-go))))))
+    (setq dumb-jump-force-searcher oldpar)
+    (setq dumb-jump--rg-installed? old-rg-installed)))
+
+(ert-deftest dumb-jump-org-named-block-nospace-test ()
+  "Test jumping to org named block definition without space after colon"
+  (let ((org-file (f-join test-data-dir-proj1 "src" "org" "named-blocks.org"))
+        (oldpar dumb-jump-force-searcher)
+        (old-rg-installed dumb-jump--rg-installed?))
+    (setq dumb-jump-force-searcher 'rg)
+    (setq dumb-jump--rg-installed? 'unset)
+    (with-current-buffer (find-file-noselect org-file t)
+      (goto-char (point-min))
+      (forward-line 45)  ; Line 46: "Test for nospace lookup: nospace"
+      (forward-char 28)  ; Position cursor on "nospace" at end of line
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        (mock (dumb-jump-goto-file-line * 48 7))  ; Line 48 is #+name:nospace (col 7)
+        (should (string= org-file (with-no-warnings (dumb-jump-go))))))
+    (setq dumb-jump-force-searcher oldpar)
+    (setq dumb-jump--rg-installed? old-rg-installed)))
+
+(ert-deftest dumb-jump-org-custom-id-nospace-test ()
+  "Test jumping to org CUSTOM_ID without space after colon"
+  (let ((org-file (f-join test-data-dir-proj1 "src" "org" "named-blocks.org"))
+        (oldpar dumb-jump-force-searcher)
+        (old-rg-installed dumb-jump--rg-installed?))
+    (setq dumb-jump-force-searcher 'rg)
+    (setq dumb-jump--rg-installed? 'unset)
+    (with-current-buffer (find-file-noselect org-file t)
+      (goto-char (point-min))
+      (forward-line 87)  ; Line 88: "Reference to nospace-id custom ID: nospace-id"
+      (forward-char 36)  ; Position cursor on "nospace-id" at end of line
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        (mock (dumb-jump-goto-file-line * 85 11))  ; Line 85 is :CUSTOM_ID:nospace-id (col 11)
+        (should (string= org-file (with-no-warnings (dumb-jump-go))))))
+    (setq dumb-jump-force-searcher oldpar)
+    (setq dumb-jump--rg-installed? old-rg-installed)))
 
 
 ;; This test verifies that having ".dumbjumpignore" files in the two sub-projects will make it find
