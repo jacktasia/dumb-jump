@@ -1,5 +1,13 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+early_access: false
 reviews:
-  in_progress_fortune: false
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
   poem: false
-  enable_prompt_for_ai_agents: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
