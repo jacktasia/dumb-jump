@@ -1,50 +1,5 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-language: "en-US"
-early_access: false
-
 reviews:
-  profile: "chill"
-  request_changes_workflow: false
-  high_level_summary: true
-  review_status: true
-  review_details: false
-  poem: false
   in_progress_fortune: false
-
-  # Keep CodeRabbit focused on review quality, not on generated/build outputs.
-  path_filters:
-    - "!**/*.elc"
-    - "!**/*.eln"
-    - "!**/*.tar"
-    - "!**/*.zip"
-    - "!**/*.png"
-    - "!**/*.jpg"
-    - "!**/*.svg"
-
-  # Path-based guidance (write instructions directly; don't point at guideline files). [web:24]
-  path_instructions:
-    - path: "**/*.el"
-      instructions: |
-        Emacs Lisp review focus:
-        - Prefer idiomatic Elisp and clarity; minimize clever macros unless clearly justified.
-        - Watch for dynamic scope surprises; call out missing `lexical-binding: t` expectations in files that assume it.
-        - Check interactive commands: correct (interactive ...) spec, docstring matches behavior, preserves point/mark when appropriate.
-        - Look for side effects: global variables, hooks, advice, timers, process filters/sentinels; ensure cleanup/unwind-protect where needed.
-        - Flag performance pitfalls in hot paths (e.g., repeated buffer-wide regex scans, excessive consing).
-        - For public packages: ensure public functions/vars are documented; ensure namespacing (package prefix) is consistent.
-
-auto_review:
-  enabled: true
-  drafts: false
-
-chat:
-  auto_reply: true
-  art: false
-
-# Explicitly disable code-generation “finishing touches”.
-finishing_touches:
-  docstrings:
-    enabled: false
-  unit_tests:
-    enabled: false
-
+  poem: false
+  enable_prompt_for_ai_agents: false
