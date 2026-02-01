@@ -48,5 +48,3 @@ finishing_touches:
   unit_tests:
     enabled: false
 
-knowledge_base:
-  web_search: false
