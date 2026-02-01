@@ -1,3 +1,5 @@
 .cask/
 \#.*test#
 .*test~
+*.elc
+*.~undo-tree~

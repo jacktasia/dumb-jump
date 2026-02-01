@@ -149,11 +149,58 @@ If you want to stop a directory from registering as the project root (and have D
 * `(setq dumb-jump-default-project "~/code")` to change default project if one is not found (defaults to `~`)
 * `(setq dumb-jump-quiet t)` if Dumb Jump is too chatty.
 * To support more languages and/or definition types customize `dumb-jump-find-rules` variable.
-* `(setq dumb-jump-force-searcher 'rg)` to force the search program Dumb Jump should use. It will _always_ use this searcher. If not set (`nil`) Dumb Jump will use `git-grep` if it's a git project and if not will try searchers in the following order `ag`, `rg`, `grep` (first installed wins). This is necessary if you want full control over the searcher Dumb Jump uses.
-* `(setq dumb-jump-prefer-searcher 'rg)` to let Dumb Jump know your searcher preference. If set this will still use `git-grep` if it's a git project (because it's the fastest), but will you use whatever you set here in any other situation. If not set Dumb Jump will follow the same order as mentioned in the `dumb-jump-force-searcher` description. At this time setting this value is only necessary if you prefer `rg` but have `ag` installed too.
 * `(setq dumb-jump-git-grep-search-args "")` to set additional command line arguments when using git-grep for searching (defaults to `""`).
 * `(setq dumb-jump-ag-search-args "")` to set additional command line arguments when using ag for searching (defaults to `""`).
 * `(setq dumb-jump-rg-search-args "")` to set additional command line arguments when using rg for searching (defaults to `"--pcre2"`).
+
+Two user-options are used to select the search tool:
+
+* `dumb-jump-prefer-searcher`: identifies the search tool normally used, unless it is nil or the value of `dumb-jump-force-searcher` overrides your preference.
+* `dumb-jump-force-searcher`: identifies how the searcher selection is overridden:
+  * If you want to force a specific tool like `ag` or `rg` set `dumb-jump-force-searcher` to that value.
+  * If you want to use the tool selected by `dumb-jump-prefer-searcher` *except* for some directories where you prefer to use `git-grep`, then set `dumb-jump-force-searcher` to a list holding the path of these directories.
+  * If you want more flexibility in the overriding, then write a function that takes the project directory and return a symbol identifying the search tool to sue for that project directory, or nil to honor `dumb-jump-prefer-searcher` choice.
+
+When both `dumb-jump-prefer-searcher` and `dumb-jump-force-searcher` are nil, Dumb Jump selects the first tool found from this list, in that order:
+* `ag`,
+* `rg`,
+* `gnu grep`,
+* `grep`.
+
+These can also all be set via Emacs customization.  Once `dump-jump` is loaded, type: <kbd>M-x</kbd> `customize-group dumb-jump` to open the customization buffer.
+
+Here's a code example for using `ag` in most cases, but overriding this choice to `rg` in monorepos where git-grep has poor hit-rate, use `git grep` in some known directories like `~/src/emacs`:
+
+~~~lisp
+;; Choose a default searcher for most projects:
+(setq dumb-jump-prefer-searcher 'ag)
+
+;; Conditionally override the searcher per-project.
+(defun my/dumb-jump-force-searcher (project-dir)
+  "Return a dumb-jump searcher symbol for PROJECT-DIR, or nil to not override."
+  (cond
+   ;; Example: force ripgrep in monorepos where git-grep has poor hit-rate
+   ;; (adapt the predicate to your environment).
+   ((string-match-p "/work/monorepo-" project-dir) 'rg)
+
+   ;; Example: force git-grep in a handful of projects where it’s known-good.
+   ((member (file-truename project-dir)
+            (mapcar #'file-truename
+                    '("~/src/emacs/"
+                      "~/src/small-lib/")))
+    'git-grep)
+
+   ;; Otherwise: no override; use dumb-jump-prefer-searcher selection.
+   (t nil)))
+
+(setq dumb-jump-force-searcher #'my/dumb-jump-force-searcher)
+~~~
+
+You can also force an overriding in a specific directory by setting `dumb-jump-force-searcher` in its `.dir-locals.el` file:
+
+~~~lisp
+  ((nil . ((dumb-jump-force-searcher . rg))))
+~~~
 
 #### If your project has multi-line method signatures [you should use `ag`](https://github.com/jacktasia/dumb-jump/issues/129) or [`rg` version `0.10.0` or higher](https://github.com/jacktasia/dumb-jump/issues/255).
 
