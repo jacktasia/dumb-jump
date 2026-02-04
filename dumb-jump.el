@@ -357,8 +357,7 @@ If nil add also the language type of current src block."
   ;;-- elisp
   '((:language "elisp" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\((defun|cl-defun)\\s+JJJ\\j"
-           ;; \\j usage see `dumb-jump-ag-word-boundary`
+           :regex "\\((defun|cl-defun|cl-defgeneric|cl-defmethod|cl-defsubst)\\s+JJJ\\j"
            :tests ("(defun test (blah)"
                    "(defun test\n"
                    "(cl-defun test (blah)"
@@ -371,9 +370,9 @@ If nil add also the language type of current src block."
                  "(defun test? (blah)"
                  "(defun test- (blah)"))
 
-    (:language "elisp" :type "function"
+    (:language "elisp" :type "function" ; macros
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\(defmacro\\s+JJJ\\j"
+           :regex "\\((defmacro|cl-defmacro|cl-define-compiler-macro)\\s+JJJ\\j"
            :tests ("(defmacro test (blah)"
                    "(defmacro test\n")
            :not ("(defmacro test-asdf (blah)"
@@ -381,6 +380,19 @@ If nil add also the language type of current src block."
                  "(defmacro tester (blah)"
                  "(defmacro test? (blah)"
                  "(defmacro test- (blah)"))
+
+    (:language "elisp" :type "function" ; hydras
+               :supports ("ag" "grep" "rg" "git-grep")
+               :regex "\\(defhydra\\b\\s*JJJ\\j"
+               :tests ("(defhydra test "
+                       "(defhydra test\n"
+                       "(defhydra test (blah\n"
+                       "(defhydra test (blah)")
+               :not ("(defhydra tester"
+                     "(defhydra test?"
+                     "(defhydra test-"
+                     "(defhydra test? (blah\n"
+                     "(defhydra test? (blah)"))
 
     (:language "elisp" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
@@ -428,10 +440,21 @@ If nil add also the language type of current src block."
            :tests ("(let ((test 123)))")
            :not ("(let ((test-2 123)))"))
 
-    ;; variable in method signature
-    (:language "elisp" :type "variable"
+    (:language "elisp" :type "type"     ; cl-lib structured type definitions
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\((defun|cl-defun)\\s*.+\\(?\\s*JJJ\\j\\s*\\)?"
+           :regex "\\((cl-defstruct|cl-deftype)\\s+JJJ\\j"
+           :tests ("(cl-defstruct test "
+                   "(cl-defstruct test\n"
+                   "(cl-deftype test "
+                   "(cl-deftype test\n")
+           :not ("(cl-defstruct test-asdf (blah)"
+                 "(cl-defstruct test-blah\n"
+                 "(cl-deftype test-asdf (blah)"
+                 "(cl-deftype test-blah\n"))
+
+    (:language "elisp" :type "variable" ;; variable in method signature
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\((defun|cl-defun|cl-defgeneric|cl-defmethod])\\s*.+\\(?\\s*JJJ\\j\\s*\\)?"
            :tests ("(defun blah (test)"
                    "(defun blah (test blah)"
                    "(defun (blah test)")
@@ -2617,6 +2640,9 @@ If nil add also the language type of current src block."
 
   "List of search regex pattern templates organized by language and type.
 Used for generating the grep tool search commands.
+Notes:
+- For a given language, a regular expression is only used by Dumb Jump when
+  the currently used search tool is identified in the :supports value.
 
 See relevant search tool command lines:
 

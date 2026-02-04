@@ -112,18 +112,27 @@
         (expected " --include \\*.js --include \\*.jsx --include \\*.vue --include \\*.html --include \\*.css "))
     (should (string= expected args))))
 
-(defun dumb-jump--elisp-expected-regexps (variant)
+(defconst dump-jump--expected-elisp-regexps-templates
+  '("\\((defun|cl-defun|cl-defgeneric|cl-defmethod|cl-defsubst)\\s+JJJ\\j"
+    "\\((defmacro|cl-defmacro|cl-define-compiler-macro)\\s+JJJ\\j"
+    "\\(defhydra\\b\\s*JJJ\\j"
+    ;;
+    "\\(defvar(-local)?\\b\\s*JJJ\\j"
+    "\\(defconst\\b\\s*JJJ\\j"
+    "\\(defcustom\\b\\s*JJJ\\j"
+    "\\(setq\\b\\s*JJJ\\j"
+    "\\(JJJ\\s+"
+    "\\((cl-defstruct|cl-deftype)\\s+JJJ\\j"
+    "\\((defun|cl-defun|cl-defgeneric|cl-defmethod])\\s*.+\\(?\\s*JJJ\\j\\s*\\)?")
+  "List of regexp templates equal to what is in dumb-jump.el.")
+
+(defun dumb-jump--elisp-expected-regexps (variant &optional type)
   "Return a list of elisp regexps adjusted with word boundary of VARIANT.
 VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
-  (let ((regexes '("\\((defun|cl-defun)\\s+JJJ\\j"
-                   "\\(defmacro\\s+JJJ\\j"
-                   "\\(defvar(-local)?\\b\\s*JJJ\\j"
-                   "\\(defconst\\b\\s*JJJ\\j"
-                   "\\(defcustom\\b\\s*JJJ\\j"
-                   "\\(setq\\b\\s*JJJ\\j"
-                   "\\(JJJ\\s+"
-                   "\\((defun|cl-defun)\\s*.+\\(?\\s*JJJ\\j\\s*\\)?"
-                   ))
+  (let ((regexes (if (eq type 'elisp-functions)
+                     ;; take the first 3 regexps: used for functions
+                     (seq-take dump-jump--expected-elisp-regexps-templates 3)
+                   dump-jump--expected-elisp-regexps-templates))
         (word-boundary-regexp
          (symbol-value
           (intern
@@ -346,8 +355,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'grep))
          (expected-regexes (s-join ""
                             (--map (concat " -e " (shell-quote-argument it))
-                                   '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                     "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])"))))
+                                   (dumb-jump--elisp-expected-regexps 'grep 'elisp-functions))))
          (expected (concat "LANG=C grep -REn" expected-regexes " ."))
          (zexpected (concat "LANG=C zgrep -REn" expected-regexes " .")))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "" nil)))
@@ -359,8 +367,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (dumb-jump-ignore-context nil) ;; overriding the default
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type 'grep))
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
-                                  '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])")))
+                                  (dumb-jump--elisp-expected-regexps 'grep 'elisp-functions)))
          (expected (concat "LANG=C grep -REn" (s-join "" expected-regexes) " .")))
     ;; the point context being passed should match a "function" type so only the one command
     (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
@@ -372,8 +379,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
            (dumb-jump-ignore-context nil) ;; overriding the default
            (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type 'grep))
            (expected-regexes (--map (concat " -e " (shell-quote-argument it))
-                                    '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                      "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])")))
+                                    (dumb-jump--elisp-expected-regexps 'grep 'elisp-functions)))
            (expected (concat "grep -REn" (s-join "" expected-regexes) " .")))
       (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil))))))
 
