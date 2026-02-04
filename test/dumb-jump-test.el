@@ -176,7 +176,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                           (concat (shell-quote-argument elem) "\\|"))
                         (-butlast base-regexes))
                   (list (shell-quote-argument (-last-item base-regexes)))))
-         (expected (concat "ag --nocolor --nogroup --elisp "
+         (expected (concat "ag --nocolor --nogroup --elisp -- "
                            (mapconcat #'identity expected-regexes "")
                            " .")))
     (should (string= expected
@@ -189,7 +189,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                                       "|"))
          (expected
           (concat
-           "ag --nocolor --nogroup --elisp --ignore-dir this/is/excluded "
+           "ag --nocolor --nogroup --elisp --ignore-dir this/is/excluded -- "
            (shell-quote-argument expected-regexes)
            " /path/to/proj-root")))
     (should (string= expected
@@ -242,7 +242,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
           (mapconcat #'identity
                      (dumb-jump--elisp-expected-regexps 'rg)
                      "|"))
-         (expected (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp "
+         (expected (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -- "
                            (shell-quote-argument expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-rg-command
                                 "tester" "blah.el" "." regexes "elisp" nil)))))
@@ -254,7 +254,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                      (dumb-jump--elisp-expected-regexps 'rg)
                      "|"))
          (expected
-          (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -g \\!this/is/excluded "
+          (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -g \\!this/is/excluded -- "
                   (shell-quote-argument expected-regexes)
                   " /path/to/proj-root")))
     (should (string= expected
@@ -303,7 +303,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                      "|"))
          (dumb-jump-ag-search-args "--follow")
          (expected
-          (concat "ag --nocolor --nogroup --follow --elisp "
+          (concat "ag --nocolor --nogroup --follow --elisp -- "
                   (shell-quote-argument expected-regexes) " .")))
     (should (string= expected
                      (dumb-jump-generate-ag-command
@@ -317,7 +317,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                                       "|"))
          (dumb-jump-rg-search-args "--no-pcre2 --follow")
          (expected
-          (concat "rg --color never --no-heading --line-number -U --no-pcre2 --follow --type elisp "
+          (concat "rg --color never --no-heading --line-number -U --no-pcre2 --follow --type elisp -- "
                   (shell-quote-argument expected-regexes)
                   " .")))
     (should (string= expected
@@ -1130,7 +1130,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
 (ert-deftest dumb-jump-populate-regexes-rg-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'rg) '("testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'rg) '("\\$testvar\\s*=\\s*")))
-  (should (equal (dumb-jump-populate-regexes "-testvar" '("JJJ\\s*=\\s*") 'rg) '("[-]testvar\\s*=\\s*"))))
+  (should (equal (dumb-jump-populate-regexes "-testvar" '("JJJ\\s*=\\s*") 'rg) '("-testvar\\s*=\\s*"))))
 
 (ert-deftest dumb-jump-populate-regexes-git-grep-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'git-grep) '("testvar\\s*=\\s*")))

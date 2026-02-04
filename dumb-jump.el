@@ -189,12 +189,14 @@ one of two preferred choice overriding methods:
 ;; ---------------------------------------------------------------------------
 ;; Dumb-jump generic regular expression meta-concepts
 ;;
-;; - `JJJ` : searched text
-;; - `\\j` : word-boundary identifier.  Use this instead of `\\b` when word
-;;           boundary must not include '-'.
+;; - `JJJ` : Is replaced by the searched identifier
+;; - `\\j` : Represents the word-boundary regular-expression to use instead
+;;           of `\\b` when word boundary must not include '-'.
+;;           In the Lisp family of programming languages the '-' character is
+;;           allowed in identifiers.
 ;; - `\\s` : for a single white space character.
-;;           Replaced by `[[:space:]]` when `dumb-jump-use-space-bracket-exp-for`
-;;           returns t.
+;;           Replaced by `[[:space:]]` for some search tools as identified by
+;;           `dumb-jump-use-space-bracket-exp-for' returning t for a tool variant.
 
 (defcustom dumb-jump-force-using-space-bracket-exp
   (eq system-type 'windows-nt)
@@ -3761,8 +3763,8 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
 (defcustom dumb-jump-language-comments
   '((:comment "//" :language "c++")
     (:comment "/*" :language "c++")
-    (:comment ";" :language "elisp")
-    (:comment ";" :language "commonlisp")
+    (:comment ";"  :language "elisp")
+    (:comment ";"  :language "commonlisp")
     (:comment "//" :language "javascript")
     (:comment "//" :language "typescript")
     (:comment "//" :language "dart")
@@ -3773,40 +3775,40 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "//" :language "objc")
     (:comment "//" :language "csharp")
     (:comment "//" :language "java")
-    (:comment ";" :language "clojure")
-    (:comment "#" :language "coffeescript")
+    (:comment ";"  :language "clojure")
+    (:comment "#"  :language "coffeescript")
     (:comment "//" :language "faust")
-    (:comment ";" :language "fennel")
-    (:comment "!" :language "fortran")
+    (:comment ";"  :language "fennel")
+    (:comment "!"  :language "fortran")
     (:comment "//" :language "go")
     (:comment "//" :language "zig")
-    (:comment "#" :language "perl")
-    (:comment "#" :language "tcl")
+    (:comment "#"  :language "perl")
+    (:comment "#"  :language "tcl")
     (:comment "//" :language "php")
-    (:comment "#" :language "php")
-    (:comment "#" :language "python")
-    (:comment "%" :language "matlab")
-    (:comment "#" :language "r")
-    (:comment ";" :language "racket")
-    (:comment "#" :language "ruby")
-    (:comment "#" :language "crystal")
-    (:comment "#" :language "nim")
-    (:comment "#" :language "nix")
+    (:comment "#"  :language "php")
+    (:comment "#"  :language "python")
+    (:comment "%"  :language "matlab")
+    (:comment "#"  :language "r")
+    (:comment ";"  :language "racket")
+    (:comment "#"  :language "ruby")
+    (:comment "#"  :language "crystal")
+    (:comment "#"  :language "nim")
+    (:comment "#"  :language "nix")
     (:comment "//" :language "scala")
-    (:comment ";" :language "scheme")
-    (:comment "#" :language "janet")
-    (:comment "#" :language "shell")
+    (:comment ";"  :language "scheme")
+    (:comment "#"  :language "janet")
+    (:comment "#"  :language "shell")
     (:comment "//" :language "solidity")
     (:comment "//" :language "swift")
-    (:comment "#" :language "elixir")
-    (:comment "%" :language "erlang")
-    (:comment "%" :language "tex")
+    (:comment "#"  :language "elixir")
+    (:comment "%"  :language "erlang")
+    (:comment "%"  :language "tex")
     (:comment "//" :language "systemverilog")
     (:comment "--" :language "vhdl")
     (:comment "//" :language "scss")
     (:comment "//" :language "pascal")
     (:comment "//" :language "protobuf")
-    (:comment "#" :language "hcl")
+    (:comment "#"  :language "hcl")
     (:comment "//" :language "apex")
     (:comment "*>" :language "cobol"))
   "List of one-line comments organized by language.
@@ -4472,9 +4474,6 @@ The arguments are:
       (when (dumb-jump-use-space-bracket-exp-for variant)
         (setq text (s-replace "\\s" "[[:space:]]" text)))
       (setq text (s-replace "JJJ" (regexp-quote look-for) text))
-      (when (and (eq variant 'rg)
-                 (string-prefix-p "-" text))
-        (setq text (concat "[-]" (substring text 1))))
       text)))
 
 (defun dumb-jump-populate-regexes (look-for regexes variant)
@@ -4533,9 +4532,9 @@ The arguments are:
                          (shell-quote-argument (s-replace proj-dir "" it))
                          exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
-      (dumb-jump-concat-command cmd exclude-args regex-args proj))))
+      (dumb-jump-concat-command cmd exclude-args "--" regex-args proj))))
 
 ;; --
 (defun dumb-jump-get-git-grep-files-matching-symbol (symbol proj-root)
@@ -4604,7 +4603,7 @@ The arguments are:
                          (shell-quote-argument (s-replace proj-dir "" it))
                          exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args regex-args proj))))
 
@@ -4640,9 +4639,9 @@ The arguments are:
                           (concat "!" (s-replace proj-dir "" it)))
                          exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
-      (dumb-jump-concat-command cmd exclude-args regex-args proj))))
+      (dumb-jump-concat-command cmd exclude-args "--" regex-args proj))))
 
 (defun dumb-jump-generate-git-grep-command (look-for
                                             cur-file proj
@@ -4682,7 +4681,7 @@ The arguments are:
                                        (concat ":(exclude)" it))
                                       exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
       (dumb-jump-concat-command cmd regex-args "--" fileexps exclude-args))))
 
@@ -4715,7 +4714,7 @@ The arguments are:
          (exclude-args (dumb-jump-arg-joiner "--exclude-dir" exclude-paths))
          (include-args (dumb-jump-get-ext-includes lang))
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
       (dumb-jump-concat-command cmd dumb-jump-grep-args
                                 case-args exclude-args
@@ -4751,7 +4750,7 @@ The arguments are:
          (exclude-args "")
          (include-args "")
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
       (dumb-jump-concat-command cmd dumb-jump-gnu-grep-args
                                 case-args exclude-args
