@@ -252,9 +252,10 @@ When this matters use `\\j` instead and grep will use this value."
   :group 'dumb-jump
   :type 'string)
 
+;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-gnu-grep-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
-  "Regexp that replaces `\\j` in dumb-jump regexes for grep search.
+  "Regexp that replaces `\\j` in dumb-jump regexes for gnu grep search.
 `\\b` thinks `-` is a word boundary.
 When this matters use `\\j` instead and grep will use this value."
   :group 'dumb-jump
@@ -434,11 +435,16 @@ If nil add also the language type of current src block."
                  "(setq tester"
                  "(setq test?" "(setq test-"))
 
-    (:language "elisp" :type "variable"
-           :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\(JJJ\\s+"
-           :tests ("(let ((test 123)))")
-           :not ("(let ((test-2 123)))"))
+    ;; The following regex identifying let-bound variables is the reason why
+    ;; searching for an elisp function cause a set of false positive on all
+    ;; locations where the function is invoked.
+    (:language "elisp" :type "variable" ; let bound variables
+               :supports ("ag" "grep" "rg" "git-grep")
+               :regex "\\(JJJ\\s+"
+               :tests ("(let ((test 123)))"
+                       "(let* ((test 123)))")
+               :not ("(let ((test-2 123)))"
+                     "(let* ((test-2 123)))"))
 
     (:language "elisp" :type "type"     ; cl-lib structured type definitions
            :supports ("ag" "grep" "rg" "git-grep")
@@ -454,7 +460,7 @@ If nil add also the language type of current src block."
 
     (:language "elisp" :type "variable" ;; variable in method signature
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\((defun|cl-defun|cl-defgeneric|cl-defmethod])\\s*.+\\(?\\s*JJJ\\j\\s*\\)?"
+           :regex "\\((defun|cl-defun|cl-defgeneric|cl-defmethod)\\s*.+\\(?\\s*JJJ\\j\\s*\\)?"
            :tests ("(defun blah (test)"
                    "(defun blah (test blah)"
                    "(defun (blah test)")
@@ -2825,27 +2831,27 @@ type for that tool."
                (:rgtype (string :tag "Ripgrep type"))))))
 
 (defcustom dumb-jump-language-contexts
-  '((:language "javascript" :type "function"  :left nil          :right "^(" )
-    (:language "javascript" :type "variable"  :left "($"         :right nil )
-    (:language "javascript" :type "variable"  :left "($"         :right "^)" )
-    (:language "javascript" :type "variable"  :left nil          :right "^\\." )
-    (:language "javascript" :type "variable"  :left nil          :right "^;" )
-    (:language "typescript" :type "function"  :left nil          :right "^(" )
-    (:language "perl"       :type "function"  :left nil          :right "^(" )
-    (:language "tcl"        :type "function"  :left "\\[$"       :right nil)
-    (:language "tcl"        :type "function"  :left "^\s*$"      :right nil)
-    (:language "tcl"        :type "variable"  :left "\\$$"       :right nil)
-    (:language "php"        :type "function"  :left nil          :right "^(" )
-    (:language "php"        :type "class"     :left "new\s+"     :right nil )
-    (:language "elisp"      :type "function"  :left "($"         :right nil )
-    (:language "elisp"      :type "variable"  :left nil          :right "^)" )
-    (:language "scheme"     :type "function"  :left "($"         :right nil )
-    (:language "scheme"     :type "variable"  :left nil          :right "^)" )
-    (:language "jai"        :type "function"  :left nil          :right "\\s*(" )
-    (:language "jai"        :type "type"      :left "\\s*:\\s*"  :right nil)
-    (:language "cobol"      :type "submodule" :left "call\s+"    :right nil )
-    (:language "cobol"      :type "section"   :left "perform\s+" :right nil )
-    (:language "cobol"      :type "section"   :left "go to\s+"   :right nil ))
+  '((:language "javascript" :type "function"  :left nil           :right "^(" )
+    (:language "javascript" :type "variable"  :left "($"          :right nil )
+    (:language "javascript" :type "variable"  :left "($"          :right "^)" )
+    (:language "javascript" :type "variable"  :left nil           :right "^\\." )
+    (:language "javascript" :type "variable"  :left nil           :right "^;" )
+    (:language "typescript" :type "function"  :left nil           :right "^(" )
+    (:language "perl"       :type "function"  :left nil           :right "^(" )
+    (:language "tcl"        :type "function"  :left "\\[$"        :right nil)
+    (:language "tcl"        :type "function"  :left "^\\s*$"      :right nil)
+    (:language "tcl"        :type "variable"  :left "\\$$"        :right nil)
+    (:language "php"        :type "function"  :left nil           :right "^(" )
+    (:language "php"        :type "class"     :left "new\\s+"     :right nil )
+    (:language "elisp"      :type "function"  :left "($"          :right nil )
+    (:language "elisp"      :type "variable"  :left nil           :right "^)" )
+    (:language "scheme"     :type "function"  :left "($"          :right nil )
+    (:language "scheme"     :type "variable"  :left nil           :right "^)" )
+    (:language "jai"        :type "function"  :left nil           :right "\\s*(" )
+    (:language "jai"        :type "type"      :left "\\s*:\\s*"   :right nil)
+    (:language "cobol"      :type "submodule" :left "call\\s+"    :right nil )
+    (:language "cobol"      :type "section"   :left "perform\\s+" :right nil )
+    (:language "cobol"      :type "section"   :left "go to\\s+"   :right nil ))
   "List of under points contexts for each language.
 This helps limit the number of regular expressions we use
 if we know that if there's a ( immediately to the right of
@@ -3615,7 +3621,11 @@ For instance, remove clojure namespace prefix."
     (--map (plist-get it :language) found)))
 
 (defun dumb-jump-fetch-results (cur-file proj-root lang _config &optional prompt)
-  "Return a list of results based on current file context and calling grep/ag.
+  "Search for symbol in PROMPT or symbol at point.
+
+Return a list of results based on current file context and calling the
+currently selected searcher tool (grep, ag, rg, ...).
+
 CUR-FILE is the path of the current buffer.
 PROJ-ROOT is that file's root project directory.
 LANG is a string programming language with CONFIG a property list

@@ -123,7 +123,7 @@
     "\\(setq\\b\\s*JJJ\\j"
     "\\(JJJ\\s+"
     "\\((cl-defstruct|cl-deftype)\\s+JJJ\\j"
-    "\\((defun|cl-defun|cl-defgeneric|cl-defmethod])\\s*.+\\(?\\s*JJJ\\j\\s*\\)?")
+    "\\((defun|cl-defun|cl-defgeneric|cl-defmethod)\\s*.+\\(?\\s*JJJ\\j\\s*\\)?")
   "List of regexp templates equal to what is in dumb-jump.el.")
 
 (defun dumb-jump--elisp-expected-regexps (variant &optional type)
@@ -131,7 +131,7 @@
 VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
   (let ((regexes (if (eq type 'elisp-functions)
                      ;; take the first 3 regexps: used for functions
-                     (seq-take dump-jump--expected-elisp-regexps-templates 3)
+                     (-take 3 dump-jump--expected-elisp-regexps-templates)
                    dump-jump--expected-elisp-regexps-templates))
         (word-boundary-regexp
          (symbol-value
@@ -1897,6 +1897,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (forward-line 4)
       (forward-char 2)
       (with-mock
+        (stub dumb-jump-ag-installed? => t)
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 9))
         (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
