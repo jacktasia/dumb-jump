@@ -1897,7 +1897,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (forward-line 4)
       (forward-char 2)
       (with-mock
-        (stub dumb-jump-ag-installed? => t)
+        ;; (stub dumb-jump-ag-installed? => t)
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 9))
         (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
