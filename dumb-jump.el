@@ -3515,6 +3515,10 @@ Return the dumb-jump alist result:
 - :file    : string: file name
 - :root    : string: project root
 - :issue   : symbol: problem description symbol: nogrep or nosymbol."
+  ;; Prevent a empty string entered-name from being interpreted as user entry
+  ;; because `read-from-minibuffer' may return "".
+  (when (and entered-name (string-blank-p entered-name))
+    (setq entered-name nil))
   (cond
    ;; When no search tool is available just return an empty result identifying
    ;; a nogrep issue.

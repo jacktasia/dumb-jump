@@ -77,21 +77,17 @@
   `(let ((have-detected-prompting nil))
      (condition-case err
          (with-mock
-           ;; Note: do not `' quote function in message: Emacs re-formats it
-           ;; and that will prevent the string to match later.
            (stub
             dumb-jump-prompt-user-for-choice
-            => (error "Unexpected call to dumb-jump-prompt-user-for-choice"))
+            => (progn
+                 (setq have-detected-prompting t)
+                 (error "Unexpected call to dumb-jump-prompt-user-for-choice")))
            ,@body)
        (error
         ;; On prompt detection, remember it.
-        (if (string-equal
-             (error-message-string err)
-             "Unexpected call to dumb-jump-prompt-user-for-choice")
-            (setq have-detected-prompting t)
-          ;; On other exception; propagate it.
-          (signal (car err) (cdr err)))))
-     (should-not have-detected-prompting)))
+        (unless have-detected-prompting
+          ;; Another exception was detected; propagate it.
+          (signal (car err) (cdr err)))))))
 
 ;; ---------------------------------------------------------------------------
 ;; Tests
