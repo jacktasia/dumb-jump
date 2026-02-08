@@ -97,7 +97,7 @@
 
 ;; - Ensure with-mock-forbidding-prompt actually detects prompts.
 (ert-deftest with-mock-forbidding-prompt-really-detects-prompt ()
-  "Test that with-mock-forbidding-prompt properly detects and fails on prompts."
+  "Test that `with-mock-forbidding-prompt' properly detects/fails on prompts."
   (should-error
    (with-mock-forbidding-prompt
      ;; This should trigger the error
@@ -109,7 +109,7 @@
   (error "Issued by test-function-that-errors!"))
 
 (ert-deftest with-mock-forbidding-prompt-does-not-catch-other-exceptions ()
-  "Test that `my-function` signals a specific error message."
+  "Test detection of other error signalling by `with-mock-forbidding-prompt'."
   (let ((err (should-error
               (with-mock-forbidding-prompt
                 (test-function-that-errors)))))
