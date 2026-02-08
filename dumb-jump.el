@@ -187,16 +187,7 @@ one of two preferred choice overriding methods:
   :type 'string)
 
 ;; ---------------------------------------------------------------------------
-;; Dumb-jump generic regular expression meta-concepts
-;;
-;; - `JJJ` : Is replaced by the searched identifier
-;; - `\\j` : Represents the word-boundary regular-expression to use instead
-;;           of `\\b` when word boundary must not include '-'.
-;;           In the Lisp family of programming languages the '-' character is
-;;           allowed in identifiers.
-;; - `\\s` : for a single white space character.
-;;           Replaced by `[[:space:]]` for some search tools as identified by
-;;           `dumb-jump-use-space-bracket-exp-for' returning t for a tool variant.
+;; Dumb Jump Regular Expressions  (see `dumb-jump-find-rules' docstring)
 
 (defcustom dumb-jump-force-using-space-bracket-exp
   (eq system-type 'windows-nt)
@@ -2646,16 +2637,34 @@ If nil add also the language type of current src block."
 
   "List of search regex pattern templates organized by language and type.
 Used for generating the grep tool search commands.
-Notes:
-- For a given language, a regular expression is only used by Dumb Jump when
-  the currently used search tool is identified in the :supports value.
 
-See relevant search tool command lines:
+For a given language, a regular expression is only used by Dumb Jump when
+the currently used search tool is identified in the :supports value.
 
+The regex string is a template filled by `dumb-jump-populate-regex' and
+should contain the \"JJJ\" string, a marker for the searched identifier.
+
+It may also contain the following:
+
+- \"\\\\j\" : a marker for word-boundary regular-expression to use instead
+          of \"\\\\b\" when word boundary concept must support Lisp language
+          family and must not include the characters '-', '?' and '*'.
+          In the Lisp family of programming languages a large number of
+          characters are allowed in identifiers, including '-', '?' and
+          '*'.
+          This marker is replaced by value of the search tool specific
+          dumb-jump-TOOL-word-boundary, like `dumb-jump-ag-word-boundary' for
+          ag.
+
+- \"\\\\s\" : for a single white space character.
+         Replaced by \"[[:space:]]\" for some search tools as identified by
+         `dumb-jump-use-space-bracket-exp-for' returning t for a tool variant.
+
+The language types supported are listed in the linked page below:
 - Ag:
-  https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t
+  URL \ `https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t'
 - rg:
-  https://github.com/BurntSushi/ripgrep/blob/master/crates/ignore/src/types.rs#L96
+  URL \ `https://github.com/BurntSushi/ripgrep/blob/master/crates/ignore/src/default_types.rs#L12'
 
 More information using the search tool command line help."
   :group 'dumb-jump
@@ -3284,10 +3293,10 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
       (goto-char (point-min))
       (forward-line (1- line)))))
 
-(defun dumb-jump--format-result (proj result)
-  "Return formatted string for PROJ and RESULT."
+(defun dumb-jump--format-result (proj-root result)
+  "Return file:line:target formatted RESULT as a string stripped of PROJ-ROOT."
   (format "%s:%s: %s"
-          (s-replace proj "" (plist-get result :path))
+          (s-replace proj-root "" (plist-get result :path))
           (plist-get result :line)
           (s-trim (plist-get result :context))))
 
@@ -3302,18 +3311,22 @@ Ignore _PROJ."
                 :caller 'dumb-jump-ivy-jump-to-selected)
     (error "ivy-read is unknown.  Is it loaded?")))
 
-(defun dumb-jump-prompt-user-for-choice (proj results)
-  "Put a PROJ list of RESULTS in menu for user selection.
-The menu can be a `popup-menu' or helm/ivy menu.
-Filters PROJ path from files for display."
-  (let ((choices (--map (dumb-jump--format-result proj it) results)))
+(defun dumb-jump-prompt-user-for-choice (proj-root results)
+  "Prompt user to select one of the identified RESULTS in PROJ-ROOT.
+Strip the PROJ-ROOT (project root path) from the file name shown in each entry.
+Prompt with the mechanism selected by `dumb-jump-selector' user-option if
+available otherwise default to `popup-menu'."
+  (let ((choices (--map (dumb-jump--format-result proj-root it) results)))
     (cond
      ((eq dumb-jump-selector 'completing-read)
       (dumb-jump-to-selected results choices
                              (completing-read "Jump to: " choices)))
+     ;;
      ((and (eq dumb-jump-selector 'ivy)
            (fboundp 'ivy-read))
-      (funcall dumb-jump-ivy-jump-to-selected-function results choices proj))
+      (funcall dumb-jump-ivy-jump-to-selected-function
+               results choices proj-root))
+     ;;
      ((and (eq dumb-jump-selector 'helm)
            (fboundp 'helm))
       (helm :sources
@@ -3323,8 +3336,8 @@ Filters PROJ path from files for display."
                 :candidates (-zip-pair choices results)
                 :persistent-action 'dumb-jump-helm-persist-action))
             :buffer "*helm dumb jump choices*"))
-     (t ; or popup
-      (dumb-jump-to-selected results choices (popup-menu* choices))))))
+     ;; or popup
+     (t (dumb-jump-to-selected results choices (popup-menu* choices))))))
 
 (defun dumb-jump-get-project-root (filepath)
   "Return project root holding FILEPATH.
@@ -3484,15 +3497,15 @@ Currently just everything before \"-mode\"."
     :root nil
     :issue ,(intern issue)))
 
-(defun dumb-jump-get-results (&optional prompt)
-  "Perform the dumb-jump search for text at point, region or in PROMPT string.
+(defun dumb-jump-get-results (&optional entered-name)
+  "Perform the dumb-jump search for text at point, region or ENTERED-NAME.
 
 Runs `dumb-jump-fetch-results' under conditions adjusted to the current
 context.
 
 Perform the search if searcher is installed, buffer is saved, and
 there's a symbol under point or an item to search is specified by the
-PROMPT argument.
+ENTERED-NAME string.
 
 Return the dumb-jump alist result:
 - :results
@@ -3513,21 +3526,21 @@ Return the dumb-jump alist result:
    ;; Inside a shell or eshell buffer,
    ((or (string= (buffer-name) "*shell*")
         (string= (buffer-name) "*eshell*"))
-    (dumb-jump-fetch-shell-results prompt))
-   ;; When inside a normal buffer but no string specified by PROMPT,
+    (dumb-jump-fetch-shell-results entered-name))
+   ;; When inside a normal buffer but no string specified by ENTERED-NAME,
    ;; point or region does not identify something to search,
    ;; just return an empty result identifying a nosymbol issue.
-   ((and (not prompt)
+   ((and (not entered-name)
          (not (region-active-p))
          (not (thing-at-point 'symbol)))
     (dumb-jump-issue-result "nosymbol"))
    ;; Otherwise, perform the search for the text identified by string specified
-   ;; by PROMPT, point or region.
+   ;; by ENTERED-NAME, point or region.
    (t
-    (dumb-jump-fetch-file-results prompt))))
+    (dumb-jump-fetch-file-results entered-name))))
 
-(defun dumb-jump-fetch-shell-results (&optional prompt)
-  "Perform search from shell buffer for text at point, region or PROMPT string.
+(defun dumb-jump-fetch-shell-results (&optional entered-name)
+  "Perform search from shell buffer for text at point, region or ENTERED-NAME.
 Return the dumb-jump alist result:
 - :results
 - :lang    : string: language name
@@ -3542,10 +3555,10 @@ Return the dumb-jump alist result:
                    (dumb-jump-read-config proj-root proj-config)))
          (lang (or (plist-get config :language)
                    (car (dumb-jump-get-lang-by-shell-contents (buffer-name))))))
-    (dumb-jump-fetch-results cur-file proj-root lang config prompt)))
+    (dumb-jump-fetch-results cur-file proj-root lang config entered-name)))
 
-(defun dumb-jump-fetch-file-results (&optional prompt)
-  "Perform a file search for text at point, region or PROMPT string.
+(defun dumb-jump-fetch-file-results (&optional entered-name)
+  "Perform a file search for text at point, region or ENTERED-NAME string.
 Return the dumb-jump alist result:
 - :results
 - :lang    : string: language name
@@ -3560,7 +3573,7 @@ Return the dumb-jump alist result:
                    (dumb-jump-read-config proj-root proj-config)))
          (lang (or (plist-get config :language)
                    (dumb-jump-get-language cur-file))))
-    (dumb-jump-fetch-results cur-file proj-root lang config prompt)))
+    (dumb-jump-fetch-results cur-file proj-root lang config entered-name)))
 
 ;; --
 (defun dumb-jump-process-symbol-by-lang (lang look-for)
@@ -3620,8 +3633,9 @@ For instance, remove clojure namespace prefix."
                           dumb-jump-language-file-exts)))
     (--map (plist-get it :language) found)))
 
-(defun dumb-jump-fetch-results (cur-file proj-root lang _config &optional prompt)
-  "Search for symbol in PROMPT or symbol at point.
+(defun dumb-jump-fetch-results (cur-file proj-root lang _config
+                                         &optional entered-name)
+  "Search for symbol in ENTERED-NAME or symbol at point.
 
 Return a list of results based on current file context and calling the
 currently selected searcher tool (grep, ag, rg, ...).
@@ -3630,7 +3644,7 @@ CUR-FILE is the path of the current buffer.
 PROJ-ROOT is that file's root project directory.
 LANG is a string programming language with CONFIG a property list
 of project configuration.
-PROMPT is an optional string identifying item to search.
+ENTERED-NAME is an optional string identifying item to search.
 The returned property list has the following members:
 - :results:
 - :lang    : string: language name
@@ -3642,10 +3656,10 @@ The returned property list has the following members:
          (proj-config (dumb-jump-get-config proj-root))
          (config (when (string-suffix-p ".dumbjump" proj-config)
                    (dumb-jump-read-config proj-root proj-config)))
-         (found-symbol (or prompt (dumb-jump-get-point-symbol)))
+         (found-symbol (or entered-name (dumb-jump-get-point-symbol)))
          (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
-         (pt-ctx (if prompt
-                     (get-text-property 0 :dumb-jump-ctx prompt)
+         (pt-ctx (if entered-name
+                     (get-text-property 0 :dumb-jump-ctx entered-name)
                    (dumb-jump-get-point-context
                     (dumb-jump-get-point-line)
                     look-for
@@ -3662,9 +3676,9 @@ The returned property list has the following members:
 
          (exclude-paths (when config (plist-get config :exclude)))
          (include-paths (when config (plist-get config :include)))
-                                        ; we will search proj root and all include paths
+         ;; we will search proj root and all include paths
          (search-paths (-distinct (-concat (list proj-root) include-paths)))
-                                        ; run command for all
+         ;; run command for all
          (raw-results (--mapcat
                        ;; TODO: should only pass exclude paths to actual project root
                        (dumb-jump-run-command look-for it
@@ -3674,7 +3688,8 @@ The returned property list has the following members:
                                               generate-fn)
                        search-paths))
 
-         (results (delete-dups (--map (plist-put it :target look-for) raw-results))))
+         (results
+          (delete-dups (--map (plist-put it :target look-for) raw-results))))
 
     `(:results ,results
       :lang ,(if (null lang) "" lang)
@@ -3698,7 +3713,7 @@ The returned property list has the following members:
 (defun dumb-jump-quick-look ()
   "Run `dumb-jump-go' in quick look mode.
 That is, show a tooltip of where it would jump instead."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (with-no-warnings
     (dumb-jump-go t)))
@@ -3706,7 +3721,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-other-window ()
   "Like dumb-jump-go' but use `find-file-other-window' instead of `find-file'."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'other))
     (with-no-warnings
@@ -3715,7 +3730,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-current-window ()
   "Like `dumb-jump-go' but always use `find-file'."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'current))
     (with-no-warnings
@@ -3724,7 +3739,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-prefer-external ()
   "Like `dumb-jump-go' but prefer external matches from the current file."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (with-no-warnings
     (dumb-jump-go nil t)))
@@ -3732,7 +3747,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-prompt ()
   "Like `dumb-jump-go' but prompt for function instead of using under point."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (with-no-warnings
     (dumb-jump-go nil nil (read-from-minibuffer "Jump to: "))))
@@ -3741,27 +3756,28 @@ That is, show a tooltip of where it would jump instead."
 (defun dumb-jump-go-prefer-external-other-window ()
   "Like `dumb-jump-go-prefer-external' but create another window.
 It uses `find-file-other-window' instead of `find-file'."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'other))
     (with-no-warnings
       (dumb-jump-go-prefer-external))))
 
 ;;;###autoload
-(defun dumb-jump-go (&optional use-tooltip prefer-external prompt)
+(defun dumb-jump-go (&optional use-tooltip prefer-external entered-name)
   "Go to the function/variable declaration for thing at point.
 When USE-TOOLTIP is t a tooltip jump preview will show instead.
 When PREFER-EXTERNAL is t it will sort external matches before
 current file.
-PROMPT is an optional string: the name of the item to jump to."
-  ;; Note: made obsolete by Emacs xref interface.
+The optional ENTERED-NAME string is the name of the item to jump to
+manually selected by user as response to a prompt."
+  ;; Note: independent of the Emacs xref interface.
   (interactive "P")
   (let* ((start-time (float-time))
-         (info (dumb-jump-get-results prompt))
+         (info (dumb-jump-get-results entered-name))
          (end-time (float-time))
          (fetch-time (- end-time start-time))
          (results (plist-get info :results))
-         (look-for (or prompt (plist-get info :symbol)))
+         (look-for (or entered-name (plist-get info :symbol)))
          (proj-root (plist-get info :root))
          (issue (plist-get info :issue))
          (lang (plist-get info :lang))
@@ -3924,6 +3940,16 @@ LANGUAGE is an optional language to pass to `dumb-jump-process-results'."
      (t
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front)))))
 
+(defun dumb-jump--candidate-x<y (x y)
+  "Return non-nil if candidate X should sort before candidate Y.
+Order by :path length (shorter first), then by :line."
+  (let ((x-path-len (length (plist-get x :path)))
+        (y-path-len (length (plist-get y :path))))
+    (if (/= x-path-len y-path-len)
+        (< x-path-len y-path-len)
+      (< (plist-get x :line)
+         (plist-get y :line)))))
+
 (defun dumb-jump-process-results (results cur-file proj-root ctx-type
                                           _look-for _use-tooltip
                                           prefer-external &optional language)
@@ -3979,18 +4005,15 @@ Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
                                   (string= (plist-get it :path) rel-cur-file)))
                          match-no-comments)
 
-               ;; Sort non-current files by path length so the nearest file is more likely to be
-               ;; sorted higher to the top. Also sorts by line number for sanity.
-               (-sort (lambda (x y)
-                        (and (< (plist-get x :line) (plist-get y :line))
-                             (< (length (plist-get x :path)) (length (plist-get y :path)))))
+               ;; Sort non-current files by path length so the nearest file is
+               ;; more likely to be sorted higher to the top. Also sorts by
+               ;; line number for sanity.
+               (-sort #'dumb-jump--candidate-x<y
                       (--filter (not (or (string= (plist-get it :path) cur-file)
                                          (string= (plist-get it :path) rel-cur-file)))
                                 match-no-comments)))
             (-concat
-             (-sort (lambda (x y)
-                      (and (< (plist-get x :line) (plist-get y :line))
-                           (< (length (plist-get x :path)) (length (plist-get y :path)))))
+             (-sort #'dumb-jump--candidate-x<y
                     (--filter (not (or (string= (plist-get it :path) cur-file)
                                        (string= (plist-get it :path) rel-cur-file)))
                               match-no-comments))
@@ -4001,15 +4024,16 @@ Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
          (matches
           (if (not prefer-external)
               (-distinct
-               (append (dumb-jump-current-file-results cur-file match-cur-file-front)
-                       (dumb-jump-current-file-results rel-cur-file match-cur-file-front)))
+               (append
+                (dumb-jump-current-file-results cur-file match-cur-file-front)
+                (dumb-jump-current-file-results rel-cur-file match-cur-file-front)))
             match-cur-file-front))
 
          (var-to-jump (car matches))
          ;; TODO: handle if ctx-type is null but ALL results are variable
 
-         ;; When non-aggressive it should only jump when there is only one match, regardless of
-         ;; context.
+         ;; When non-aggressive it should only jump when there is only one
+         ;; match, regardless of context.
          (do-var-jump
           (and (or dumb-jump-aggressive
                    (= (length match-cur-file-front) 1))
@@ -4846,7 +4870,7 @@ The arguments are:
 ;;;###autoload
 (define-minor-mode dumb-jump-mode
   "Minor mode for jumping to variable and function definitions."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   :global t
   :keymap dumb-jump-mode-map)
 
@@ -4884,10 +4908,11 @@ The arguments are:
 			 (ctx (dumb-jump-get-point-context line ident col)))
 		    (propertize ident :dumb-jump-ctx ctx)))))
 
-  (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump)) prompt)
-    (let* ((info (dumb-jump-get-results prompt))
+  (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump))
+                                          entered-name)
+    (let* ((info (dumb-jump-get-results entered-name))
            (results (plist-get info :results))
-           (look-for (or prompt (plist-get info :symbol)))
+           (look-for (or entered-name (plist-get info :symbol)))
            (proj-root (plist-get info :root))
            (issue (plist-get info :issue))
            (lang (plist-get info :lang))
