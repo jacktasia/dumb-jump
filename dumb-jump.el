@@ -3334,6 +3334,9 @@ Return a directory name without the trailing slash."
    (expand-file-name
     (or
      dumb-jump-project
+     (when-let (((fboundp 'project-current))
+                (proj (project-current t (file-name-directory filepath))))
+       (project-root proj))
      (locate-dominating-file filepath #'dumb-jump-get-config)
      dumb-jump-default-project))))
 
