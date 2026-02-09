@@ -292,8 +292,20 @@ There are a lot of options for running the tests locally:
 requires [Cask](https://github.com/cask/cask) using your local emacs
 ```sh
 cd /path/to/dumb-jump
-cask
 make test
+```
+
+The first time you run this it will also run `cask` to
+setup your directory.
+
+##### Run a subset of tests
+is the same as before but use the `test-this` target followed by one or
+several full or partial test names.  For example, to run all tests that have 'clojure'
+or 'org' in their test function name do this:
+
+```sh
+cd /path/to/dumb-jump
+make test-this clojure org
 ```
 
 #### Concurrent
