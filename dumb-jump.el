@@ -105,7 +105,7 @@ the selector defaults to popup."
 The available choices are:
 - \\='ag              : https://github.com/ggreer/the_silver_searcher
 - \\='rg              : https://github.com/BurntSushi/ripgrep
-- \\='grep
+- \\='grep            : https://en.wikipedia.org/wiki/Grep
 - \\='gnu-grep        : https://www.gnu.org/software/grep/manual/grep.html
 - \\='git-grep        : https://git-scm.com/docs/git-grep
 - \\='git-grep-plus-ag
@@ -187,15 +187,27 @@ one of two preferred choice overriding methods:
   :type 'string)
 
 ;; ---------------------------------------------------------------------------
-;; Dumb-jump generic regular expression meta-concepts
-;;
-;; - `JJJ` : searched text
-;; - `\\j` : word-boundary identifier.  Use this instead of `\\b` when word
-;;           boundary must not include '-'.
-;; - `\\s` : for a single white space character
+;; Dumb Jump Regular Expressions  (see `dumb-jump-find-rules' docstring)
 
+(defcustom dumb-jump-force-using-space-bracket-exp
+  (eq system-type 'windows-nt)
+  "When t the `\\\\s` in regexp code strings is replaced by `[[:space:]]`.
+Otherwise it is left in the regular expression.
+Defaults to t under Windows because older gnu grep versions have problem
+dealing with `\\\\s` to match end of words due to the 2 bytes used to
+identify the end of line."
+  :group 'dumb-jump
+  :type 'boolean)
+
+(defun dumb-jump-use-space-bracket-exp-for (variant)
+  "Return t when `\\\\s` must be replaced by `[[:space]]` for VARIANT.
+VARIANT must be a one of the following symbols: ag, rg, grep, gnu-grep,
+git-grep or git-grep-plus-ag."
+  (and dumb-jump-force-using-space-bracket-exp
+       (memq variant '(grep gnu-grep git-grep git-grep-plus-ag))))
 
 ;; word-boundary regexps: they replace the "\\j" in dumb-jump regexes.
+;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-ag-word-boundary
   "(?![a-zA-Z0-9\\?\\*-])"
   "Regexp that replaces `\\j` in dumb-jump regexes for ag search.
@@ -204,6 +216,7 @@ When this matters use `\\j` instead and ag will use this value."
   :group 'dumb-jump
   :type 'string)
 
+;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-rg-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
   "Regexp that replaces `\\j` in dumb-jump regexes for rg search.
@@ -212,6 +225,7 @@ When this matters use `\\j` instead and rg will use this value."
   :group 'dumb-jump
   :type 'string)
 
+;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-git-grep-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
   "Regexp that replaces `\\j` in dumb-jump regexes for git-grep search.
@@ -220,9 +234,19 @@ When this matters use `\\j` instead and git grep will use this value."
   :group 'dumb-jump
   :type 'string)
 
+;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-grep-word-boundary
   "($|[^a-zA-Z0-9\\?\\*-])"
   "Regexp that replaces `\\j` in dumb-jump regexes for grep search.
+`\\b` thinks `-` is a word boundary.
+When this matters use `\\j` instead and grep will use this value."
+  :group 'dumb-jump
+  :type 'string)
+
+;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
+(defcustom dumb-jump-gnu-grep-word-boundary
+  "($|[^a-zA-Z0-9\\?\\*-])"
+  "Regexp that replaces `\\j` in dumb-jump regexes for gnu grep search.
 `\\b` thinks `-` is a word boundary.
 When this matters use `\\j` instead and grep will use this value."
   :group 'dumb-jump
@@ -320,12 +344,12 @@ If nil add also the language type of current src block."
   :group 'dumb-jump
   :type 'boolean)
 
+;; [:todo 2026-01-29, by Pierre Rouleau: Why 3 backslashes in front of '('? ]
 (defcustom dumb-jump-find-rules
   ;;-- elisp
   '((:language "elisp" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\((defun|cl-defun)\\s+JJJ\\j"
-           ;; \\j usage see `dumb-jump-ag-word-boundary`
+           :regex "\\((defun|cl-defun|cl-defgeneric|cl-defmethod|cl-defsubst)\\s+JJJ\\j"
            :tests ("(defun test (blah)"
                    "(defun test\n"
                    "(cl-defun test (blah)"
@@ -338,9 +362,9 @@ If nil add also the language type of current src block."
                  "(defun test? (blah)"
                  "(defun test- (blah)"))
 
-    (:language "elisp" :type "function"
+    (:language "elisp" :type "function" ; macros
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\(defmacro\\s+JJJ\\j"
+           :regex "\\((defmacro|cl-defmacro|cl-define-compiler-macro)\\s+JJJ\\j"
            :tests ("(defmacro test (blah)"
                    "(defmacro test\n")
            :not ("(defmacro test-asdf (blah)"
@@ -349,18 +373,45 @@ If nil add also the language type of current src block."
                  "(defmacro test? (blah)"
                  "(defmacro test- (blah)"))
 
-    (:language "elisp" :type "variable"
-           :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\(defvar\\b\\s*JJJ\\j"
-           :tests ("(defvar test "
-                   "(defvar test\n")
-           :not ("(defvar tester"
-                 "(defvar test?"
-                 "(defvar test-"))
+    (:language "elisp" :type "function" ; hydras
+               :supports ("ag" "grep" "rg" "git-grep")
+               :regex "\\(defhydra\\b\\s*JJJ\\j"
+               :tests ("(defhydra test "
+                       "(defhydra test\n"
+                       "(defhydra test (blah\n"
+                       "(defhydra test (blah)")
+               :not ("(defhydra tester"
+                     "(defhydra test?"
+                     "(defhydra test-"
+                     "(defhydra test? (blah\n"
+                     "(defhydra test? (blah)"))
 
     (:language "elisp" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\(defcustom\\b\\s*JJJ\\j"
+           :regex "\\(defvar(-local)?\\b\\s*JJJ\\j"
+           :tests ("(defvar test "
+                   "(defvar test\n"
+                   "(defvar-local test"
+                   "(defvar-local test\n")
+           :not ("(defvar tester"
+                 "(defvar test?"
+                 "(defvar test-"
+                 "(defvar-local tester"
+                 "(defvar-local test?"
+                 "(defvar-local test-"))
+
+    (:language "elisp" :type "variable"
+           :supports ("ag" "grep" "rg" "ugrep" "git-grep")
+           :regex "\\(defconst\\b\\s*JJJ\\j"
+           :tests ("(defconst test "
+                   "(defconst test\n")
+           :not ("(defconst tester"
+                 "(defconst test?"
+                 "(defconst test-"))
+
+    (:language "elisp" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\(defcustom\\b\\s*JJJ\\j"
            :tests ("(defcustom test "
                    "(defcustom test\n")
            :not ("(defcustom tester"
@@ -369,22 +420,38 @@ If nil add also the language type of current src block."
 
     (:language "elisp" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\(setq\\b\\s*JJJ\\j"
+           :regex "\\(setq\\b\\s*JJJ\\j"
            :tests ("(setq test 123)")
            :not ("setq test-blah 123)"
                  "(setq tester"
                  "(setq test?" "(setq test-"))
 
-    (:language "elisp" :type "variable"
-           :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\\(JJJ\\s+"
-           :tests ("(let ((test 123)))")
-           :not ("(let ((test-2 123)))"))
+    ;; The following regex identifying let-bound variables is the reason why
+    ;; searching for an elisp function cause a set of false positive on all
+    ;; locations where the function is invoked.
+    (:language "elisp" :type "variable" ; let bound variables
+               :supports ("ag" "grep" "rg" "git-grep")
+               :regex "\\(JJJ\\s+"
+               :tests ("(let ((test 123)))"
+                       "(let* ((test 123)))")
+               :not ("(let ((test-2 123)))"
+                     "(let* ((test-2 123)))"))
 
-    ;; variable in method signature
-    (:language "elisp" :type "variable"
-           :supports ("ag" "rg" "git-grep")
-           :regex "\\((defun|cl-defun)\\s*.+\\\(?\\s*JJJ\\j\\s*\\\)?"
+    (:language "elisp" :type "type"     ; cl-lib structured type definitions
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\((cl-defstruct|cl-deftype)\\s+JJJ\\j"
+           :tests ("(cl-defstruct test "
+                   "(cl-defstruct test\n"
+                   "(cl-deftype test "
+                   "(cl-deftype test\n")
+           :not ("(cl-defstruct test-asdf (blah)"
+                 "(cl-defstruct test-blah\n"
+                 "(cl-deftype test-asdf (blah)"
+                 "(cl-deftype test-blah\n"))
+
+    (:language "elisp" :type "variable" ;; variable in method signature
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\((defun|cl-defun|cl-defgeneric|cl-defmethod)\\s*.+\\(?\\s*JJJ\\j\\s*\\)?"
            :tests ("(defun blah (test)"
                    "(defun blah (test blah)"
                    "(defun (blah test)")
@@ -2577,12 +2644,33 @@ If nil add also the language type of current src block."
   "List of search regex pattern templates organized by language and type.
 Used for generating the grep tool search commands.
 
-See relevant search tool command lines:
+For a given language, a regular expression is only used by Dumb Jump when
+the currently used search tool is identified in the :supports value.
 
+The regex string is a template filled by `dumb-jump-populate-regex' and
+should contain the \"JJJ\" string, a marker for the searched identifier.
+
+It may also contain the following:
+
+- \"\\\\j\" : a marker for word-boundary regular-expression to use instead
+          of \"\\\\b\" when word boundary concept must support Lisp language
+          family and must not include the characters '-', '?' and '*'.
+          In the Lisp family of programming languages a large number of
+          characters are allowed in identifiers, including '-', '?' and
+          '*'.
+          This marker is replaced by value of the search tool specific
+          dumb-jump-TOOL-word-boundary, like `dumb-jump-ag-word-boundary' for
+          ag.
+
+- \"\\\\s\" : for a single white space character.
+         Replaced by \"[[:space:]]\" for some search tools as identified by
+         `dumb-jump-use-space-bracket-exp-for' returning t for a tool variant.
+
+The language types supported are listed in the linked page below:
 - Ag:
-  https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t
+  URL \ `https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t'
 - rg:
-  https://github.com/BurntSushi/ripgrep/blob/master/crates/ignore/src/types.rs#L96
+  URL \ `https://github.com/BurntSushi/ripgrep/blob/master/crates/ignore/src/default_types.rs#L12'
 
 More information using the search tool command line help."
   :group 'dumb-jump
@@ -2596,154 +2684,158 @@ More information using the search tool command line help."
                      (:not (repeat string))))))
 
 (defcustom dumb-jump-language-file-exts
-  '((:language "elisp" :ext "el" :agtype "elisp" :rgtype "elisp")
-    (:language "elisp" :ext "el.gz" :agtype "elisp" :rgtype "elisp")
-    (:language "commonlisp" :ext "lisp" :agtype "lisp" :rgtype "lisp")
-    (:language "commonlisp" :ext "lsp" :agtype "lisp" :rgtype "lisp")
-    (:language "c++" :ext "c" :agtype "cc" :rgtype "c")
-    (:language "c++" :ext "h" :agtype "cc" :rgtype "c")
-    (:language "c++" :ext "C" :agtype "cpp" :rgtype "cpp")
-    (:language "c++" :ext "H" :agtype "cpp" :rgtype "cpp")
-    (:language "c++" :ext "tpp" :agtype "cpp" :rgtype nil)
-    (:language "c++" :ext "cpp" :agtype "cpp" :rgtype "cpp")
-    (:language "c++" :ext "hpp" :agtype "cpp" :rgtype "cpp")
-    (:language "c++" :ext "cxx" :agtype "cpp" :rgtype "cpp")
-    (:language "c++" :ext "hxx" :agtype "cpp" :rgtype nil)
-    (:language "c++" :ext "cc" :agtype "cpp" :rgtype "cpp")
-    (:language "c++" :ext "hh" :agtype "cpp" :rgtype "cpp")
-    (:language "c++" :ext "c++" :agtype nil :rgtype nil)
-    (:language "c++" :ext "h++" :agtype nil :rgtype nil)
-    (:language "coq" :ext "v" :agtype nil :rgtype nil)
-    (:language "ocaml" :ext "ml" :agtype "ocaml" :rgtype "ocaml")
-    (:language "ocaml" :ext "mli" :agtype "ocaml" :rgtype "ocaml")
-    (:language "ocaml" :ext "mll" :agtype "ocaml" :rgtype "ocaml")
-    (:language "ocaml" :ext "mly" :agtype "ocaml" :rgtype "ocaml")
+  ;;  dumb-jump language       file extension     ag type             rg type
+  '((:language "elisp"         :ext "el"          :agtype "elisp"     :rgtype "elisp")
+    (:language "elisp"         :ext "el.gz"       :agtype "elisp"     :rgtype "elisp")
+    (:language "commonlisp"    :ext "lisp"        :agtype "lisp"      :rgtype "lisp")
+    (:language "commonlisp"    :ext "lsp"         :agtype "lisp"      :rgtype "lisp")
+    (:language "c++"           :ext "c"           :agtype "cc"        :rgtype "c")
+    (:language "c++"           :ext "h"           :agtype "cc"        :rgtype "c")
+    (:language "c++"           :ext "C"           :agtype "cpp"       :rgtype "cpp")
+    (:language "c++"           :ext "H"           :agtype "cpp"       :rgtype "cpp")
+    (:language "c++"           :ext "tpp"         :agtype "cpp"       :rgtype nil)
+    (:language "c++"           :ext "cpp"         :agtype "cpp"       :rgtype "cpp")
+    (:language "c++"           :ext "hpp"         :agtype "cpp"       :rgtype "cpp")
+    (:language "c++"           :ext "cxx"         :agtype "cpp"       :rgtype "cpp")
+    (:language "c++"           :ext "hxx"         :agtype "cpp"       :rgtype nil)
+    (:language "c++"           :ext "cc"          :agtype "cpp"       :rgtype "cpp")
+    (:language "c++"           :ext "hh"          :agtype "cpp"       :rgtype "cpp")
+    (:language "c++"           :ext "c++"         :agtype nil         :rgtype nil)
+    (:language "c++"           :ext "h++"         :agtype nil         :rgtype nil)
+    (:language "coq"           :ext "v"           :agtype nil         :rgtype nil)
+    (:language "ocaml"         :ext "ml"          :agtype "ocaml"     :rgtype "ocaml")
+    (:language "ocaml"         :ext "mli"         :agtype "ocaml"     :rgtype "ocaml")
+    (:language "ocaml"         :ext "mll"         :agtype "ocaml"     :rgtype "ocaml")
+    (:language "ocaml"         :ext "mly"         :agtype "ocaml"     :rgtype "ocaml")
     ;; groovy is nil type because jenkinsfile is not in searcher type lists
-    (:language "groovy" :ext "gradle" :agtype nil :rgtype nil)
-    (:language "groovy" :ext "groovy" :agtype nil :rgtype nil)
-    (:language "groovy" :ext "jenkinsfile" :agtype nil :rgtype nil)
-    (:language "haskell" :ext "hs" :agtype "haskell" :rgtype "haskell")
-    (:language "haskell" :ext "lhs" :agtype "haskell" :rgtype "haskell")
-    (:language "objc" :ext "m" :agtype "objc" :rgtype "objc")
-    (:language "csharp" :ext "cs" :agtype "csharp" :rgtype "csharp")
-    (:language "java" :ext "java" :agtype "java" :rgtype "java")
-    (:language "vala" :ext "vala" :agtype "vala" :rgtype "vala")
-    (:language "vala" :ext "vapi" :agtype "vala" :rgtype "vala")
-    (:language "julia" :ext "jl" :agtype "julia" :rgtype "julia")
-    (:language "clojure" :ext "clj" :agtype "clojure" :rgtype "clojure")
-    (:language "clojure" :ext "cljc" :agtype "clojure" :rgtype "clojure")
-    (:language "clojure" :ext "cljs" :agtype "clojure" :rgtype "clojure")
-    (:language "clojure" :ext "cljx" :agtype "clojure" :rgtype "clojure")
-    (:language "coffeescript" :ext "coffee" :agtype "coffee" :rgtype "coffeescript")
-    (:language "faust" :ext "dsp" :agtype nil :rgtype nil)
-    (:language "faust" :ext "lib" :agtype nil :rgtype nil)
-    (:language "fennel" :ext "fnl" :agtype nil :rgtype nil)
-    (:language "fortran" :ext "F" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "f" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "f77" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "f90" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "f95" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "F77" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "F90" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "F95" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "f03" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "for" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "ftn" :agtype "fortran" :rgtype "fortran")
-    (:language "fortran" :ext "fpp" :agtype "fortran" :rgtype "fortran")
-    (:language "go" :ext "go" :agtype "go" :rgtype "go")
-    (:language "javascript" :ext "js" :agtype "js" :rgtype "js")
-    (:language "javascript" :ext "jsx" :agtype "js" :rgtype "js")
-    (:language "javascript" :ext "vue" :agtype "js" :rgtype "js")
-    (:language "javascript" :ext "html" :agtype "html" :rgtype "html")
-    (:language "javascript" :ext "css" :agtype "css" :rgtype "css")
-    (:language "typescript" :ext "ts" :agtype "ts" :rgtype "ts")
-    (:language "typescript" :ext "tsx" :agtype "ts" :rgtype "ts")
-    (:language "typescript" :ext "vue" :agtype "ts" :rgtype "ts")
-    (:language "dart" :ext "dart" :agtype nil :rgtype "dart")
-    (:language "lua" :ext "lua" :agtype "lua" :rgtype "lua")
+    (:language "groovy"        :ext "gradle"      :agtype nil         :rgtype nil)
+    (:language "groovy"        :ext "groovy"      :agtype nil         :rgtype nil)
+    (:language "groovy"        :ext "jenkinsfile" :agtype nil         :rgtype nil)
+    (:language "haskell"       :ext "hs"          :agtype "haskell"   :rgtype "haskell")
+    (:language "haskell"       :ext "lhs"         :agtype "haskell"   :rgtype "haskell")
+    (:language "objc"          :ext "m"           :agtype "objc"      :rgtype "objc")
+    (:language "csharp"        :ext "cs"          :agtype "csharp"    :rgtype "csharp")
+    (:language "java"          :ext "java"        :agtype "java"      :rgtype "java")
+    (:language "vala"          :ext "vala"        :agtype "vala"      :rgtype "vala")
+    (:language "vala"          :ext "vapi"        :agtype "vala"      :rgtype "vala")
+    (:language "julia"         :ext "jl"          :agtype "julia"     :rgtype "julia")
+    (:language "clojure"       :ext "clj"         :agtype "clojure"   :rgtype "clojure")
+    (:language "clojure"       :ext "cljc"        :agtype "clojure"   :rgtype "clojure")
+    (:language "clojure"       :ext "cljs"        :agtype "clojure"   :rgtype "clojure")
+    (:language "clojure"       :ext "cljx"        :agtype "clojure"   :rgtype "clojure")
+    (:language "coffeescript"  :ext "coffee"      :agtype "coffee"    :rgtype "coffeescript")
+    (:language "faust"         :ext "dsp"         :agtype nil         :rgtype nil)
+    (:language "faust"         :ext "lib"         :agtype nil         :rgtype nil)
+    (:language "fennel"        :ext "fnl"         :agtype nil         :rgtype nil)
+    (:language "fortran"       :ext "F"           :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "f"           :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "f77"         :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "f90"         :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "f95"         :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "F77"         :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "F90"         :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "F95"         :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "f03"         :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "for"         :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "ftn"         :agtype "fortran"   :rgtype "fortran")
+    (:language "fortran"       :ext "fpp"         :agtype "fortran"   :rgtype "fortran")
+    (:language "go"            :ext "go"          :agtype "go"        :rgtype "go")
+    (:language "javascript"    :ext "js"          :agtype "js"        :rgtype "js")
+    (:language "javascript"    :ext "jsx"         :agtype "js"        :rgtype "js")
+    (:language "javascript"    :ext "vue"         :agtype "js"        :rgtype "js")
+    (:language "javascript"    :ext "html"        :agtype "html"      :rgtype "html")
+    (:language "javascript"    :ext "css"         :agtype "css"       :rgtype "css")
+    (:language "typescript"    :ext "ts"          :agtype "ts"        :rgtype "ts")
+    (:language "typescript"    :ext "tsx"         :agtype "ts"        :rgtype "ts")
+    (:language "typescript"    :ext "vue"         :agtype "ts"        :rgtype "ts")
+    (:language "dart"          :ext "dart"        :agtype nil         :rgtype "dart")
+    (:language "lua"           :ext "lua"         :agtype "lua"       :rgtype "lua")
     ;; the extension "m" is also used by obj-c so must use matlab-mode
     ;; since obj-c will win by file extension, but here for searcher types
-    (:language "matlab" :ext "m" :agtype "matlab" :rgtype "matlab")
-    (:language "nim" :ext "nim" :agtype "nim" :rgtype "nim")
-    (:language "nix" :ext "nix" :agtype "nix" :rgtype "nix")
-    (:language "org" :ext "org" :agtype nil :rgtype "org")
-    (:language "perl" :ext "pl" :agtype "perl" :rgtype "perl")
-    (:language "perl" :ext "pm" :agtype "perl" :rgtype "perl")
-    (:language "perl" :ext "pm6" :agtype "perl" :rgtype nil)
-    (:language "perl" :ext "perl" :agtype nil :rgtype "perl")
-    (:language "perl" :ext "plh" :agtype nil :rgtype "perl")
-    (:language "perl" :ext "plx" :agtype nil :rgtype "perl")
-    (:language "perl" :ext "pod" :agtype "perl" :rgtype "pod")
-    (:language "perl" :ext "t" :agtype "perl" :rgtype nil)
-    (:language "php" :ext "php" :agtype "php" :rgtype "php")
-    (:language "php" :ext "php3" :agtype "php" :rgtype "php")
-    (:language "php" :ext "php4" :agtype "php" :rgtype "php")
-    (:language "php" :ext "php5" :agtype "php" :rgtype "php")
-    (:language "php" :ext "phtml" :agtype "php" :rgtype "php")
-    (:language "php" :ext "inc" :agtype "php" :rgtype nil)
-    (:language "python" :ext "py" :agtype "python" :rgtype "py")
-    (:language "r" :ext "R" :agtype "r" :rgtype "r")
-    (:language "r" :ext "r" :agtype "r" :rgtype "r")
-    (:language "r" :ext "Rmd" :agtype "r" :rgtype "r")
-    (:language "r" :ext "Rnw" :agtype "r" :rgtype "r")
-    (:language "r" :ext "Rtex" :agtype "r" :rgtype nil)
-    (:language "r" :ext "Rrst" :agtype "r" :rgtype nil)
-    (:language "racket" :ext "rkt" :agtype "racket" :rgtype "lisp")
-    (:language "crystal" :ext "cr" :agtype "crystal" :rgtype "crystal")
-    (:language "crystal" :ext "ecr" :agtype "crystal" :rgtype nil)
-    (:language "ruby" :ext "rb" :agtype "ruby" :rgtype "ruby")
-    (:language "ruby" :ext "erb" :agtype "ruby" :rgtype nil)
-    (:language "ruby" :ext "haml" :agtype "ruby" :rgtype nil)
-    (:language "ruby" :ext "rake" :agtype "ruby" :rgtype nil)
-    (:language "ruby" :ext "slim" :agtype "ruby" :rgtype nil)
-    (:language "rust" :ext "rs" :agtype "rust" :rgtype "rust")
-    (:language "zig" :ext "zig" :agtype nil :rgtype "zig")
-    (:language "scad" :ext "scad" :agtype nil :rgtype nil)
-    (:language "scala" :ext "scala" :agtype "scala" :rgtype "scala")
-    (:language "scheme" :ext "scm" :agtype "scheme" :rgtype "lisp")
-    (:language "scheme" :ext "ss" :agtype "scheme" :rgtype "lisp")
-    (:language "scheme" :ext "sld" :agtype "scheme" :rgtype "lisp")
-    (:language "janet" :ext "janet" :agtype "janet" :rgtype "lisp")
-    (:language "shell" :ext "sh" :agtype nil :rgtype nil)
-    (:language "shell" :ext "bash" :agtype nil :rgtype nil)
-    (:language "shell" :ext "csh" :agtype nil :rgtype nil)
-    (:language "shell" :ext "ksh" :agtype nil :rgtype nil)
-    (:language "shell" :ext "tcsh" :agtype nil :rgtype nil)
-    (:language "sml" :ext "sml" :agtype "sml" :rgtype "sml")
-    (:language "solidity" :ext "sol" :agtype nil :rgtype nil)
-    (:language "sql" :ext "sql" :agtype "sql" :rgtype "sql")
-    (:language "swift" :ext "swift" :agtype nil :rgtype "swift")
-    (:language "tex" :ext "tex" :agtype "tex" :rgtype "tex")
-    (:language "elixir" :ext "ex" :agtype "elixir" :rgtype "elixir")
-    (:language "elixir" :ext "exs" :agtype "elixir" :rgtype "elixir")
-    (:language "elixir" :ext "eex" :agtype "elixir" :rgtype "elixir")
-    (:language "erlang" :ext "erl" :agtype "erlang" :rgtype "erlang")
-    (:language "systemverilog" :ext "sv" :agtype "verilog" :rgtype "verilog")
-    (:language "systemverilog" :ext "svh" :agtype "verilog" :rgtype "verilog")
-    (:language "vhdl" :ext "vhd" :agtype "vhdl" :rgtype "vhdl")
-    (:language "vhdl" :ext "vhdl" :agtype "vhdl" :rgtype "vhdl")
-    (:language "scss" :ext "scss" :agtype "css" :rgtype "css")
-    (:language "pascal" :ext "pas" :agtype "delphi" :rgtype nil)
-    (:language "pascal" :ext "dpr" :agtype "delphi" :rgtype nil)
-    (:language "pascal" :ext "int" :agtype "delphi" :rgtype nil)
-    (:language "pascal" :ext "dfm" :agtype "delphi" :rgtype nil)
-    (:language "fsharp" :ext "fs" :agtype "fsharp" :rgtype nil)
-    (:language "fsharp" :ext "fsi" :agtype "fsharp" :rgtype nil)
-    (:language "fsharp" :ext "fsx" :agtype "fsharp" :rgtype nil)
-    (:language "kotlin" :ext "kt" :agtype "kotlin" :rgtype "kotlin")
-    (:language "kotlin" :ext "kts" :agtype "kotlin" :rgtype "kotlin")
-    (:language "protobuf" :ext "proto" :agtype "proto" :rgtype "protobuf")
-    (:language "hcl" :ext "tf" :agtype "terraform" :rgtype "tf")
-    (:language "hcl" :ext "tfvars" :agtype "terraform" :rgtype nil)
-    (:language "apex" :ext "cls" :agtype nil :rgtype nil)
-    (:language "apex" :ext "trigger" :agtype nil :rgtype nil)
-    (:language "jai" :ext "jai" :agtype nil :rgtype nil)
-    (:language "odin" :ext "odin" :agtype nil :rgtype nil)
-    (:language "cobol" :ext "cbl" :agtype nil :rgtype nil)
-    (:language "cobol" :ext "cob" :agtype nil :rgtype nil)
-    (:language "cobol" :ext "cpy" :agtype nil :rgtype nil))
+    (:language "matlab"        :ext "m"           :agtype "matlab"    :rgtype "matlab")
+    (:language "nim"           :ext "nim"         :agtype "nim"       :rgtype "nim")
+    (:language "nix"           :ext "nix"         :agtype "nix"       :rgtype "nix")
+    (:language "org"           :ext "org"         :agtype nil         :rgtype "org")
+    (:language "perl"          :ext "pl"          :agtype "perl"      :rgtype "perl")
+    (:language "perl"          :ext "pm"          :agtype "perl"      :rgtype "perl")
+    (:language "perl"          :ext "pm6"         :agtype "perl"      :rgtype nil)
+    (:language "perl"          :ext "perl"        :agtype nil         :rgtype "perl")
+    (:language "perl"          :ext "plh"         :agtype nil         :rgtype "perl")
+    (:language "perl"          :ext "plx"         :agtype nil         :rgtype "perl")
+    (:language "perl"          :ext "pod"         :agtype "perl"      :rgtype "pod")
+    (:language "perl"          :ext "t"           :agtype "perl"      :rgtype nil)
+    (:language "php"           :ext "php"         :agtype "php"       :rgtype "php")
+    (:language "php"           :ext "php3"        :agtype "php"       :rgtype "php")
+    (:language "php"           :ext "php4"        :agtype "php"       :rgtype "php")
+    (:language "php"           :ext "php5"        :agtype "php"       :rgtype "php")
+    (:language "php"           :ext "phtml"       :agtype "php"       :rgtype "php")
+    (:language "php"           :ext "inc"         :agtype "php"       :rgtype nil)
+    (:language "python"        :ext "py"          :agtype "python"    :rgtype "py")
+    (:language "r"             :ext "R"           :agtype "r"         :rgtype "r")
+    (:language "r"             :ext "r"           :agtype "r"         :rgtype "r")
+    (:language "r"             :ext "Rmd"         :agtype "r"         :rgtype "r")
+    (:language "r"             :ext "Rnw"         :agtype "r"         :rgtype "r")
+    (:language "r"             :ext "Rtex"        :agtype "r"         :rgtype nil)
+    (:language "r"             :ext "Rrst"        :agtype "r"         :rgtype nil)
+    (:language "racket"        :ext "rkt"         :agtype "racket"    :rgtype "lisp")
+    (:language "crystal"       :ext "cr"          :agtype "crystal"   :rgtype "crystal")
+    (:language "crystal"       :ext "ecr"         :agtype "crystal"   :rgtype nil)
+    (:language "ruby"          :ext "rb"          :agtype "ruby"      :rgtype "ruby")
+    (:language "ruby"          :ext "erb"         :agtype "ruby"      :rgtype nil)
+    (:language "ruby"          :ext "haml"        :agtype "ruby"      :rgtype nil)
+    (:language "ruby"          :ext "rake"        :agtype "ruby"      :rgtype nil)
+    (:language "ruby"          :ext "slim"        :agtype "ruby"      :rgtype nil)
+    (:language "rust"          :ext "rs"          :agtype "rust"      :rgtype "rust")
+    (:language "zig"           :ext "zig"         :agtype nil         :rgtype "zig")
+    (:language "scad"          :ext "scad"        :agtype nil         :rgtype nil)
+    (:language "scala"         :ext "scala"       :agtype "scala"     :rgtype "scala")
+    (:language "scheme"        :ext "scm"         :agtype "scheme"    :rgtype "lisp")
+    (:language "scheme"        :ext "ss"          :agtype "scheme"    :rgtype "lisp")
+    (:language "scheme"        :ext "sld"         :agtype "scheme"    :rgtype "lisp")
+    (:language "janet"         :ext "janet"       :agtype "janet"     :rgtype "lisp")
+    (:language "shell"         :ext "sh"          :agtype nil         :rgtype nil)
+    (:language "shell"         :ext "bash"        :agtype nil         :rgtype nil)
+    (:language "shell"         :ext "csh"         :agtype nil         :rgtype nil)
+    (:language "shell"         :ext "ksh"         :agtype nil         :rgtype nil)
+    (:language "shell"         :ext "tcsh"        :agtype nil         :rgtype nil)
+    (:language "sml"           :ext "sml"         :agtype "sml"       :rgtype "sml")
+    (:language "solidity"      :ext "sol"         :agtype nil         :rgtype nil)
+    (:language "sql"           :ext "sql"         :agtype "sql"       :rgtype "sql")
+    (:language "swift"         :ext "swift"       :agtype nil         :rgtype "swift")
+    (:language "tex"           :ext "tex"         :agtype "tex"       :rgtype "tex")
+    (:language "elixir"        :ext "ex"          :agtype "elixir"    :rgtype "elixir")
+    (:language "elixir"        :ext "exs"         :agtype "elixir"    :rgtype "elixir")
+    (:language "elixir"        :ext "eex"         :agtype "elixir"    :rgtype "elixir")
+    (:language "erlang"        :ext "erl"         :agtype "erlang"    :rgtype "erlang")
+    (:language "systemverilog" :ext "sv"          :agtype "verilog"   :rgtype "verilog")
+    (:language "systemverilog" :ext "svh"         :agtype "verilog"   :rgtype "verilog")
+    (:language "vhdl"          :ext "vhd"         :agtype "vhdl"      :rgtype "vhdl")
+    (:language "vhdl"          :ext "vhdl"        :agtype "vhdl"      :rgtype "vhdl")
+    (:language "scss"          :ext "scss"        :agtype "css"       :rgtype "css")
+    (:language "pascal"        :ext "pas"         :agtype "delphi"    :rgtype nil)
+    (:language "pascal"        :ext "dpr"         :agtype "delphi"    :rgtype nil)
+    (:language "pascal"        :ext "int"         :agtype "delphi"    :rgtype nil)
+    (:language "pascal"        :ext "dfm"         :agtype "delphi"    :rgtype nil)
+    (:language "fsharp"        :ext "fs"          :agtype "fsharp"    :rgtype nil)
+    (:language "fsharp"        :ext "fsi"         :agtype "fsharp"    :rgtype nil)
+    (:language "fsharp"        :ext "fsx"         :agtype "fsharp"    :rgtype nil)
+    (:language "kotlin"        :ext "kt"          :agtype "kotlin"    :rgtype "kotlin")
+    (:language "kotlin"        :ext "kts"         :agtype "kotlin"    :rgtype "kotlin")
+    (:language "protobuf"      :ext "proto"       :agtype "proto"     :rgtype "protobuf")
+    (:language "hcl"           :ext "tf"          :agtype "terraform" :rgtype "tf")
+    (:language "hcl"           :ext "tfvars"      :agtype "terraform" :rgtype nil)
+    (:language "apex"          :ext "cls"         :agtype nil         :rgtype nil)
+    (:language "apex"          :ext "trigger"     :agtype nil         :rgtype nil)
+    (:language "jai"           :ext "jai"         :agtype nil         :rgtype nil)
+    (:language "odin"          :ext "odin"        :agtype nil         :rgtype nil)
+    (:language "cobol"         :ext "cbl"         :agtype nil         :rgtype nil)
+    (:language "cobol"         :ext "cob"         :agtype nil         :rgtype nil)
+    (:language "cobol"         :ext "cpy"         :agtype nil         :rgtype nil))
 
-  "Mapping of programming language(s) to file extensions by search tool."
+  "Map programming language to file extensions support by search tool.
+The value of :agytpe, :rgtype is nil when the search tool file type does
+not search for that file extension, otherwise it is the name of the file
+type for that tool."
   :group 'dumb-jump
   :type
   '(repeat
@@ -2754,28 +2846,27 @@ More information using the search tool command line help."
                (:rgtype (string :tag "Ripgrep type"))))))
 
 (defcustom dumb-jump-language-contexts
-  '((:language "javascript" :type "function" :right "^(" :left nil)
-    (:language "javascript" :type "variable" :right nil :left "($")
-    (:language "javascript" :type "variable" :right "^)" :left "($")
-    (:language "javascript" :type "variable" :right "^\\." :left nil)
-    (:language "javascript" :type "variable" :right "^;" :left nil)
-    (:language "typescript" :type "function" :right "^(" :left nil)
-    (:language "perl" :type "function" :right "^(" :left nil)
-    (:language "tcl" :type "function" :left "\\[$" :right nil)
-    (:language "tcl" :type "function" :left "^\s*$" :right nil)
-    (:language "tcl" :type "variable" :left "\\$$" :right nil)
-    (:language "php" :type "function" :right "^(" :left nil)
-    (:language "php" :type "class" :right nil :left "new\s+")
-    (:language "elisp" :type "function" :right nil :left "($")
-    (:language "elisp" :type "variable" :right "^)" :left nil)
-    (:language "scheme" :type "function" :right nil :left "($")
-    (:language "scheme" :type "variable" :right "^)" :left nil)
-    (:language "jai" :type "function" :right "\\s*(" :left nil)
-    (:language "jai" :type "type" :left "\\s*:\\s*" :right nil)
-    (:language "cobol" :type "submodule" :right nil :left "call\s+")
-    (:language "cobol" :type "section" :right nil :left "perform\s+")
-    (:language "cobol" :type "section" :right nil :left "go to\s+"))
-
+  '((:language "javascript" :type "function"  :left nil           :right "^(" )
+    (:language "javascript" :type "variable"  :left "($"          :right nil )
+    (:language "javascript" :type "variable"  :left "($"          :right "^)" )
+    (:language "javascript" :type "variable"  :left nil           :right "^\\." )
+    (:language "javascript" :type "variable"  :left nil           :right "^;" )
+    (:language "typescript" :type "function"  :left nil           :right "^(" )
+    (:language "perl"       :type "function"  :left nil           :right "^(" )
+    (:language "tcl"        :type "function"  :left "\\[$"        :right nil)
+    (:language "tcl"        :type "function"  :left "^\\s*$"      :right nil)
+    (:language "tcl"        :type "variable"  :left "\\$$"        :right nil)
+    (:language "php"        :type "function"  :left nil           :right "^(" )
+    (:language "php"        :type "class"     :left "new\\s+"     :right nil )
+    (:language "elisp"      :type "function"  :left "($"          :right nil )
+    (:language "elisp"      :type "variable"  :left nil           :right "^)" )
+    (:language "scheme"     :type "function"  :left "($"          :right nil )
+    (:language "scheme"     :type "variable"  :left nil           :right "^)" )
+    (:language "jai"        :type "function"  :left nil           :right "\\s*(" )
+    (:language "jai"        :type "type"      :left "\\s*:\\s*"   :right nil)
+    (:language "cobol"      :type "submodule" :left "call\\s+"    :right nil )
+    (:language "cobol"      :type "section"   :left "perform\\s+" :right nil )
+    (:language "cobol"      :type "section"   :left "go to\\s+"   :right nil ))
   "List of under points contexts for each language.
 This helps limit the number of regular expressions we use
 if we know that if there's a ( immediately to the right of
@@ -3208,10 +3299,10 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
       (goto-char (point-min))
       (forward-line (1- line)))))
 
-(defun dumb-jump--format-result (proj result)
-  "Return formatted string for PROJ and RESULT."
+(defun dumb-jump--format-result (proj-root result)
+  "Return file:line:target formatted RESULT as a string stripped of PROJ-ROOT."
   (format "%s:%s: %s"
-          (s-replace proj "" (plist-get result :path))
+          (s-replace proj-root "" (plist-get result :path))
           (plist-get result :line)
           (s-trim (plist-get result :context))))
 
@@ -3226,18 +3317,22 @@ Ignore _PROJ."
                 :caller 'dumb-jump-ivy-jump-to-selected)
     (error "ivy-read is unknown.  Is it loaded?")))
 
-(defun dumb-jump-prompt-user-for-choice (proj results)
-  "Put a PROJ list of RESULTS in menu for user selection.
-The menu can be a `popup-menu' or helm/ivy menu.
-Filters PROJ path from files for display."
-  (let ((choices (--map (dumb-jump--format-result proj it) results)))
+(defun dumb-jump-prompt-user-for-choice (proj-root results)
+  "Prompt user to select one of the identified RESULTS in PROJ-ROOT.
+Strip the PROJ-ROOT (project root path) from the file name shown in each entry.
+Prompt with the mechanism selected by `dumb-jump-selector' user-option if
+available otherwise default to `popup-menu'."
+  (let ((choices (--map (dumb-jump--format-result proj-root it) results)))
     (cond
      ((eq dumb-jump-selector 'completing-read)
       (dumb-jump-to-selected results choices
                              (completing-read "Jump to: " choices)))
+     ;;
      ((and (eq dumb-jump-selector 'ivy)
            (fboundp 'ivy-read))
-      (funcall dumb-jump-ivy-jump-to-selected-function results choices proj))
+      (funcall dumb-jump-ivy-jump-to-selected-function
+               results choices proj-root))
+     ;;
      ((and (eq dumb-jump-selector 'helm)
            (fboundp 'helm))
       (helm :sources
@@ -3247,8 +3342,8 @@ Filters PROJ path from files for display."
                 :candidates (-zip-pair choices results)
                 :persistent-action 'dumb-jump-helm-persist-action))
             :buffer "*helm dumb jump choices*"))
-     (t ; or popup
-      (dumb-jump-to-selected results choices (popup-menu* choices))))))
+     ;; or popup
+     (t (dumb-jump-to-selected results choices (popup-menu* choices))))))
 
 (defun dumb-jump-get-project-root (filepath)
   "Return project root holding FILEPATH.
@@ -3408,15 +3503,15 @@ Currently just everything before \"-mode\"."
     :root nil
     :issue ,(intern issue)))
 
-(defun dumb-jump-get-results (&optional prompt)
-  "Perform the dumb-jump search for text at point, region or in PROMPT string.
+(defun dumb-jump-get-results (&optional entered-name)
+  "Perform the dumb-jump search for text at point, region or ENTERED-NAME.
 
 Runs `dumb-jump-fetch-results' under conditions adjusted to the current
 context.
 
 Perform the search if searcher is installed, buffer is saved, and
 there's a symbol under point or an item to search is specified by the
-PROMPT argument.
+ENTERED-NAME string.
 
 Return the dumb-jump alist result:
 - :results
@@ -3426,6 +3521,10 @@ Return the dumb-jump alist result:
 - :file    : string: file name
 - :root    : string: project root
 - :issue   : symbol: problem description symbol: nogrep or nosymbol."
+  ;; Prevent a empty string entered-name from being interpreted as user entry
+  ;; because `read-from-minibuffer' may return "".
+  (when (and entered-name (string-blank-p entered-name))
+    (setq entered-name nil))
   (cond
    ;; When no search tool is available just return an empty result identifying
    ;; a nogrep issue.
@@ -3437,21 +3536,21 @@ Return the dumb-jump alist result:
    ;; Inside a shell or eshell buffer,
    ((or (string= (buffer-name) "*shell*")
         (string= (buffer-name) "*eshell*"))
-    (dumb-jump-fetch-shell-results prompt))
-   ;; When inside a normal buffer but no string specified by PROMPT,
+    (dumb-jump-fetch-shell-results entered-name))
+   ;; When inside a normal buffer but no string specified by ENTERED-NAME,
    ;; point or region does not identify something to search,
    ;; just return an empty result identifying a nosymbol issue.
-   ((and (not prompt)
+   ((and (not entered-name)
          (not (region-active-p))
          (not (thing-at-point 'symbol)))
     (dumb-jump-issue-result "nosymbol"))
    ;; Otherwise, perform the search for the text identified by string specified
-   ;; by PROMPT, point or region.
+   ;; by ENTERED-NAME, point or region.
    (t
-    (dumb-jump-fetch-file-results prompt))))
+    (dumb-jump-fetch-file-results entered-name))))
 
-(defun dumb-jump-fetch-shell-results (&optional prompt)
-  "Perform search from shell buffer for text at point, region or PROMPT string.
+(defun dumb-jump-fetch-shell-results (&optional entered-name)
+  "Perform search from shell buffer for text at point, region or ENTERED-NAME.
 Return the dumb-jump alist result:
 - :results
 - :lang    : string: language name
@@ -3466,10 +3565,10 @@ Return the dumb-jump alist result:
                    (dumb-jump-read-config proj-root proj-config)))
          (lang (or (plist-get config :language)
                    (car (dumb-jump-get-lang-by-shell-contents (buffer-name))))))
-    (dumb-jump-fetch-results cur-file proj-root lang config prompt)))
+    (dumb-jump-fetch-results cur-file proj-root lang config entered-name)))
 
-(defun dumb-jump-fetch-file-results (&optional prompt)
-  "Perform a file search for text at point, region or PROMPT string.
+(defun dumb-jump-fetch-file-results (&optional entered-name)
+  "Perform a file search for text at point, region or ENTERED-NAME string.
 Return the dumb-jump alist result:
 - :results
 - :lang    : string: language name
@@ -3484,7 +3583,7 @@ Return the dumb-jump alist result:
                    (dumb-jump-read-config proj-root proj-config)))
          (lang (or (plist-get config :language)
                    (dumb-jump-get-language cur-file))))
-    (dumb-jump-fetch-results cur-file proj-root lang config prompt)))
+    (dumb-jump-fetch-results cur-file proj-root lang config entered-name)))
 
 ;; --
 (defun dumb-jump-process-symbol-by-lang (lang look-for)
@@ -3544,13 +3643,18 @@ For instance, remove clojure namespace prefix."
                           dumb-jump-language-file-exts)))
     (--map (plist-get it :language) found)))
 
-(defun dumb-jump-fetch-results (cur-file proj-root lang _config &optional prompt)
-  "Return a list of results based on current file context and calling grep/ag.
+(defun dumb-jump-fetch-results (cur-file proj-root lang _config
+                                         &optional entered-name)
+  "Search for symbol in ENTERED-NAME or symbol at point.
+
+Return a list of results based on current file context and calling the
+currently selected searcher tool (grep, ag, rg, ...).
+
 CUR-FILE is the path of the current buffer.
 PROJ-ROOT is that file's root project directory.
 LANG is a string programming language with CONFIG a property list
 of project configuration.
-PROMPT is an optional string identifying item to search.
+ENTERED-NAME is an optional string identifying item to search.
 The returned property list has the following members:
 - :results:
 - :lang    : string: language name
@@ -3562,10 +3666,10 @@ The returned property list has the following members:
          (proj-config (dumb-jump-get-config proj-root))
          (config (when (string-suffix-p ".dumbjump" proj-config)
                    (dumb-jump-read-config proj-root proj-config)))
-         (found-symbol (or prompt (dumb-jump-get-point-symbol)))
+         (found-symbol (or entered-name (dumb-jump-get-point-symbol)))
          (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
-         (pt-ctx (if prompt
-                     (get-text-property 0 :dumb-jump-ctx prompt)
+         (pt-ctx (if entered-name
+                     (get-text-property 0 :dumb-jump-ctx entered-name)
                    (dumb-jump-get-point-context
                     (dumb-jump-get-point-line)
                     look-for
@@ -3582,9 +3686,9 @@ The returned property list has the following members:
 
          (exclude-paths (when config (plist-get config :exclude)))
          (include-paths (when config (plist-get config :include)))
-                                        ; we will search proj root and all include paths
+         ;; we will search proj root and all include paths
          (search-paths (-distinct (-concat (list proj-root) include-paths)))
-                                        ; run command for all
+         ;; run command for all
          (raw-results (--mapcat
                        ;; TODO: should only pass exclude paths to actual project root
                        (dumb-jump-run-command look-for it
@@ -3594,7 +3698,8 @@ The returned property list has the following members:
                                               generate-fn)
                        search-paths))
 
-         (results (delete-dups (--map (plist-put it :target look-for) raw-results))))
+         (results
+          (delete-dups (--map (plist-put it :target look-for) raw-results))))
 
     `(:results ,results
       :lang ,(if (null lang) "" lang)
@@ -3618,7 +3723,7 @@ The returned property list has the following members:
 (defun dumb-jump-quick-look ()
   "Run `dumb-jump-go' in quick look mode.
 That is, show a tooltip of where it would jump instead."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (with-no-warnings
     (dumb-jump-go t)))
@@ -3626,7 +3731,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-other-window ()
   "Like dumb-jump-go' but use `find-file-other-window' instead of `find-file'."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'other))
     (with-no-warnings
@@ -3635,7 +3740,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-current-window ()
   "Like `dumb-jump-go' but always use `find-file'."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'current))
     (with-no-warnings
@@ -3644,7 +3749,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-prefer-external ()
   "Like `dumb-jump-go' but prefer external matches from the current file."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (with-no-warnings
     (dumb-jump-go nil t)))
@@ -3652,7 +3757,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-prompt ()
   "Like `dumb-jump-go' but prompt for function instead of using under point."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (with-no-warnings
     (dumb-jump-go nil nil (read-from-minibuffer "Jump to: "))))
@@ -3661,27 +3766,28 @@ That is, show a tooltip of where it would jump instead."
 (defun dumb-jump-go-prefer-external-other-window ()
   "Like `dumb-jump-go-prefer-external' but create another window.
 It uses `find-file-other-window' instead of `find-file'."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'other))
     (with-no-warnings
       (dumb-jump-go-prefer-external))))
 
 ;;;###autoload
-(defun dumb-jump-go (&optional use-tooltip prefer-external prompt)
+(defun dumb-jump-go (&optional use-tooltip prefer-external entered-name)
   "Go to the function/variable declaration for thing at point.
 When USE-TOOLTIP is t a tooltip jump preview will show instead.
 When PREFER-EXTERNAL is t it will sort external matches before
 current file.
-PROMPT is an optional string: the name of the item to jump to."
-  ;; Note: made obsolete by Emacs xref interface.
+The optional ENTERED-NAME string is the name of the item to jump to
+manually selected by user as response to a prompt."
+  ;; Note: independent of the Emacs xref interface.
   (interactive "P")
   (let* ((start-time (float-time))
-         (info (dumb-jump-get-results prompt))
+         (info (dumb-jump-get-results entered-name))
          (end-time (float-time))
          (fetch-time (- end-time start-time))
          (results (plist-get info :results))
-         (look-for (or prompt (plist-get info :symbol)))
+         (look-for (or entered-name (plist-get info :symbol)))
          (proj-root (plist-get info :root))
          (issue (plist-get info :issue))
          (lang (plist-get info :lang))
@@ -3719,8 +3825,8 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
 (defcustom dumb-jump-language-comments
   '((:comment "//" :language "c++")
     (:comment "/*" :language "c++")
-    (:comment ";" :language "elisp")
-    (:comment ";" :language "commonlisp")
+    (:comment ";"  :language "elisp")
+    (:comment ";"  :language "commonlisp")
     (:comment "//" :language "javascript")
     (:comment "//" :language "typescript")
     (:comment "//" :language "dart")
@@ -3731,40 +3837,40 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "//" :language "objc")
     (:comment "//" :language "csharp")
     (:comment "//" :language "java")
-    (:comment ";" :language "clojure")
-    (:comment "#" :language "coffeescript")
+    (:comment ";"  :language "clojure")
+    (:comment "#"  :language "coffeescript")
     (:comment "//" :language "faust")
-    (:comment ";" :language "fennel")
-    (:comment "!" :language "fortran")
+    (:comment ";"  :language "fennel")
+    (:comment "!"  :language "fortran")
     (:comment "//" :language "go")
     (:comment "//" :language "zig")
-    (:comment "#" :language "perl")
-    (:comment "#" :language "tcl")
+    (:comment "#"  :language "perl")
+    (:comment "#"  :language "tcl")
     (:comment "//" :language "php")
-    (:comment "#" :language "php")
-    (:comment "#" :language "python")
-    (:comment "%" :language "matlab")
-    (:comment "#" :language "r")
-    (:comment ";" :language "racket")
-    (:comment "#" :language "ruby")
-    (:comment "#" :language "crystal")
-    (:comment "#" :language "nim")
-    (:comment "#" :language "nix")
+    (:comment "#"  :language "php")
+    (:comment "#"  :language "python")
+    (:comment "%"  :language "matlab")
+    (:comment "#"  :language "r")
+    (:comment ";"  :language "racket")
+    (:comment "#"  :language "ruby")
+    (:comment "#"  :language "crystal")
+    (:comment "#"  :language "nim")
+    (:comment "#"  :language "nix")
     (:comment "//" :language "scala")
-    (:comment ";" :language "scheme")
-    (:comment "#" :language "janet")
-    (:comment "#" :language "shell")
+    (:comment ";"  :language "scheme")
+    (:comment "#"  :language "janet")
+    (:comment "#"  :language "shell")
     (:comment "//" :language "solidity")
     (:comment "//" :language "swift")
-    (:comment "#" :language "elixir")
-    (:comment "%" :language "erlang")
-    (:comment "%" :language "tex")
+    (:comment "#"  :language "elixir")
+    (:comment "%"  :language "erlang")
+    (:comment "%"  :language "tex")
     (:comment "//" :language "systemverilog")
     (:comment "--" :language "vhdl")
     (:comment "//" :language "scss")
     (:comment "//" :language "pascal")
     (:comment "//" :language "protobuf")
-    (:comment "#" :language "hcl")
+    (:comment "#"  :language "hcl")
     (:comment "//" :language "apex")
     (:comment "*>" :language "cobol"))
   "List of one-line comments organized by language.
@@ -3844,6 +3950,16 @@ LANGUAGE is an optional language to pass to `dumb-jump-process-results'."
      (t
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front)))))
 
+(defun dumb-jump--candidate-x<y (x y)
+  "Return non-nil if candidate X should sort before candidate Y.
+Order by :path length (shorter first), then by :line."
+  (let ((x-path-len (length (plist-get x :path)))
+        (y-path-len (length (plist-get y :path))))
+    (if (/= x-path-len y-path-len)
+        (< x-path-len y-path-len)
+      (< (plist-get x :line)
+         (plist-get y :line)))))
+
 (defun dumb-jump-process-results (results cur-file proj-root ctx-type
                                           _look-for _use-tooltip
                                           prefer-external &optional language)
@@ -3899,18 +4015,15 @@ Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
                                   (string= (plist-get it :path) rel-cur-file)))
                          match-no-comments)
 
-               ;; Sort non-current files by path length so the nearest file is more likely to be
-               ;; sorted higher to the top. Also sorts by line number for sanity.
-               (-sort (lambda (x y)
-                        (and (< (plist-get x :line) (plist-get y :line))
-                             (< (length (plist-get x :path)) (length (plist-get y :path)))))
+               ;; Sort non-current files by path length so the nearest file is
+               ;; more likely to be sorted higher to the top. Also sorts by
+               ;; line number for sanity.
+               (-sort #'dumb-jump--candidate-x<y
                       (--filter (not (or (string= (plist-get it :path) cur-file)
                                          (string= (plist-get it :path) rel-cur-file)))
                                 match-no-comments)))
             (-concat
-             (-sort (lambda (x y)
-                      (and (< (plist-get x :line) (plist-get y :line))
-                           (< (length (plist-get x :path)) (length (plist-get y :path)))))
+             (-sort #'dumb-jump--candidate-x<y
                     (--filter (not (or (string= (plist-get it :path) cur-file)
                                        (string= (plist-get it :path) rel-cur-file)))
                               match-no-comments))
@@ -3921,15 +4034,16 @@ Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
          (matches
           (if (not prefer-external)
               (-distinct
-               (append (dumb-jump-current-file-results cur-file match-cur-file-front)
-                       (dumb-jump-current-file-results rel-cur-file match-cur-file-front)))
+               (append
+                (dumb-jump-current-file-results cur-file match-cur-file-front)
+                (dumb-jump-current-file-results rel-cur-file match-cur-file-front)))
             match-cur-file-front))
 
          (var-to-jump (car matches))
          ;; TODO: handle if ctx-type is null but ALL results are variable
 
-         ;; When non-aggressive it should only jump when there is only one match, regardless of
-         ;; context.
+         ;; When non-aggressive it should only jump when there is only one
+         ;; match, regardless of context.
          (do-var-jump
           (and (or dumb-jump-aggressive
                    (= (length match-cur-file-front) 1))
@@ -4418,7 +4532,7 @@ The arguments are:
 - IT      : string: the dumb-jump generic regular expression.
 - LOOK-FOR: string: the searched item.
 - VARIANT : symbol: the search tool variant,
-                    one of: ag, rg, git-grep-plus-ag, git-grep."
+                    one of: ag, rg, grep, gnu-grep, git-grep-plus-ag, git-grep."
   (let ((boundary
          (cond ((eq variant 'rg) dumb-jump-rg-word-boundary)
                ((eq variant 'ag) dumb-jump-ag-word-boundary)
@@ -4427,12 +4541,9 @@ The arguments are:
                (t dumb-jump-grep-word-boundary))))
     (let ((text it))
       (setq text (s-replace "\\j" boundary text))
-      (when (eq variant 'gnu-grep)
+      (when (dumb-jump-use-space-bracket-exp-for variant)
         (setq text (s-replace "\\s" "[[:space:]]" text)))
       (setq text (s-replace "JJJ" (regexp-quote look-for) text))
-      (when (and (eq variant 'rg)
-                 (string-prefix-p "-" text))
-        (setq text (concat "[-]" (substring text 1))))
       text)))
 
 (defun dumb-jump-populate-regexes (look-for regexes variant)
@@ -4491,9 +4602,9 @@ The arguments are:
                          (shell-quote-argument (s-replace proj-dir "" it))
                          exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
-      (dumb-jump-concat-command cmd exclude-args regex-args proj))))
+      (dumb-jump-concat-command cmd exclude-args "--" regex-args proj))))
 
 ;; --
 (defun dumb-jump-get-git-grep-files-matching-symbol (symbol proj-root)
@@ -4562,7 +4673,7 @@ The arguments are:
                          (shell-quote-argument (s-replace proj-dir "" it))
                          exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args regex-args proj))))
 
@@ -4598,9 +4709,9 @@ The arguments are:
                           (concat "!" (s-replace proj-dir "" it)))
                          exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
-      (dumb-jump-concat-command cmd exclude-args regex-args proj))))
+      (dumb-jump-concat-command cmd exclude-args "--" regex-args proj))))
 
 (defun dumb-jump-generate-git-grep-command (look-for
                                             cur-file proj
@@ -4640,7 +4751,7 @@ The arguments are:
                                        (concat ":(exclude)" it))
                                       exclude-paths)))
          (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
       (dumb-jump-concat-command cmd regex-args "--" fileexps exclude-args))))
 
@@ -4673,7 +4784,7 @@ The arguments are:
          (exclude-args (dumb-jump-arg-joiner "--exclude-dir" exclude-paths))
          (include-args (dumb-jump-get-ext-includes lang))
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
       (dumb-jump-concat-command cmd dumb-jump-grep-args
                                 case-args exclude-args
@@ -4709,7 +4820,7 @@ The arguments are:
          (exclude-args "")
          (include-args "")
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
-    (if (= (length regexes) 0)
+    (if (null regexes)
         ""
       (dumb-jump-concat-command cmd dumb-jump-gnu-grep-args
                                 case-args exclude-args
@@ -4769,7 +4880,7 @@ The arguments are:
 ;;;###autoload
 (define-minor-mode dumb-jump-mode
   "Minor mode for jumping to variable and function definitions."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   :global t
   :keymap dumb-jump-mode-map)
 
@@ -4807,10 +4918,11 @@ The arguments are:
 			 (ctx (dumb-jump-get-point-context line ident col)))
 		    (propertize ident :dumb-jump-ctx ctx)))))
 
-  (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump)) prompt)
-    (let* ((info (dumb-jump-get-results prompt))
+  (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump))
+                                          entered-name)
+    (let* ((info (dumb-jump-get-results entered-name))
            (results (plist-get info :results))
-           (look-for (or prompt (plist-get info :symbol)))
+           (look-for (or entered-name (plist-get info :symbol)))
            (proj-root (plist-get info :root))
            (issue (plist-get info :issue))
            (lang (plist-get info :lang))

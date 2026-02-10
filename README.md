@@ -99,7 +99,7 @@ Dumb Jump performs best with The Silver Searcher `ag` ([ag install instructions]
 
 #### Basic
 
-To enable the [xref][] backend, evaluate
+To enable the [xref][] backend (new in version 0.5.4), evaluate
 
 ~~~lisp
 (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
@@ -234,7 +234,7 @@ More details [here](http://p.cweiske.de/506). Thanks to @cweiske and @Glumanda99
 
 ## Obsolete commands and options
 
-Older versions of dumb jump didn't use xref, and instead had custom
+Versions of dumb jump older than 0.5.4 didn't use xref, and instead had custom
 commands. These, while marked obsolete, can still be used:
 
 * `dumb-jump-go` (former) core functionality. Attempts to jump to the
@@ -292,8 +292,20 @@ There are a lot of options for running the tests locally:
 requires [Cask](https://github.com/cask/cask) using your local emacs
 ```sh
 cd /path/to/dumb-jump
-cask
 make test
+```
+
+The first time you run this it will also run `cask` to
+setup your directory.
+
+##### Run a subset of tests
+is the same as before but use the `test-this` target followed by one or
+several full or partial test names.  For example, to run all tests that have 'clojure'
+or 'org' in their test function name do this:
+
+```sh
+cd /path/to/dumb-jump
+make test-this clojure org
 ```
 
 #### Concurrent

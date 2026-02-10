@@ -9,6 +9,9 @@
 (require 'dumb-jump)
 ;;; Code:
 
+;; Utilities - locate test files
+;; -----------------------------
+
 (defun dumb-jump-output-rule-test-failures (failures)
   (--each failures (princ (format "\t%s\n" it))))
 
@@ -52,6 +55,62 @@
                                          "../dumb-jump.el"
                                        "INVALID-Current-Working-Directory-for-dumb-jump!"))
   "Relative path of dumb-jump.el ")
+
+;; ---------------------------------------------------------------------------
+;; Test Setup Utilities
+;; --------------------
+
+;; Prevent dumb-jump from prompting user during test
+
+;; dumb-jump commands will prompt the user when a search operation finds more
+;; than 1 destination candidate.  This prompting cannot be performed when the
+;; code is automatically tested as the test will hang if it is allowed to
+;; proceed.
+;;
+;; The following macro must be used to wrap test code that access a dumb-jump
+;; command that may prompt.  The macro force test failure when dumb-jump
+;; prompting function, `dumb-jump-prompt-user-for-choice', is invoked.
+
+(defmacro with-mock-forbidding-prompt (&rest body)
+  "Test BODY.  Ensure no prompting occurs; fail test if prompting did occur."
+  (declare (indent 0))
+  `(with-mock
+     (stub
+      dumb-jump-prompt-user-for-choice
+      => (error "Unexpected call to dumb-jump-prompt-user-for-choice"))
+     ,@body))
+
+;; ---------------------------------------------------------------------------
+;; Tests
+;; -----
+
+;; Test `with-mock-forbidding-prompt':
+
+;; - Ensure with-mock-forbidding-prompt actually detects prompts.
+(ert-deftest with-mock-forbidding-prompt-really-detects-prompt ()
+  "Test that `with-mock-forbidding-prompt' properly detects/fails on prompts."
+  (should-error
+   (with-mock-forbidding-prompt
+     ;; This should trigger the error
+     (dumb-jump-prompt-user-for-choice "/test/path" '((:path "a" :line 1))))))
+
+;; - Ensure that it does not misinterpret another exception as a prompt.
+(defun test-function-that-errors ()
+  "A test utility that issues an error."
+  (error "Issued by test-function-that-errors!"))
+
+(ert-deftest with-mock-forbidding-prompt-does-not-catch-other-exceptions ()
+  "Test detection of other error signalling by `with-mock-forbidding-prompt'."
+  (let ((err (should-error
+              (with-mock-forbidding-prompt
+                (test-function-that-errors)))))
+    ;; The error description is a list, often in the format (ERROR-SYMBOL . DATA).
+    ;; The error message string is typically the second element (car of the DATA,
+    ;; which is the cdr of the error description).
+    (should (string-match "Issued by test-function-that-errors!" (cadr err)))))
+
+;; --------------------
+
 
 (ert-deftest data-dir-exists-test ()
   (should (f-dir? test-data-dir)))
@@ -112,113 +171,242 @@
         (expected " --include \\*.js --include \\*.jsx --include \\*.vue --include \\*.html --include \\*.css "))
     (should (string= expected args))))
 
+(defconst dumb-jump--expected-elisp-regexps-templates
+  '("\\((defun|cl-defun|cl-defgeneric|cl-defmethod|cl-defsubst)\\s+JJJ\\j"
+    "\\((defmacro|cl-defmacro|cl-define-compiler-macro)\\s+JJJ\\j"
+    "\\(defhydra\\b\\s*JJJ\\j"
+    ;;
+    "\\(defvar(-local)?\\b\\s*JJJ\\j"
+    "\\(defconst\\b\\s*JJJ\\j"
+    "\\(defcustom\\b\\s*JJJ\\j"
+    "\\(setq\\b\\s*JJJ\\j"
+    "\\(JJJ\\s+"
+    "\\((cl-defstruct|cl-deftype)\\s+JJJ\\j"
+    "\\((defun|cl-defun|cl-defgeneric|cl-defmethod)\\s*.+\\(?\\s*JJJ\\j\\s*\\)?")
+  "List of regexp templates equal to what is in dumb-jump.el.")
+
+(defun dumb-jump--elisp-expected-regexps (variant &optional type)
+  "Return a list of elisp regexps adjusted with word boundary of VARIANT.
+VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
+  (let ((regexes (if (eq type 'elisp-functions)
+                     ;; take the first 3 regexps: used for functions
+                     (-take 3 dumb-jump--expected-elisp-regexps-templates)
+                   dumb-jump--expected-elisp-regexps-templates))
+        (word-boundary-regexp
+         (symbol-value
+          (intern
+           (format "dumb-jump-%s-word-boundary"
+                   (if (eq variant 'git-grep-plus-ag)
+                       'ag
+                     variant)))))
+        (formatted-regexps '()))
+    ;; perform translation of each regexp template
+    (dolist (r regexes (reverse formatted-regexps))
+      (setq r (s-replace "JJJ" "tester" r))
+      (setq r (s-replace "\\j" word-boundary-regexp r))
+      (when (dumb-jump-use-space-bracket-exp-for variant)
+        (setq r (s-replace "\\s" "[[:space:]]" r)))
+      (push r formatted-regexps))))
+
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-test ()
   (let* ((system-type 'darwin)
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'grep))
+         ;; The grep command built by dumb-jump places each regexp inside its
+         ;; own -e string.  Each of those strings following -e must be
+         ;; shell-quoted.
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
-                                  '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(tester\\s+")))
-         (expected (concat "LANG=C grep -REn --include \\*.el --include \\*.el.gz" (s-join "" expected-regexes) " .")))
+                                  (dumb-jump--elisp-expected-regexps 'grep)))
+
+         (expected (concat
+                    "LANG=C grep -REn --include \\*.el --include \\*.el.gz"
+                    (s-join "" expected-regexes)
+                    " .")))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-gnu-grep-command-no-ctx-test ()
   (let* ((system-type 'darwin)
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'gnu-grep))
+         ;; The gnu grep command built by dumb-jump places each regexp inside
+         ;; its own -e string. Each of those strings following -e must be
+         ;; shell-quoted.
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
-                                  '("\\((defun|cl-defun)[[:space:]]+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defmacro[[:space:]]+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defvar\\b[[:space:]]*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defcustom\\b[[:space:]]*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(setq\\b[[:space:]]*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(tester[[:space:]]+")))
+                                  (dumb-jump--elisp-expected-regexps 'gnu-grep)))
          (expected (concat "LANG=C grep -rEn" (s-join "" expected-regexes) " .")))
     (should (string= expected  (dumb-jump-generate-gnu-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "ag --nocolor --nogroup --elisp " (shell-quote-argument expected-regexes) " .")))
-    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+         (base-regexes (dumb-jump--elisp-expected-regexps 'ag))
+         ;; The ag tool accepts a list of regexps separated by "\\|".
+         ;; Each of the regexp must be shell-quoted (but not "\\|").
+         (expected-regexes
+          (append (-map (lambda (elem)
+                          (concat (shell-quote-argument elem) "\\|"))
+                        (-butlast base-regexes))
+                  (list (shell-quote-argument (-last-item base-regexes)))))
+         (expected (concat "ag --nocolor --nogroup --elisp -- "
+                           (mapconcat #'identity expected-regexes "")
+                           " .")))
+    (should (string= expected
+                     (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-ag-command-exclude-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "ag --nocolor --nogroup --elisp --ignore-dir this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root")))
-    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded"))))))
+         (expected-regexes (mapconcat #'identity
+                                      (dumb-jump--elisp-expected-regexps 'ag)
+                                      "|"))
+         (expected
+          (concat
+           "ag --nocolor --nogroup --elisp --ignore-dir this/is/excluded -- "
+           (shell-quote-argument expected-regexes)
+           " /path/to/proj-root")))
+    (should (string= expected
+                     (dumb-jump-generate-ag-command
+                      "tester" "blah.el" "/path/to/proj-root"
+                      regexes "elisp"
+                      '("/path/to/proj-root/this/is/excluded"))))))
 
 (ert-deftest dumb-jump-generate-git-grep-plus-ag-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' " (shell-quote-argument expected-regexes) " /path/to/proj-root"))) ;; NOTE no "--elisp" and the `-G` arg is new
-  (with-mock
-   (mock (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
-    (should (string= expected  (dumb-jump-generate-git-grep-plus-ag-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" nil))))))
+         (expected-regexes (mapconcat #'identity
+                                      (dumb-jump--elisp-expected-regexps 'git-grep-plus-ag)
+                                      "|"))
+         (expected
+          ;; NOTE no "--elisp" and the `-G` arg is new
+          (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' "
+                  (shell-quote-argument expected-regexes)
+                  " /path/to/proj-root")))
+    (with-mock
+      (mock
+       (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
+      (should (string= expected
+                       (dumb-jump-generate-git-grep-plus-ag-command
+                        "tester" "blah.el" "/path/to/proj-root"
+                        regexes "elisp" nil))))))
 
 
 (ert-deftest dumb-jump-generate-git-grep-plus-ag-command-exclude-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' --ignore-dir this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root"))) ;; NOTE no "--elisp" and the `-G` arg is new
-  (with-mock
-   (mock (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
-    (should (string= expected  (dumb-jump-generate-git-grep-plus-ag-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded")))))))
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'git-grep-plus-ag)
+                     "|"))
+         (expected
+          ;; NOTE no "--elisp" and the `-G` arg is new
+          (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' --ignore-dir this/is/excluded "
+                  (shell-quote-argument expected-regexes)
+                  " /path/to/proj-root")))
+    (with-mock
+      (mock (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
+      (should (string= expected
+                       (dumb-jump-generate-git-grep-plus-ag-command
+                        "tester" "blah.el" "/path/to/proj-root" regexes "elisp"
+                        '("/path/to/proj-root/this/is/excluded")))))))
 
 
 (ert-deftest dumb-jump-generate-rg-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp " (shell-quote-argument expected-regexes) " .")))
-    (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'rg)
+                     "|"))
+         (expected (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -- "
+                           (shell-quote-argument expected-regexes) " .")))
+    (should (string= expected  (dumb-jump-generate-rg-command
+                                "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-rg-command-remote-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
-         (expected (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -g \\!this/is/excluded " (shell-quote-argument expected-regexes) " /path/to/proj-root")))
-    (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "/path/to/proj-root" regexes "elisp" '("/path/to/proj-root/this/is/excluded"))))))
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'rg)
+                     "|"))
+         (expected
+          (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -g \\!this/is/excluded -- "
+                  (shell-quote-argument expected-regexes)
+                  " /path/to/proj-root")))
+    (should (string= expected
+                     (dumb-jump-generate-rg-command
+                      "tester" "blah.el" "/path/to/proj-root" regexes "elisp"
+                      '("/path/to/proj-root/this/is/excluded"))))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'git-grep)
+                     "|"))
          (excludes '("one" "two" "three"))
-         (expected (concat "git grep --color=never --line-number --untracked -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
-    (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
+         (expected
+          (concat "git grep --color=never --line-number --untracked -E "
+                  (shell-quote-argument expected-regexes)
+                  " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
+    (should (string= expected
+                     (dumb-jump-generate-git-grep-command
+                      "tester" "blah.el" "." regexes "elisp" excludes)))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-extra-args ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'git-grep)
+                     "|"))
          (excludes '("one" "two" "three"))
          (dumb-jump-git-grep-search-args "--recurse-submodules")
-         (expected (concat "git grep --color=never --line-number --untracked --recurse-submodules -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
-    (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
+         (expected
+          (concat
+           "git grep --color=never --line-number --untracked --recurse-submodules -E "
+           (shell-quote-argument expected-regexes)
+           " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
+    (should (string= expected
+                     (dumb-jump-generate-git-grep-command
+                      "tester" "blah.el" "." regexes "elisp" excludes)))))
 
 (ert-deftest dumb-jump-generate-ag-command-no-ctx-extra-args ()
   ;; ag args
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester(?![a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester(?![a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester(?![a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'ag)
+                     "|"))
          (dumb-jump-ag-search-args "--follow")
-         (expected (concat "ag --nocolor --nogroup --follow --elisp " (shell-quote-argument expected-regexes) " .")))
-    (should (string= expected  (dumb-jump-generate-ag-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+         (expected
+          (concat "ag --nocolor --nogroup --follow --elisp -- "
+                  (shell-quote-argument expected-regexes) " .")))
+    (should (string= expected
+                     (dumb-jump-generate-ag-command
+                      "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-rg-command-no-ctx-extra-args ()
   ;; rg-args
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected-regexes (mapconcat #'identity
+                                      (dumb-jump--elisp-expected-regexps 'rg)
+                                      "|"))
          (dumb-jump-rg-search-args "--no-pcre2 --follow")
-         (expected (concat "rg --color never --no-heading --line-number -U --no-pcre2 --follow --type elisp " (shell-quote-argument expected-regexes) " .")))
-    (should (string= expected  (dumb-jump-generate-rg-command  "tester" "blah.el" "." regexes "elisp" nil)))))
+         (expected
+          (concat "rg --color never --no-heading --line-number -U --no-pcre2 --follow --type elisp -- "
+                  (shell-quote-argument expected-regexes)
+                  " .")))
+    (should (string= expected
+                     (dumb-jump-generate-rg-command
+                      "tester" "blah.el" "." regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-not-search-untracked-test ()
   (let* ((dumb-jump-git-grep-search-args "")
          (dumb-jump-git-grep-search-untracked nil)
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
-         (expected-regexes "\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])|\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])|\\(tester\\s+|\\((defun|cl-defun)\\s*.+\\(?\\s*tester($|[^a-zA-Z0-9\\?\\*-])\\s*\\)?")
+         (expected-regexes (mapconcat #'identity
+                                      (dumb-jump--elisp-expected-regexps 'git-grep)
+                                      "|"))
          (excludes '("one" "two" "three"))
-         (expected (concat "git grep --color=never --line-number -E " (shell-quote-argument expected-regexes) " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
-    (should (string= expected  (dumb-jump-generate-git-grep-command  "tester" "blah.el" "." regexes "elisp" excludes)))))
+         (expected
+          (concat "git grep --color=never --line-number -E "
+                  (shell-quote-argument expected-regexes)
+                  " -- ./\\*.el ./\\*.el.gz \\:\\(exclude\\)one \\:\\(exclude\\)two \\:\\(exclude\\)three")))
+    (should (string= expected
+                     (dumb-jump-generate-git-grep-command
+                      "tester" "blah.el" "." regexes "elisp" excludes)))))
 
 (ert-deftest dumb-jump-generate-grep-command-no-ctx-funcs-only-test ()
   (let* ((system-type 'darwin)
@@ -226,8 +414,7 @@
          (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'grep))
          (expected-regexes (s-join ""
                             (--map (concat " -e " (shell-quote-argument it))
-                                   '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                     "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])"))))
+                                   (dumb-jump--elisp-expected-regexps 'grep 'elisp-functions))))
          (expected (concat "LANG=C grep -REn" expected-regexes " ."))
          (zexpected (concat "LANG=C zgrep -REn" expected-regexes " .")))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "" nil)))
@@ -239,8 +426,7 @@
          (dumb-jump-ignore-context nil) ;; overriding the default
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type 'grep))
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
-                                  '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])")))
+                                  (dumb-jump--elisp-expected-regexps 'grep 'elisp-functions)))
          (expected (concat "LANG=C grep -REn" (s-join "" expected-regexes) " .")))
     ;; the point context being passed should match a "function" type so only the one command
     (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
@@ -252,8 +438,7 @@
            (dumb-jump-ignore-context nil) ;; overriding the default
            (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type 'grep))
            (expected-regexes (--map (concat " -e " (shell-quote-argument it))
-                                    '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                      "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])")))
+                                    (dumb-jump--elisp-expected-regexps 'grep 'elisp-functions)))
            (expected (concat "grep -REn" (s-join "" expected-regexes) " .")))
       (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil))))))
 
@@ -263,12 +448,7 @@
          (dumb-jump-ignore-context t)
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type nil))
          (expected-regexes (--map (concat " -e " (shell-quote-argument it))
-                                  '("\\((defun|cl-defun)\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defmacro\\s+tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defvar\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(defcustom\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(setq\\b\\s*tester($|[^a-zA-Z0-9\\?\\*-])"
-                                    "\\(tester\\s+")))
+                                  (dumb-jump--elisp-expected-regexps 'grep)))
          (expected (concat "LANG=C grep -REn" (s-join "" expected-regexes) " .")))
 
     ;; the point context being passed is ignored so ALL should return
@@ -364,7 +544,8 @@
     (should (string= ".dumbjump" (dumb-jump-get-config found-project)))))
 
 (ert-deftest dumb-jump-find-proj-root-default-test ()
-  (with-mock (mock (locate-dominating-file * *))
+  (with-mock
+    (mock (locate-dominating-file * *))
     (let ((found-project (dumb-jump-get-project-root ""))
           (expected (f-expand dumb-jump-default-project)))
       (should (string= found-project expected)))))
@@ -379,12 +560,12 @@
 
 (ert-deftest dumb-jump-goto-file-line-test ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
-    (with-mock
-     (when (version< emacs-version "29")
-       (mock (ring-insert * *)))
-     (dumb-jump-goto-file-line js-file 3 0)
-     (should (string= (buffer-file-name) js-file))
-     (should (= (line-number-at-pos) 3)))))
+    (with-mock-forbidding-prompt
+      (when (version< emacs-version "29")
+        (mock (ring-insert * *)))
+      (dumb-jump-goto-file-line js-file 3 0)
+      (should (string= (buffer-file-name) js-file))
+      (should (= (line-number-at-pos) 3)))))
 
 (ert-deftest dumb-jump-test-grep-rules-test ()
   (let ((rule-failures (dumb-jump-test-grep-rules)))
@@ -481,8 +662,12 @@
                              :language "elisp"
                              :regex "\\\(defvarJJJ\\b\\s*"
                              :tests ("(defvar test ")))
+           ;; Add a bad rules to the rules normally used by dumb-jump.
 	   (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
+           ;; then test all rules to detect the ones that fail.
 	   (rule-failures (dumb-jump-test-rg-rules)))
+      ;; No rule taken from dumb-jump.el should fail: the only one that
+      ;; should fail should be the `bad-rule' defined above.
       (should (= (length rule-failures) 1)))))
 
 (when (and (not (eq system-type 'darwin))   ; git grep is broken on macOS as of Jan 2026.
@@ -562,7 +747,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
-      (with-mock
+      (with-mock-forbidding-prompt
         (mock (pop-tag-mark))
         (stub dumb-jump-rg-installed? => t)
         (with-no-warnings (dumb-jump-go))
@@ -597,7 +782,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 9))
         (should (string= go-js-file (with-no-warnings (dumb-jump-go))))))))
@@ -608,7 +793,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 9))
         (should (string= go-js-file (with-no-warnings (dumb-jump-go-other-window))))))))
@@ -619,7 +804,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 9))
         (should (string= go-js-file (with-no-warnings (dumb-jump-go-current-window))))))))
@@ -641,7 +826,7 @@
       (goto-char (point-min))
       (forward-line 11)
       (forward-char 76)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 7 35))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -651,7 +836,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 20)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 1 4))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -661,7 +846,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 21)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -671,7 +856,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 22)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 5 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -681,7 +866,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 23)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 10 2))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -691,7 +876,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 24)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 16 2))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -702,7 +887,7 @@
       (goto-char (point-min))
       (forward-line 36)
       (forward-char 12)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 28 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -715,7 +900,7 @@
       (goto-char (point-min))
       (forward-line 7)
       (forward-char 35)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 6 25))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -727,7 +912,7 @@
       (goto-char (point-min))
       (forward-line 13)
       (forward-char 35)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 12 32))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -739,7 +924,7 @@
       (goto-char (point-min))
       (forward-line 20)
       (forward-char 35)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 19 32))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -751,7 +936,7 @@
       (goto-char (point-min))
       (forward-line 13)
       (forward-char 33)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 11 10))
         (should (string= el-file (with-no-warnings (dumb-jump-go))))))))
@@ -763,7 +948,7 @@
       (goto-char (point-min))
       (forward-line 21)
       (forward-char 33)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 18 10))
         (should (string= el-file (with-no-warnings (dumb-jump-go))))))))
@@ -775,7 +960,7 @@
       (goto-char (point-min))
       (forward-line 4)
       (forward-char 12)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 27))
         (should (string= el-file (with-no-warnings (dumb-jump-go))))))))
@@ -786,7 +971,7 @@
       (goto-char (point-min))
       (forward-line 1)
       (forward-char 4)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-message "'%s' %s %s declaration not found." "nothing" * *))
         (with-no-warnings (dumb-jump-go))))))
@@ -795,7 +980,7 @@
   (let ((txt-file (f-join test-data-dir-proj1 "src" "js" "nocode.txt")))
     (with-current-buffer (find-file-noselect txt-file t)
       (goto-char (point-min))
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-message "Could not find rules for '%s'." ".txt file"))
         (with-no-warnings (dumb-jump-go))))))
@@ -811,7 +996,7 @@
                        (sleep-for 0 300)
                      (sleep-for 0.3)))
                  '(:results (:result))))
-        (with-mock
+        (with-mock-forbidding-prompt
           (stub dumb-jump-rg-installed? => t)
           (mock (dumb-jump-message "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions" * * *))
           (mock (dumb-jump-result-follow * * *))
@@ -821,52 +1006,52 @@
   (let ((dumb-jump-aggressive t)
         (results '((:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
                    (:path "src/file.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
-    (with-mock
-     (mock (dumb-jump-goto-file-line "src/file.js" 62 4))
-     (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil nil))))
+    (with-mock-forbidding-prompt
+      (mock (dumb-jump-goto-file-line "src/file.js" 62 4))
+      (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil nil))))
 
 (ert-deftest dumb-jump-message-handle-results-choices-test ()
   (let ((results '((:path "src/file2.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
                    (:path "src/file2.js" :line 63 :context "var isNow = true" :diff 7 :target "isNow")
                    (:path "src/file2.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
     (with-mock
-     (mock (dumb-jump-prompt-user-for-choice "/code/redux" *))
-     (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil nil))))
+      (mock (dumb-jump-prompt-user-for-choice "/code/redux" *))
+      (dumb-jump-handle-results results "src/file.js" "/code/redux" "" "isNow" nil nil))))
 
 (ert-deftest dumb-jump-grep-installed?-bsd-test ()
   (let ((dumb-jump--grep-installed? 'unset))
     (with-mock
-     (mock (shell-command-to-string *) => "grep (BSD grep) 2.5.1-FreeBSD\n" :times 1)
-     (should (eq (dumb-jump-grep-installed?) 'bsd)))
-     ;; confirm memoization of the previous result
-     (should (eq (dumb-jump-grep-installed?) 'bsd))))
+      (mock (shell-command-to-string *) => "grep (BSD grep) 2.5.1-FreeBSD\n" :times 1)
+      (should (eq (dumb-jump-grep-installed?) 'bsd)))
+    ;; confirm memoization of the previous result
+    (should (eq (dumb-jump-grep-installed?) 'bsd))))
 
 (ert-deftest dumb-jump-grep-installed?-gnu-test ()
   (let ((dumb-jump--grep-installed? 'unset))
     (with-mock
-     (mock (shell-command-to-string *) => "grep (GNU grep) 2.4.2\n" :times 1)
-     (should (eq (dumb-jump-grep-installed?) 'gnu))
-     ;; confirm memoization of the previous result
-     (should (eq (dumb-jump-grep-installed?) 'gnu)))))
+      (mock (shell-command-to-string *) => "grep (GNU grep) 2.4.2\n" :times 1)
+      (should (eq (dumb-jump-grep-installed?) 'gnu))
+      ;; confirm memoization of the previous result
+      (should (eq (dumb-jump-grep-installed?) 'gnu)))))
 
 (ert-deftest dumb-jump-ag-installed?-test ()
   (let ((dumb-jump--ag-installed? 'unset))
     (with-mock
-     (mock (shell-command-to-string *) => "ag version 0.33.0\n" :times 1)
-     (should (eq (dumb-jump-ag-installed?) t))
-     ;; confirm memoization of the previous result
-     (should (eq (dumb-jump-ag-installed?) t)))))
+      (mock (shell-command-to-string *) => "ag version 0.33.0\n" :times 1)
+      (should (eq (dumb-jump-ag-installed?) t))
+      ;; confirm memoization of the previous result
+      (should (eq (dumb-jump-ag-installed?) t)))))
 
 (ert-deftest dumb-jump-git-grep-plus-ag-installed?-test ()
   (let ((dumb-jump--git-grep-plus-ag-installed? 'unset)
         (dumb-jump--ag-installed? 'unset)
         (dumb-jump--git-grep-installed? 'unset))
     (with-mock
-     ; this isn't ideal but combining the ag and git grep responses but this shouldn't matter in practice with :times 2
-     (mock (shell-command-to-string *) => "ag version 0.33.0\nfatal: no pattern given\n" :times 2)
-     (should (eq (dumb-jump-git-grep-plus-ag-installed?) t))
-     ;; confirm memoization of the previous result
-     (should (eq (dumb-jump-git-grep-plus-ag-installed?) t)))))
+      ;; this isn't ideal but combining the ag and git grep responses but this shouldn't matter in practice with :times 2
+      (mock (shell-command-to-string *) => "ag version 0.33.0\nfatal: no pattern given\n" :times 2)
+      (should (eq (dumb-jump-git-grep-plus-ag-installed?) t))
+      ;; confirm memoization of the previous result
+      (should (eq (dumb-jump-git-grep-plus-ag-installed?) t)))))
 
 (ert-deftest dumb-jump-rg-installed?-test-no ()
   (let ((dumb-jump--rg-installed? 'unset))
@@ -899,10 +1084,10 @@
   (let ((dumb-jump--rg-installed? 'unset))
     (with-mock
       (mock (executable-find *) => t)
-     (mock (shell-command-to-string *) => "ripgrep 0.10.0\n" :times 1)
-     (should (eq (dumb-jump-rg-installed?) nil))
-     ;; confirm memoization of the previous result
-     (should (eq (dumb-jump-rg-installed?) nil)))))
+      (mock (shell-command-to-string *) => "ripgrep 0.10.0\n" :times 1)
+      (should (eq (dumb-jump-rg-installed?) nil))
+      ;; confirm memoization of the previous result
+      (should (eq (dumb-jump-rg-installed?) nil)))))
 
 (ert-deftest dumb-jump-rg-installed?-test-yes2 ()
   (let ((dumb-jump--rg-installed? 'unset))
@@ -935,7 +1120,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-char 13)
-      (with-mock
+      (with-mock-forbidding-prompt
         ;; (mock (executable-find *) => t)
         (mock (dumb-jump-rg-installed?) => nil)
         (mock (dumb-jump-ag-installed?) => nil)
@@ -949,7 +1134,7 @@
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
       (forward-line 1)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-message "No symbol under point."))
         (with-no-warnings (dumb-jump-go))))))
@@ -1011,7 +1196,7 @@
 (ert-deftest dumb-jump-populate-regexes-rg-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'rg) '("testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'rg) '("\\$testvar\\s*=\\s*")))
-  (should (equal (dumb-jump-populate-regexes "-testvar" '("JJJ\\s*=\\s*") 'rg) '("[-]testvar\\s*=\\s*"))))
+  (should (equal (dumb-jump-populate-regexes "-testvar" '("JJJ\\s*=\\s*") 'rg) '("-testvar\\s*=\\s*"))))
 
 (ert-deftest dumb-jump-populate-regexes-git-grep-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'git-grep) '("testvar\\s*=\\s*")))
@@ -1062,7 +1247,7 @@
       (goto-char (point-min))
       (forward-line 23)
       (forward-char 3)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 7))
         (should (string= (with-no-warnings (dumb-jump-go)) lib-file))))))
@@ -1104,7 +1289,7 @@
       (goto-char (point-min))
       (forward-line 8)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -1115,7 +1300,7 @@
       (goto-char (point-min))
       (forward-line 22)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 13 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -1127,7 +1312,7 @@
       (goto-char (point-min))
       (forward-line 27)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 26 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -1138,7 +1323,7 @@
       (goto-char (point-min))
       (forward-line 32)
       (forward-char 7)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 31 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -1149,7 +1334,7 @@
       (goto-char (point-min))
       (forward-line 39)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 37 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
@@ -1162,7 +1347,7 @@
       (goto-char (point-min))
       (forward-line 8)
       (forward-char 14)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 3 6))
         (should (string= cpp-file (with-no-warnings (dumb-jump-go))))))))
@@ -1173,7 +1358,7 @@
       (goto-char (point-min))
       (forward-line 8)
       (forward-char 9)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 1 6))
         (should (string= cpp-file (with-no-warnings (dumb-jump-go))))))))
@@ -1184,7 +1369,7 @@
       (goto-char (point-min))
       (forward-line 16)
       (forward-char 12)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 6 18))
         (should (string= cpp-file (with-no-warnings (dumb-jump-go))))))))
@@ -1197,7 +1382,7 @@
       (goto-char (point-min))
       (forward-line 3)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 9 6))
         (should (string= org-file (with-no-warnings (dumb-jump-go))))))
@@ -1211,7 +1396,7 @@
       (goto-char (point-min))
       (forward-line 14)
       (forward-char 10)
-       (with-mock
+       (with-mock-forbidding-prompt
          (stub dumb-jump-rg-installed? => t)
          (mock (dumb-jump-goto-file-line * 21 2))
          (should (string= org-file (with-no-warnings (dumb-jump-go))))))
@@ -1234,7 +1419,7 @@
       (forward-line 3)
       (forward-char 2)
       (org-edit-src-code)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 9 6))
         (should (string= org-file (with-no-warnings (dumb-jump-go))))))
@@ -1253,7 +1438,7 @@
       (goto-char (point-min))
       (forward-line 38)  ; Line 39: "Test for uniqueblock lookup: uniqueblock"
       (forward-char 34)  ; Position cursor on "uniqueblock" at end of line
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 41 8))  ; Line 41 is #+name: uniqueblock (col 8)
         (should (string= org-file (with-no-warnings (dumb-jump-go))))))
@@ -1271,7 +1456,7 @@
       (goto-char (point-min))
       (forward-line 65)  ; Line 66: "Reference to MainTopic heading: MainTopic"
       (forward-char 35)  ; Position cursor on "MainTopic" at end of line
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 68 4))  ; Line 68 is *** MainTopic (col 4)
         (should (string= org-file (with-no-warnings (dumb-jump-go))))))
@@ -1289,7 +1474,7 @@
       (goto-char (point-min))
       (forward-line 57)  ; Line 58: "See also the section with ID call-section for more info."
       (forward-char 34)  ; Position cursor on "call-section"
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 55 12))  ; Line 55 is :CUSTOM_ID: call-section (col 12)
         (should (string= org-file (with-no-warnings (dumb-jump-go))))))
@@ -1307,7 +1492,7 @@
       (goto-char (point-min))
       (forward-line 61)  ; Line 62: "#+CALL: UPPERCASE()"
       (forward-char 8)   ; Position cursor on "UPPERCASE"
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 20 8))  ; Line 20 is #+NAME: UPPERCASE (col 8)
         (should (string= org-file (with-no-warnings (dumb-jump-go))))))
@@ -1325,7 +1510,7 @@
       (goto-char (point-min))
       (forward-line 45)  ; Line 46: "Test for nospace lookup: nospace"
       (forward-char 28)  ; Position cursor on "nospace" at end of line
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 48 7))  ; Line 48 is #+name:nospace (col 7)
         (should (string= org-file (with-no-warnings (dumb-jump-go))))))
@@ -1343,7 +1528,7 @@
       (goto-char (point-min))
       (forward-line 87)  ; Line 88: "Reference to nospace-id custom ID: nospace-id"
       (forward-char 36)  ; Position cursor on "nospace-id" at end of line
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 85 11))  ; Line 85 is :CUSTOM_ID:nospace-id (col 11)
         (should (string= org-file (with-no-warnings (dumb-jump-go))))))
@@ -1362,7 +1547,7 @@
       (goto-char (point-min))
       (forward-line 3)
       (forward-char 18)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 6 6))
         (should (string= header-file (with-no-warnings (dumb-jump-go))))))))
@@ -1377,7 +1562,7 @@
       (goto-char (point-min))
       (forward-line 10)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 6))
         (should (string= header-file (with-no-warnings (dumb-jump-go-prefer-external))))))))
@@ -1389,7 +1574,7 @@
       (goto-char (point-min))
       (forward-line 3)
       (forward-char 18)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 6 6))
         (should (string= header-file (with-no-warnings (dumb-jump-go-prefer-external))))))))
@@ -1400,7 +1585,7 @@
       (goto-char (point-min))
       (forward-line 1)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 6 6))
         (should (string= main-file (with-no-warnings (dumb-jump-go-prefer-external))))))))
@@ -1413,15 +1598,19 @@
       (goto-char (point-min))
       (forward-line 10)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 6))
-        (should (string= header-file (with-no-warnings (dumb-jump-go-prefer-external-other-window))))))))
+        (should (string= header-file
+                         (with-no-warnings
+                           (dumb-jump-go-prefer-external-other-window))))))))
 
 (ert-deftest dumb-jump-filter-no-start-comments ()
   (should (equal '((:context "yield me"))
-                 (dumb-jump-filter-no-start-comments '((:context "// filter me out")
-                                                       (:context "yield me")) "c++"))))
+                 (dumb-jump-filter-no-start-comments
+                  '((:context "// filter me out")
+                    (:context "yield me"))
+                  "c++"))))
 
 (ert-deftest dumb-jump-filter-no-start-comments-unknown-language ()
   (should (equal nil (dumb-jump-filter-no-start-comments '() "unknownlanguage"))))
@@ -1744,7 +1933,7 @@
       (goto-char (point-min))
       (forward-line 2)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 1 6))
         (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
@@ -1758,7 +1947,7 @@
       (goto-char (point-min))
       (forward-line 3)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 2 6))
         (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
@@ -1771,7 +1960,8 @@
       (goto-char (point-min))
       (forward-line 4)
       (forward-char 2)
-      (with-mock
+      (with-mock-forbidding-prompt
+        ;; (stub dumb-jump-ag-installed? => t)
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 9))
         (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
@@ -1784,10 +1974,10 @@
       (goto-char (point-min))
       (forward-line 5)
       (forward-char 2)
-      (with-mock
-        (stub dumb-jump-rg-installed? => t)
-        (mock (dumb-jump-goto-file-line * 5 7))
-        (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
+      (with-mock-forbidding-prompt
+       (stub dumb-jump-rg-installed? => t)
+       (mock (dumb-jump-goto-file-line * 5 7))
+       (should (string= clj-to-file (with-no-warnings (dumb-jump-go))))))))
 
 
 (ert-deftest dumb-jump-format-files-as-ag-arg-test ()
@@ -1798,12 +1988,77 @@
 
 (ert-deftest dumb-jump-get-git-grep-files-matching-symbol-test ()
   (with-mock
-   (mock (shell-command-to-string "git grep --full-name -F -c symbol path") => "fileA:1\nfileB:2\n")
-   (should (equal (dumb-jump-get-git-grep-files-matching-symbol "symbol" "path") '("fileA" "fileB")))))
+    (mock (shell-command-to-string "git grep --full-name -F -c symbol path") => "fileA:1\nfileB:2\n")
+    (should (equal (dumb-jump-get-git-grep-files-matching-symbol "symbol" "path") '("fileA" "fileB")))))
 
 (ert-deftest dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg-test ()
   (with-mock
-   (mock (shell-command-to-string "git grep --full-name -F -c symbol path") => "fileA:1\nfileB:2\n")
-   (should (string= (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg "symbol" "path") "'(path/fileA|path/fileB)'"))))
+    (mock (shell-command-to-string "git grep --full-name -F -c symbol path") => "fileA:1\nfileB:2\n")
+    (should (string= (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg "symbol" "path") "'(path/fileA|path/fileB)'"))))
+
+
+;; ---------------------------------------------------------------------------
+;; Tests for `dumb-jump-use-space-bracket-exp-for'
+
+(ert-deftest dumb-jump-use-space-bracket-exp-when-forced-on-grep ()
+  "Test dumb-jump-use-space-bracket-exp-for returned value."
+  ;; When `dumb-jump-force-using-space-bracket-exp' is t (like on Windows):
+  (let ((dumb-jump-force-using-space-bracket-exp t))
+    ;; It should return t for grep based tools to prevent problem when the
+    ;; system uses an old version of grep that did not support \s
+    (should (dumb-jump-use-space-bracket-exp-for 'grep))
+    (should (dumb-jump-use-space-bracket-exp-for 'gnu-grep))
+    (should (dumb-jump-use-space-bracket-exp-for 'git-grep))
+    (should (dumb-jump-use-space-bracket-exp-for 'git-grep-plus-ag))
+    ;; The other tools, ag, rg are not affected by this problem, so they can
+    ;; use \s in their regular expressions.
+    (should-not (dumb-jump-use-space-bracket-exp-for 'ag))
+    (should-not (dumb-jump-use-space-bracket-exp-for 'rg))
+    ))
+
+(ert-deftest dumb-jump-use-space-bracket-exp-when-not-forced ()
+  "Test that dumb-jump-use-space-bracket-exp-for returns nil when not forced."
+  (let ((dumb-jump-force-using-space-bracket-exp nil))
+    (should-not (dumb-jump-use-space-bracket-exp-for 'grep))
+    (should-not (dumb-jump-use-space-bracket-exp-for 'gnu-grep))
+    (should-not (dumb-jump-use-space-bracket-exp-for 'git-grep))
+    (should-not (dumb-jump-use-space-bracket-exp-for 'ag))
+    (should-not (dumb-jump-use-space-bracket-exp-for 'rg))))
+
+;; ---------------------------------------------------------------------------
+;; Tests space bracket expansion done by `dumb-jump-populate-regex'
+
+(ert-deftest dumb-jump-populate-regex-space-bracket-for-grep-tools-when-forced ()
+  "Test that \\s is replaced with [[:space:]] only for grep tools when forced."
+  (let ((dumb-jump-force-using-space-bracket-exp t))
+    ;; When forced, the bracket space should only be used in grep tools
+    (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-1" 'gnu-grep)
+                     "\\(defun[[:space:]]+test-1($|[^a-zA-Z0-9\\?\\*-])"))
+    (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-2" 'grep)
+                     "\\(defun[[:space:]]+test-2($|[^a-zA-Z0-9\\?\\*-])"))
+    (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-3" 'git-grep)
+                     "\\(defun[[:space:]]+test-3($|[^a-zA-Z0-9\\?\\*-])"))
+    ;; but not for the others.
+    ;; Note: ag uses a different regex
+    (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-4" 'ag)
+                     "\\(defun\\s+test-4(?![a-zA-Z0-9\\?\\*-])"))
+    (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-5" 'rg)
+                     "\\(defun\\s+test-5($|[^a-zA-Z0-9\\?\\*-])"))))
+
+(ert-deftest dumb-jump-populate-regex-space-bracket-for-no-tools-when-not-forced ()
+  "Test that \\s is replaced with [[:space:]] only for grep tools when forced."
+  (let ((dumb-jump-force-using-space-bracket-exp nil))
+    ;; When not forced, the bracket space should not be used by any tool
+    (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-1" 'gnu-grep)
+                     "\\(defun\\s+test-1($|[^a-zA-Z0-9\\?\\*-])"))
+    (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-2" 'grep)
+                     "\\(defun\\s+test-2($|[^a-zA-Z0-9\\?\\*-])"))
+    (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-3" 'git-grep)
+                     "\\(defun\\s+test-3($|[^a-zA-Z0-9\\?\\*-])"))
+    ;; Note: ag uses a different regex
+    (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-4" 'ag)
+                     "\\(defun\\s+test-4(?![a-zA-Z0-9\\?\\*-])"))
+    (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-5" 'rg)
+                     "\\(defun\\s+test-5($|[^a-zA-Z0-9\\?\\*-])"))))
 
 ;;;
