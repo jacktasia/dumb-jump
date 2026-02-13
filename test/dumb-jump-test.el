@@ -1246,7 +1246,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
     (with-current-buffer (find-file-noselect el-file t)
       (goto-char (point-min))
       (forward-line 23)
-      (forward-char 3)
+      (forward-char 19)
       (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
         (mock (dumb-jump-goto-file-line * 4 7))
