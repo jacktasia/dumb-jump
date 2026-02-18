@@ -4980,7 +4980,12 @@ The arguments are:
                            (xref-make
                             (plist-get res :context)
                             (xref-make-file-location
-                             (expand-file-name (plist-get res :path))
+                             (let ((path (plist-get res :path))
+                                 (remote-prefix (file-remote-p default-directory)))
+                             (expand-file-name
+                              (if remote-prefix
+                                  (concat remote-prefix path)
+                                path)))
                              (plist-get res :line)
                              0))))
                        (if do-var-jump
