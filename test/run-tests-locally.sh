@@ -79,7 +79,7 @@ echo ""
 # the Dockerfile's FROM line).
 #
 # Docker layer caching means subsequent builds for the same Emacs version are
-# fast — only the COPY + RUN chmod layers rebuild if run-in-container.sh changes.
+# fast. Source changes invalidate the repo snapshot layer only.
 
 echo "==> Building image for Emacs ${EMACS_VERSION}..."
 echo "    (First pull of silex/emacs:${EMACS_VERSION}-ci-cask takes ~1-2 min;"
@@ -93,14 +93,14 @@ docker build \
 echo ""
 
 # ── Run tests ─────────────────────────────────────────────────────────────────
-# Bind-mount the repo read-write so `cask install` can write .cask/ into the
-# project directory (already in .gitignore).
+# The image already contains a snapshot of the repo from build time.
 # --rm cleans up the container after it exits.
 
 echo "==> Launching test container..."
+# Note: no --tty here. Emacs runs in batch/noninteractive mode and spawns
+# subprocesses (ag, rg, grep) via shell-command. With --tty, those child
+# processes inherit the pseudo-TTY and can block waiting for terminal input
+# instead of exiting when done. Plain pipe I/O (no --tty) keeps them clean.
 docker run \
     --rm \
-    --interactive \
-    --tty \
-    --volume "${REPO_ROOT}:/repo" \
     "${IMAGE_TAG}"

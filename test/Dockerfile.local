@@ -21,7 +21,7 @@ ARG EMACS_VERSION=29.4
 
 # Pin to linux/amd64: silex/emacs images are amd64-only; Docker Desktop on
 # Apple Silicon emulates this via Rosetta 2.
-FROM --platform=linux/amd64 silex/emacs:${EMACS_VERSION}-ci-cask
+FROM silex/emacs:${EMACS_VERSION}-ci-cask
 
 # ── Search tools ──────────────────────────────────────────────────────────────
 # dumb-jump tests exercise ag (The Silver Searcher) and ripgrep.
@@ -32,9 +32,18 @@ RUN apt-get -qq update \
         ripgrep \
  && rm -rf /var/lib/apt/lists/*
 
-# ── Working directory ─────────────────────────────────────────────────────────
-# The host repo is bind-mounted here by run-tests-locally.sh.
+# ── Workspace snapshot ────────────────────────────────────────────────────────
+# Copy the repository into the image so tests run against an internal filesystem
+# instead of a host bind mount (significantly faster on Docker Desktop/macOS).
 WORKDIR /repo
+
+# Install Emacs package dependencies at build time and cache them by Cask file.
+# This avoids running `cask install` every container start.
+COPY Cask /repo/Cask
+COPY dumb-jump.el /repo/dumb-jump.el
+RUN PATH="/nix/store/emacs/bin:/root/.cask/bin:${PATH}" cask install
+
+COPY . /repo
 
 # ── Entrypoint ────────────────────────────────────────────────────────────────
 COPY test/run-in-container.sh /run-in-container.sh
