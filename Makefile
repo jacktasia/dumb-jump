@@ -12,6 +12,7 @@ _GNU_MAKE_ONLY_FILE = $(if $(MAKE_VERSION),gnu.mk)
 # Set these but don't override values from the environment if they are set.
 CASK ?= cask
 EMACS ?= emacs
+EMACS_VERSION ?= 29.4
 
 # ----------------------------------------------------------------------------
 # Rules
@@ -20,7 +21,7 @@ EMACS ?= emacs
 # Most recipes do not correspond to the presence of a file; they must be
 # declared PHONY to avoid conflict with a file name.
 #
-.PHONY: all test unit install test-concurrent test-go setup \
+.PHONY: all test unit install setup \
         actions-test test-docker help
 
 
@@ -36,13 +37,6 @@ unit: .cask
 
 install:
 	${CASK} install
-
-
-test-concurrent: .cask
-	@go run test/ert_runner.go -p ".*-ag-.*" -p ".*-rg-.*" test/dumb-jump-test.el
-
-test-go:
-	@go test ./... -v
 
 setup:
 	@bash test/github-actions-setup.sh
