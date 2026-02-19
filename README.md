@@ -204,6 +204,16 @@ You can also force an overriding in a specific directory by setting `dumb-jump-f
 
 #### If your project has multi-line method signatures [you should use `ag`](https://github.com/jacktasia/dumb-jump/issues/129) or [`rg` version `0.10.0` or higher](https://github.com/jacktasia/dumb-jump/issues/255).
 
+##### macOS and git-grep
+
+`git-grep` does not work correctly on macOS as of git 2.39 and later. Between versions 2.37 and 2.39, git switched to using the platform's native BSD regex library instead of GNU grep, which breaks the `\b` word-boundary patterns that Dumb Jump relies on. Installing GNU grep does not fix this because it is git's internal regex engine that changed, not the system grep.
+
+**Workaround:** force a different searcher on macOS:
+
+~~~lisp
+(setq dumb-jump-force-searcher 'rg)  ; or 'ag
+~~~
+
 To learn more about how Dumb Jump picks a searcher see [this issue](https://github.com/jacktasia/dumb-jump/issues/109) and this [pull request](https://github.com/jacktasia/dumb-jump/pull/111).
 
 ##### Hydra for effieciency
@@ -282,7 +292,7 @@ Feedback is very welcome via GitHub issues. I will consider supporting other lan
 
 ## Running Tests
 
-Opening a PR will use CircleCI to run all the tests against all the supported emacs versions and search programs.
+Opening a PR will use GitHub Actions to run all the tests against all supported Emacs versions on Linux and macOS.
 
 ### Running tests locally
 
@@ -312,25 +322,22 @@ make test-this clojure org
 requires golang and [Cask](https://github.com/cask/cask) using your local emacs
 ```sh
 cd /path/to/dumb-jump
-cask
 make test-concurrent
 ```
 
-#### Docker (latest emacs)
-only requires docker and runs tests against emacs 26.1
+#### Docker
+only requires Docker; runs tests against the default Emacs version (29.4)
 ```sh
 cd /path/to/dumb-jump
-cask
-make test-in-docker
+make test-docker
 ```
 
-#### Docker (all supported emacs versions)
-only requires docker and runs tests against all supported emacs versions
+To run against a specific Emacs version:
 ```sh
-cd /path/to/dumb-jump
-cask
-make test-all-in-docker
+make test-docker EMACS_VERSION=28.1
 ```
+
+Supported versions: `25.3 26.1 26.2 26.3 27.1 28.1 29.4 30.1`
 
 
 ## Alternatives
