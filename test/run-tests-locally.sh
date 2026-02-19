@@ -12,7 +12,7 @@
 #
 # Arguments:
 #   EMACS_VERSION  Emacs version to test against (default: 29.4)
-#                  Must be one of: 25.3 26.1 26.2 26.3 27.1 28.1 29.4 30.1
+#                  Must be one of: 26.3  27.2  28.2  29.4  30.2
 #
 # Examples:
 #   bash test/run-tests-locally.sh          # uses default (29.4)

@@ -14,7 +14,7 @@
 #
 # Usage (handled automatically by test/run-tests-locally.sh):
 #   make test-docker
-#   make test-docker EMACS_VERSION=28.1
+#   make test-docker EMACS_VERSION=28.2
 
 # Default version matches the most recent stable in the CI matrix.
 ARG EMACS_VERSION=29.4

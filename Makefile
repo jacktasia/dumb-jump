@@ -49,7 +49,7 @@ setup:
 
 actions-test: install setup unit
 
-# EMACS_VERSION can be overridden: make test-docker EMACS_VERSION=28.1
+# EMACS_VERSION can be overridden: make test-docker EMACS_VERSION=28.2
 test-docker:
 	@bash test/run-tests-locally.sh $(EMACS_VERSION)
 
@@ -82,6 +82,6 @@ Notes:\n\
 - 'test-concurrent' shows # of skipped tests due to unavailability of a search tool, others do not.\n\
 - 'test-this' is only available when using GNU Make.\n\
 - Use 'test-this' to identify a set of tests by complete or partial names.\n\
-- 'test-docker' requires Docker. Supported Emacs versions: 25.3 26.1 26.2 26.3 27.1 28.1 29.4 30.1\n\n"
+- 'test-docker' requires Docker. Supported Emacs versions: 26.3  27.2  28.2  29.4  30.2\n\n"
 
 # ----------------------------------------------------------------------------
