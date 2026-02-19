@@ -327,17 +327,17 @@ make test-concurrent
 
 #### Docker
 only requires Docker; runs tests against the default Emacs version (29.4)
-```sh
+~~~sh
 cd /path/to/dumb-jump
 make test-docker
-```
+~~~
 
 To run against a specific Emacs version:
-```sh
-make test-docker EMACS_VERSION=28.1
-```
+~~~sh
+make test-docker EMACS_VERSION=28.2
+~~~
 
-Supported versions: `25.3 26.1 26.2 26.3 27.1 28.1 29.4 30.1`
+Supported versions: `26.3 27.2 28.2 29.4 30.2`
 
 
 ## Alternatives

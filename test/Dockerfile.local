@@ -21,7 +21,7 @@ ARG EMACS_VERSION=29.4
 
 # Pin to linux/amd64: silex/emacs images are amd64-only; Docker Desktop on
 # Apple Silicon emulates this via Rosetta 2.
-FROM silex/emacs:${EMACS_VERSION}-ci-cask
+FROM --platform=linux/amd64 silex/emacs:${EMACS_VERSION}-ci-cask
 
 # ── Search tools ──────────────────────────────────────────────────────────────
 # dumb-jump tests exercise ag (The Silver Searcher) and ripgrep.

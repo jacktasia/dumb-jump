@@ -33,7 +33,7 @@ DOCKERFILE="${REPO_ROOT}/test/Dockerfile.local"
 IMAGE_TAG="dumb-jump-test:emacs-${EMACS_VERSION}"
 
 # Emacs versions matching the CI matrix (from .github/workflows/test.yml)
-SUPPORTED_VERSIONS="25.3 26.1 26.2 26.3 27.1 28.1 29.4 30.1"
+SUPPORTED_VERSIONS="26.3 27.2 28.2 29.4 30.2"
 
 # ── Validation ────────────────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ if ! command -v docker &>/dev/null; then
     exit 1
 fi
 
-if ! docker info &>/dev/null 2>&1; then
+if ! docker info &>/dev/null; then
     echo "ERROR: Docker daemon is not running. Please start Docker Desktop." >&2
     exit 1
 fi
