@@ -1,0 +1,43 @@
+# test/Dockerfile.local
+#
+# Extends silex/emacs:<VERSION>-ci-cask to add the search tools (ag, ripgrep)
+# that dumb-jump's tests require.
+#
+# silex/emacs images ship with Emacs, git, make, and Cask pre-installed.
+# The EMACS_VERSION build arg selects which Emacs version to bake in.
+#
+# All silex/emacs images are amd64 Linux. On Apple Silicon, Docker Desktop
+# runs them transparently via Rosetta 2 (--platform linux/amd64).
+#
+# Supported EMACS_VERSION values (matches CI matrix in .github/workflows/test.yml):
+#   25.3  26.1  26.2  26.3  27.1  28.1  29.4  30.1
+#
+# Usage (handled automatically by test/run-tests-locally.sh):
+#   make test-docker
+#   make test-docker EMACS_VERSION=28.1
+
+# Default version matches the most recent stable in the CI matrix.
+ARG EMACS_VERSION=29.4
+
+# Pin to linux/amd64: silex/emacs images are amd64-only; Docker Desktop on
+# Apple Silicon emulates this via Rosetta 2.
+FROM --platform=linux/amd64 silex/emacs:${EMACS_VERSION}-ci-cask
+
+# ── Search tools ──────────────────────────────────────────────────────────────
+# dumb-jump tests exercise ag (The Silver Searcher) and ripgrep.
+# Install from the Debian repos included in the silex base image.
+RUN apt-get -qq update \
+ && apt-get install -y --no-install-recommends \
+        silversearcher-ag \
+        ripgrep \
+ && rm -rf /var/lib/apt/lists/*
+
+# ── Working directory ─────────────────────────────────────────────────────────
+# The host repo is bind-mounted here by run-tests-locally.sh.
+WORKDIR /repo
+
+# ── Entrypoint ────────────────────────────────────────────────────────────────
+COPY test/run-in-container.sh /run-in-container.sh
+RUN chmod +x /run-in-container.sh
+
+ENTRYPOINT ["/run-in-container.sh"]

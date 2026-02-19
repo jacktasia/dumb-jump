@@ -20,9 +20,8 @@ EMACS ?= emacs
 # Most recipes do not correspond to the presence of a file; they must be
 # declared PHONY to avoid conflict with a file name.
 #
-.PHONY: all test unit install test-concurrent test-go docker-build-test-runner \
-        docker-push-test-runner test-all-in-docker test-in-docker setup \
-        actions-test help
+.PHONY: all test unit install test-concurrent test-go setup \
+        actions-test test-docker help
 
 
 all: test
@@ -45,22 +44,14 @@ test-concurrent: .cask
 test-go:
 	@go test ./... -v
 
-docker-build-test-runner:
-	docker build . -t jacktasia/dumb-jump-test-runner:v3 -f test/Dockerfile
-
-docker-push-test-runner:
-	docker push jacktasia/dumb-jump-test-runner:v3
-
-test-all-in-docker:
-	@bash test/run-local-in-docker.sh all
-
-test-in-docker:
-	@bash test/run-local-in-docker.sh current
-
 setup:
 	@bash test/github-actions-setup.sh
 
 actions-test: install setup unit
+
+# EMACS_VERSION can be overridden: make test-docker EMACS_VERSION=28.1
+test-docker:
+	@bash test/run-tests-locally.sh $(EMACS_VERSION)
 
 # Include the test-some rule only when GNU Make is used.
 #
@@ -78,16 +69,19 @@ help:
 Execute dumb-jump Ert tests.\n\
 The following targets are supported:\n\
 \n\
-- make                       : same as 'make test'\n\
-- make install               : install all dependencies specified in Cask file\n\
-- make unit                  : execute all Ert tests\n\
-- make test                  : execute all Ert tests\n\
-- make test-this T1 [T2...]  : execute specified Ert test(s) T1, T2...\n\
-- make test-concurrent       : execute all Ert tests, but concurrently.\n\
-- make help                  : prints this help.\n\n\
+- make                                        : same as 'make test'\n\
+- make install                                : install all dependencies specified in Cask file\n\
+- make unit                                   : execute all Ert tests\n\
+- make test                                   : execute all Ert tests\n\
+- make test-this T1 [T2...]                   : execute specified Ert test(s) T1, T2...\n\
+- make test-concurrent                        : execute all Ert tests, but concurrently.\n\
+- make test-docker                            : run tests locally in Docker (default: Emacs 29.4)\n\
+- make test-docker EMACS_VERSION=X.Y          : run tests in Docker with a specific Emacs version\n\
+- make help                                   : prints this help.\n\n\
 Notes:\n\
 - 'test-concurrent' shows # of skipped tests due to unavailability of a search tool, others do not.\n\
 - 'test-this' is only available when using GNU Make.\n\
-- Use 'test-this' to identify a set of tests by complete or partial names.\n\n"
+- Use 'test-this' to identify a set of tests by complete or partial names.\n\
+- 'test-docker' requires Docker. Supported Emacs versions: 25.3 26.1 26.2 26.3 27.1 28.1 29.4 30.1\n\n"
 
 # ----------------------------------------------------------------------------
