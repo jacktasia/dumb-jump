@@ -8,7 +8,7 @@ on:
       - '**.md'
 
 jobs:
-  build:
+  linux:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -35,3 +35,34 @@ jobs:
       - name: Run tests
         timeout-minutes: 20
         run: make actions-test
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        emacs_version: ['28.1','29.4','30.1']
+        cask_version: ['snapshot']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs_version }}
+
+      - uses: conao3/setup-cask@master
+        with:
+          version: ${{ matrix.cask_version }}
+
+      - name: Install search tools
+        run: brew install the_silver_searcher ripgrep
+
+      - name: Run tests
+        timeout-minutes: 20
+        run: make install unit
