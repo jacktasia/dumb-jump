@@ -1416,6 +1416,12 @@ If nil add also the language type of current src block."
            :tests ("contract test{"
                    "contract test {"
                    "contract test is foo"))
+    
+    (:language "solidity" :type "type" 
+           :supports ("ag" "grep" "rg" "git-grep") 
+           :regex  "struct\\s*JJJ\\s*\\\{"
+           :tests ("struct test{"
+                   "struct test {"))
 
     ;;-- R
     (:language "r" :type "variable"
