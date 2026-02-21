@@ -1,0 +1,52 @@
+# test/Dockerfile.local
+#
+# Extends silex/emacs:<VERSION>-ci-cask to add the search tools (ag, ripgrep)
+# that dumb-jump's tests require.
+#
+# silex/emacs images ship with Emacs, git, make, and Cask pre-installed.
+# The EMACS_VERSION build arg selects which Emacs version to bake in.
+#
+# All silex/emacs images are amd64 Linux. On Apple Silicon, Docker Desktop
+# runs them transparently via Rosetta 2 (--platform linux/amd64).
+#
+# Supported EMACS_VERSION values (available silex/emacs:<VERSION>-ci-cask tags):
+#   26.3  27.2  28.2  29.4  30.2
+#
+# Usage (handled automatically by test/run-tests-locally.sh):
+#   make test-docker
+#   make test-docker EMACS_VERSION=28.2
+
+# Default version matches the most recent stable in the CI matrix.
+ARG EMACS_VERSION=29.4
+
+# Pin to linux/amd64: silex/emacs images are amd64-only; Docker Desktop on
+# Apple Silicon emulates this via Rosetta 2.
+FROM --platform=linux/amd64 silex/emacs:${EMACS_VERSION}-ci-cask
+
+# ── Search tools ──────────────────────────────────────────────────────────────
+# dumb-jump tests exercise ag (The Silver Searcher) and ripgrep.
+# Install from the Debian repos included in the silex base image.
+RUN apt-get -qq update \
+ && apt-get install -y --no-install-recommends \
+        silversearcher-ag \
+        ripgrep \
+ && rm -rf /var/lib/apt/lists/*
+
+# ── Workspace snapshot ────────────────────────────────────────────────────────
+# Copy the repository into the image so tests run against an internal filesystem
+# instead of a host bind mount (significantly faster on Docker Desktop/macOS).
+WORKDIR /repo
+
+# Install Emacs package dependencies at build time and cache them by Cask file.
+# This avoids running `cask install` every container start.
+COPY Cask /repo/Cask
+COPY dumb-jump.el /repo/dumb-jump.el
+RUN PATH="/nix/store/emacs/bin:/root/.cask/bin:${PATH}" cask install
+
+COPY . /repo
+
+# ── Entrypoint ────────────────────────────────────────────────────────────────
+COPY test/run-in-container.sh /run-in-container.sh
+RUN chmod +x /run-in-container.sh
+
+ENTRYPOINT ["/run-in-container.sh"]

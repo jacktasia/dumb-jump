@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 
 (require 'ert)
 (require 'undercover)
@@ -9,6 +10,6 @@
 
 (require 'el-mock)
 (eval-when-compile
-  (require 'cl))
+  (require 'cl-lib))
 
 ;;; test-helper.el ends here
