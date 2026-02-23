@@ -67,7 +67,7 @@ When IGNORE-CASE is non-nil, match without case sensitivity."
 (defun dumb-jump--index-of (needle text)
   "Return the index of NEEDLE in TEXT, or nil when not found."
   (when (and (stringp needle) (stringp text))
-    (string-match (regexp-quote needle) text)))
+    (string-match-p (regexp-quote needle) text)))
 
 (defun dumb-jump--join (separator strings)
   "Join STRINGS using SEPARATOR."
@@ -76,15 +76,16 @@ When IGNORE-CASE is non-nil, match without case sensitivity."
 (defun dumb-jump--match (regexp text &optional start)
   "Return list of REGEXP matches in TEXT from START, or nil."
   (when (and (stringp regexp)
-             (stringp text)
-             (string-match regexp text start))
-    (let* ((group-count (/ (length (match-data t)) 2))
-           (i 0)
-           matches)
-      (while (< i group-count)
-        (push (match-string i text) matches)
-        (setq i (1+ i)))
-      (nreverse matches))))
+             (stringp text))
+    (save-match-data
+      (when (string-match regexp text start)
+        (let* ((group-count (/ (length (match-data t)) 2))
+               (i 0)
+               matches)
+          (while (< i group-count)
+            (push (match-string i text) matches)
+            (setq i (1+ i)))
+          (nreverse matches))))))
 
 (defun dumb-jump--matched-positions-all (regexp text &optional start)
   "Return a list of match ranges for REGEXP in TEXT from START.
