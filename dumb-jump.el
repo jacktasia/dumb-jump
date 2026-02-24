@@ -61,13 +61,15 @@
 When IGNORE-CASE is non-nil, match without case sensitivity."
   (and (stringp needle)
        (stringp text)
-       (let ((case-fold-search ignore-case))
-         (if (string-match-p (regexp-quote needle) text) t nil))))
+       (save-match-data
+         (let ((case-fold-search ignore-case))
+           (if (string-match-p (regexp-quote needle) text) t nil)))))
 
 (defun dumb-jump--index-of (needle text)
   "Return the index of NEEDLE in TEXT, or nil when not found."
   (when (and (stringp needle) (stringp text))
-    (string-match-p (regexp-quote needle) text)))
+    (save-match-data
+      (string-match-p (regexp-quote needle) text))))
 
 (defun dumb-jump--join (separator strings)
   "Join STRINGS using SEPARATOR."
@@ -91,15 +93,16 @@ When IGNORE-CASE is non-nil, match without case sensitivity."
   "Return a list of match ranges for REGEXP in TEXT from START.
 Each element is a cons cell of the form (START . END)."
   (when (and (stringp regexp) (stringp text))
-    (let ((pos (or start 0))
-          matches)
-      (while (string-match regexp text pos)
-        (let ((beg (match-beginning 0))
-              (end (match-end 0)))
-          (push (cons beg end) matches)
-          ;; Avoid infinite loops if REGEXP can match empty strings.
-          (setq pos (if (= beg end) (1+ end) end))))
-      (nreverse matches))))
+    (save-match-data
+      (let ((pos (or start 0))
+            matches)
+        (while (string-match regexp text pos)
+          (let ((beg (match-beginning 0))
+                (end (match-end 0)))
+            (push (cons beg end) matches)
+            ;; Avoid infinite loops if REGEXP can match empty strings.
+            (setq pos (if (= beg end) (1+ end) end))))
+        (nreverse matches)))))
 
 (defun dumb-jump--replace (old new text)
   "Replace all OLD literal matches in TEXT with NEW."
@@ -3457,7 +3460,7 @@ available otherwise default to `completing-read'."
     (cond
      ((eq dumb-jump-selector 'completing-read)
       (dumb-jump-to-selected results choices
-                             (completing-read "Jump to: " choices)))
+                             (dumb-jump--select-choice choices "Jump to: ")))
      ;;
      ((and (eq dumb-jump-selector 'ivy)
            (fboundp 'ivy-read))
@@ -3771,7 +3774,8 @@ For instance, remove clojure namespace prefix."
   (let* ((buffer-contents (with-current-buffer buffer
                             (buffer-string)))
 
-         (found (--filter (dumb-jump--match (concat "\\." (plist-get it :ext) "\\b") buffer-contents)
+         (found (--filter (dumb-jump--match (concat "\\." (regexp-quote (plist-get it :ext)) "\\b")
+                                            buffer-contents)
                           dumb-jump-language-file-exts)))
     (--map (plist-get it :language) found)))
 
@@ -4512,26 +4516,29 @@ The parameters are:
 Return a list of (path line context)."
   (let* ((parts (--remove (string= it "")
                           (dumb-jump--split "\\(?:^\\|:\\)[0-9]+:"  resp-line)))
-         (line-num-raw (dumb-jump--match "\\(?:^\\|:\\)\\([0-9]+\\):" resp-line)))
+         (line-num-raw (dumb-jump--match "\\(?:^\\|:\\)\\([0-9]+\\):" resp-line))
+         (line-num (and line-num-raw
+                        (> (length line-num-raw) 1)
+                        (nth 1 line-num-raw))))
 
     (cond
      ;; fixes rare bug where context is blank  but file is defined "/somepath/file.txt:14:"
      ;; OR: (and (= (length parts) 1) (file-name-exists (nth 0 parts)))
      ((dumb-jump--match ":[0-9]+:$" resp-line)
       nil)
-     ((and parts line-num-raw)
+     ((and parts line-num)
       (if (= (length parts) 2)
           (list (let ((path (expand-file-name (nth 0 parts))))
                   (if (file-name-absolute-p (nth 0 parts))
                       path
                     (file-relative-name path)))
-                (nth 1 line-num-raw) (nth 1 parts))
+                line-num (nth 1 parts))
                                         ; this case is when they are searching a particular file...
         (list (let ((path (expand-file-name cur-file)))
                 (if (file-name-absolute-p cur-file)
                     path
                   (file-relative-name path)))
-              (nth 1 line-num-raw) (nth 0 parts)))))))
+              line-num (nth 0 parts)))))))
 
 ;; --
 ;; Parse Search Tool Results: indirectly called by `dumb-jump-run-command'
@@ -4641,8 +4648,10 @@ that are both strings."
 
 (defun dumb-jump-arg-joiner (prefix values)
   "Helper to generate command arg with its PREFIX for each value in VALUES."
-  (let ((args (dumb-jump--join (format " %s " prefix) values)))
-    (if (and args values)
+  (let* ((normalized-values (--map (dumb-jump--trim (or it "")) values))
+         (non-empty-values (--filter (> (length it) 0) normalized-values))
+         (args (dumb-jump--join (format " %s " prefix) non-empty-values)))
+    (if non-empty-values
         (format " %s %s " prefix args)
       "")))
 
@@ -4969,7 +4978,9 @@ The arguments are:
 
 (defun dumb-jump-concat-command (&rest parts)
   "Concat the PARTS of a command if each part has a length."
-  (dumb-jump--join " " (-map #'dumb-jump--trim (--filter (> (length it) 0) parts))))
+  (let* ((normalized-parts (--map (dumb-jump--trim (or it "")) parts))
+         (non-empty-parts (--filter (> (length it) 0) normalized-parts)))
+    (dumb-jump--join " " non-empty-parts)))
 
 (defun dumb-jump-get-file-exts-by-language (language)
   "Return list of file extensions for a LANGUAGE."
