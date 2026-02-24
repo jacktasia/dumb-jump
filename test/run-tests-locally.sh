@@ -21,6 +21,20 @@
 
 set -euo pipefail
 
+# ── Container engine detection ────────────────────────────────────────────────
+# Prefer docker; fall back to podman (covers podman-docker installations where
+# the 'docker' shim may not be on PATH or the daemon socket differs).
+if command -v docker &>/dev/null; then
+	DOCKER=docker
+elif command -v podman &>/dev/null; then
+	DOCKER=podman
+else
+	echo "ERROR: Neither docker nor podman found on PATH." >&2
+	echo "Install Docker Desktop: https://www.docker.com/products/docker-desktop/" >&2
+	echo "Or install Podman: https://podman.io/getting-started/installation" >&2
+	exit 1
+fi
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 # Positional arg takes priority over env var; env var is the Make-friendly path.
@@ -37,33 +51,27 @@ SUPPORTED_VERSIONS="26.3 27.2 28.2 29.4 30.2"
 
 # ── Validation ────────────────────────────────────────────────────────────────
 
-if ! command -v docker &>/dev/null; then
-    echo "ERROR: Docker is not installed or not on PATH." >&2
-    echo "Install Docker Desktop: https://www.docker.com/products/docker-desktop/" >&2
-    exit 1
-fi
-
-if ! docker info &>/dev/null; then
-    echo "ERROR: Docker daemon is not running. Please start Docker Desktop." >&2
-    exit 1
+if ! "$DOCKER" info &>/dev/null; then
+	echo "ERROR: ${DOCKER} daemon is not running. Please start it before running tests." >&2
+	exit 1
 fi
 
 version_ok=0
 for v in $SUPPORTED_VERSIONS; do
-    if [[ "$v" == "$EMACS_VERSION" ]]; then
-        version_ok=1
-        break
-    fi
+	if [[ "$v" == "$EMACS_VERSION" ]]; then
+		version_ok=1
+		break
+	fi
 done
 if [[ $version_ok -eq 0 ]]; then
-    echo "ERROR: Emacs version '${EMACS_VERSION}' is not a supported version." >&2
-    echo "Supported versions: ${SUPPORTED_VERSIONS}" >&2
-    exit 1
+	echo "ERROR: Emacs version '${EMACS_VERSION}' is not a supported version." >&2
+	echo "Supported versions: ${SUPPORTED_VERSIONS}" >&2
+	exit 1
 fi
 
 # ── Info ──────────────────────────────────────────────────────────────────────
 
-echo "==> Running tests locally in Docker"
+echo "==> Running tests locally in Docker (engine: ${DOCKER})"
 echo "    Emacs version : ${EMACS_VERSION}"
 echo "    Docker image  : ${IMAGE_TAG}"
 echo "    Repo root     : ${REPO_ROOT}"
@@ -84,11 +92,11 @@ echo ""
 echo "==> Building image for Emacs ${EMACS_VERSION}..."
 echo "    (First pull of silex/emacs:${EMACS_VERSION}-ci-cask takes ~1-2 min;"
 echo "     subsequent runs use Docker's layer cache)"
-docker build \
-    --file      "${DOCKERFILE}" \
-    --tag       "${IMAGE_TAG}" \
-    --build-arg "EMACS_VERSION=${EMACS_VERSION}" \
-    "${REPO_ROOT}"
+"$DOCKER" build \
+	--file "${DOCKERFILE}" \
+	--tag "${IMAGE_TAG}" \
+	--build-arg "EMACS_VERSION=${EMACS_VERSION}" \
+	"${REPO_ROOT}"
 
 echo ""
 
@@ -101,6 +109,6 @@ echo "==> Launching test container..."
 # subprocesses (ag, rg, grep) via shell-command. With --tty, those child
 # processes inherit the pseudo-TTY and can block waiting for terminal input
 # instead of exiting when done. Plain pipe I/O (no --tty) keeps them clean.
-docker run \
-    --rm \
-    "${IMAGE_TAG}"
+"$DOCKER" run \
+	--rm \
+	"${IMAGE_TAG}"
