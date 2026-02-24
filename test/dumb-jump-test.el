@@ -708,7 +708,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
     (should (string= ctx-type "function"))))
 
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-test ()
-  (let* ((dumb-jump-selector 'legacy)
+  (let* ((dumb-jump-selector 'completing-read)
          (results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
                     (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
     (with-mock
