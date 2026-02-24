@@ -1894,7 +1894,9 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
                    (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
     (with-mock
-     (mock (dumb-jump--select-choice '("relfile.js:62: var isNow = true" "src/absfile.js:69: isNow = false") "Matches: ") :times 1)
+     (mock (dumb-jump--select-choice '("relfile.js:62: var isNow = true" "src/absfile.js:69: isNow = false") "Matches: ")
+           => "src/absfile.js:69: isNow = false")
+     (mock (dumb-jump--show-preview "src/absfile.js:69: isNow = false") :times 1)
      (dumb-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" t nil))))
 
 ;; Make sure it jumps when there's only one possibility in non-aggressive mode.

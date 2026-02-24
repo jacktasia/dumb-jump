@@ -4034,9 +4034,13 @@ LANGUAGE is an optional language to pass to `dumb-jump-process-results'."
      cur-file)
     (cond
      (use-tooltip ;; quick-look mode
-      (dumb-jump--select-choice
-       (--map (dumb-jump--format-result proj-root it) results)
-       "Matches: "))
+      (let* ((choices (--map (dumb-jump--format-result proj-root it) results))
+             (selected-choice (dumb-jump--select-choice choices "Matches: "))
+             (selected-result (cdr (assoc selected-choice
+                                          (-zip-pair choices results)))))
+        (when selected-result
+          (dumb-jump--show-preview
+           (dumb-jump--format-result proj-root selected-result)))))
      (do-var-jump
       (dumb-jump-result-follow var-to-jump use-tooltip proj-root))
      (t
