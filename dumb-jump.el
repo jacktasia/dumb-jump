@@ -2051,10 +2051,13 @@ If nil add also the language type of current src block."
      ;;-- purescript
      (:language "purescript" :type "function"
             :supports ("ag" "grep" "rg" "git-grep")
-            :regex "^\\bJJJ\\s+::"
+            :regex "^\\s*\\bJJJ\\b\\s+(::|(\\w+.*=))"
             :tests ("test :: Int -> String"
-                    "test :: Number -> Number -> Number")
-            :not ("nottest :: Int -> String"))
+                    "test :: Number -> Number -> Number"
+                    "  test :: Int -> String"
+                    "test x y = x + y")
+            :not ("nottest :: Int -> String"
+                  "testing x = 1"))
 
      (:language "purescript" :type "variable"
             :supports ("ag" "grep" "rg" "git-grep")
