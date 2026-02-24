@@ -1,4 +1,4 @@
-;;; dumb-jump.el --- Jump to definition for 50+ languages without configuration -*- lexical-binding: t; -*-
+;;; dumb-jump.el --- Jump to definition for 60+ languages without configuration -*- lexical-binding: t; -*-
 ;; Copyright (C) 2015-2021 jack angers
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/jacktasia/dumb-jump
@@ -21,7 +21,7 @@
 
 ;;; Commentary:
 
-;; Dumb Jump is an Emacs "jump to definition" package with support for 50+ programming languages that favors
+;; Dumb Jump is an Emacs "jump to definition" package with support for 60+ programming languages that favors
 ;; "just working" over speed or accuracy.  This means minimal -- and ideally zero -- configuration with absolutely
 ;; no stored indexes (TAGS) or persistent background processes.
 ;;
@@ -2043,12 +2043,53 @@ If nil add also the language type of current src block."
            :regex "^\\s*module\\s*\\bJJJ\\b"
            :tests ("module test ="))
 
-    (:language "ocaml" :type "module"
-           :supports ("ag" "rg")
-           :regex "^\\s*module\\s*type\\s*\\bJJJ\\b"
-           :tests ("module type test ="))
+     (:language "ocaml" :type "module"
+            :supports ("ag" "rg")
+            :regex "^\\s*module\\s*type\\s*\\bJJJ\\b"
+            :tests ("module type test ="))
 
-    ;; lua
+    ;;-- purescript
+    (:language "purescript" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*\\bJJJ\\b\\s+(::|[^=]*\\s=[^=])"
+           :tests ("test :: Int -> String"
+                   "test :: Number -> Number -> Number"
+                   "  test :: Int -> String"
+                   "test x y = x + y"
+                   "test (Just x) = x"
+                   "test { x } = x")
+           :not ("nottest :: Int -> String"
+                 "testing x = 1"
+                 "test x == y"
+                 "test >>= bar"))
+
+    (:language "purescript" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*\\bJJJ\\s*=[^=]"
+           :tests ("test = 42"
+                   "test = \\x -> x + 1"
+                   "  test = compute x")
+           :not ("test == 42"
+                 "-- test = 42"))
+
+    (:language "purescript" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\blet\\s+JJJ\\s*(\\::|=[^=])"
+           :tests ("let test = 42"
+                   "let test :: Int")
+           :not ("let testing = 42"
+                 "let test == 42"))
+
+    (:language "purescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*(type|newtype|data)\\s+JJJ\\b"
+           :tests ("type test = Int"
+                   "newtype test = test Int"
+                   "data test = test Int | Other String")
+           :not ("type testOther = Int"
+                 "data testOther = testOther Int"))
+
+     ;; lua
     (:language "lua" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+"
@@ -2787,9 +2828,10 @@ More information using the search tool command line help."
     (:language "php"           :ext "php3"        :agtype "php"       :rgtype "php")
     (:language "php"           :ext "php4"        :agtype "php"       :rgtype "php")
     (:language "php"           :ext "php5"        :agtype "php"       :rgtype "php")
-    (:language "php"           :ext "phtml"       :agtype "php"       :rgtype "php")
-    (:language "php"           :ext "inc"         :agtype "php"       :rgtype nil)
-    (:language "python"        :ext "py"          :agtype "python"    :rgtype "py")
+     (:language "php"           :ext "phtml"       :agtype "php"       :rgtype "php")
+     (:language "php"           :ext "inc"         :agtype "php"       :rgtype nil)
+     (:language "purescript"    :ext "purs"        :agtype nil         :rgtype nil)
+     (:language "python"        :ext "py"          :agtype "python"    :rgtype "py")
     (:language "r"             :ext "R"           :agtype "r"         :rgtype "r")
     (:language "r"             :ext "r"           :agtype "r"         :rgtype "r")
     (:language "r"             :ext "Rmd"         :agtype "r"         :rgtype "r")
@@ -3865,9 +3907,10 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "//" :language "zig")
     (:comment "#"  :language "perl")
     (:comment "#"  :language "tcl")
-    (:comment "//" :language "php")
-    (:comment "#"  :language "php")
-    (:comment "#"  :language "python")
+     (:comment "//" :language "php")
+     (:comment "#"  :language "php")
+     (:comment "--" :language "purescript")
+     (:comment "#"  :language "python")
     (:comment "%"  :language "matlab")
     (:comment "#"  :language "r")
     (:comment ";"  :language "racket")
