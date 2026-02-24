@@ -2051,7 +2051,7 @@ If nil add also the language type of current src block."
     ;;-- purescript
     (:language "purescript" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "^\\s*\\bJJJ\\b\\s+(::|[^=]+=\\s*[^=])"
+           :regex "^\\s*\\bJJJ\\b\\s+(::|[^=]*\\s=[^=])"
            :tests ("test :: Int -> String"
                    "test :: Number -> Number -> Number"
                    "  test :: Int -> String"
@@ -2060,7 +2060,8 @@ If nil add also the language type of current src block."
                    "test { x } = x")
            :not ("nottest :: Int -> String"
                  "testing x = 1"
-                 "test x == y"))
+                 "test x == y"
+                 "test >>= bar"))
 
     (:language "purescript" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
