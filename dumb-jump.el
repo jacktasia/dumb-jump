@@ -2048,42 +2048,45 @@ If nil add also the language type of current src block."
             :regex "^\\s*module\\s*type\\s*\\bJJJ\\b"
             :tests ("module type test ="))
 
-     ;;-- purescript
-     (:language "purescript" :type "function"
-            :supports ("ag" "grep" "rg" "git-grep")
-            :regex "^\\s*\\bJJJ\\b\\s+(::|(\\w+.*=))"
-            :tests ("test :: Int -> String"
-                    "test :: Number -> Number -> Number"
-                    "  test :: Int -> String"
-                    "test x y = x + y")
-            :not ("nottest :: Int -> String"
-                  "testing x = 1"))
+    ;;-- purescript
+    (:language "purescript" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*\\bJJJ\\b\\s+(::|[^=]+=\\s*[^=])"
+           :tests ("test :: Int -> String"
+                   "test :: Number -> Number -> Number"
+                   "  test :: Int -> String"
+                   "test x y = x + y"
+                   "test (Just x) = x"
+                   "test { x } = x")
+           :not ("nottest :: Int -> String"
+                 "testing x = 1"
+                 "test x == y"))
 
-     (:language "purescript" :type "variable"
-            :supports ("ag" "grep" "rg" "git-grep")
-            :regex "^\\s*\\bJJJ\\s*=[^=]"
-            :tests ("test = 42"
-                    "test = \\x -> x + 1"
-                    "  test = compute x")
-            :not ("test == 42"
-                  "-- test = 42"))
+    (:language "purescript" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*\\bJJJ\\s*=[^=]"
+           :tests ("test = 42"
+                   "test = \\x -> x + 1"
+                   "  test = compute x")
+           :not ("test == 42"
+                 "-- test = 42"))
 
-     (:language "purescript" :type "variable"
-            :supports ("ag" "grep" "rg" "git-grep")
-            :regex "\\blet\\s+JJJ\\s*(\\::|\\\(|=)"
-            :tests ("let test = 42"
-                    "let test :: Int"
-                    "let test(x, y) = x + y")
-            :not ("let testing = 42"))
+    (:language "purescript" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\blet\\s+JJJ\\s*(\\::|\\\(|=)"
+           :tests ("let test = 42"
+                   "let test :: Int"
+                   "let test(x, y) = x + y")
+           :not ("let testing = 42"))
 
-     (:language "purescript" :type "type"
-            :supports ("ag" "grep" "rg" "git-grep")
-            :regex "^\\s*(type|newtype|data)\\s+JJJ\\b"
-            :tests ("type test = Int"
-                    "newtype test = test Int"
-                    "data test = test Int | Other String")
-            :not ("type testOther = Int"
-                  "data testOther = testOther Int"))
+    (:language "purescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*(type|newtype|data)\\s+JJJ\\b"
+           :tests ("type test = Int"
+                   "newtype test = test Int"
+                   "data test = test Int | Other String")
+           :not ("type testOther = Int"
+                 "data testOther = testOther Int"))
 
      ;; lua
     (:language "lua" :type "variable"
