@@ -1934,25 +1934,25 @@ If nil add also the language type of current src block."
 
     (:language "typescript" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "class\\s*JJJ(?:\\s*<[^>]*>)?\\s*[\\\(\\\{]"
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s*[\\\(\\\{]"
            :tests ("class test{"
                    "class test<T>{"))
 
     (:language "typescript" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "class\\s*JJJ(?:\\s*<[^>]*>)?\\s+extends"
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s+extends"
            :tests ("class test extends Component{"
                    "class test<T> extends Component{"))
 
     (:language "typescript" :type "type"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "class\\s*JJJ(?:\\s*<[^>]*>)?\\s*[\\\(\\\{]"
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s*[\\\(\\\{]"
            :tests ("class test{"
                    "class test<T>{"))
 
     (:language "typescript" :type "type"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "class\\s*JJJ(?:\\s*<[^>]*>)?\\s+extends"
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s+extends"
            :tests ("class test extends Component{"
                    "class test<T> extends Component{"))
 
