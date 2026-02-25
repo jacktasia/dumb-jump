@@ -13,6 +13,11 @@ _GNU_MAKE_ONLY_FILE = $(if $(MAKE_VERSION),gnu.mk)
 CASK ?= cask
 EMACS ?= emacs
 EMACS_VERSION ?= 29.4
+GH ?= gh
+RELEASE_REPO ?= jacktasia/dumb-jump
+RELEASE_BRANCH ?= master
+RELEASE_NOTES_FILE ?=
+RELEASE_GENERATE_NOTES ?= 1
 
 # ----------------------------------------------------------------------------
 # Rules
@@ -22,7 +27,8 @@ EMACS_VERSION ?= 29.4
 # declared PHONY to avoid conflict with a file name.
 #
 .PHONY: all test unit install setup \
-        actions-test test-docker test-this-docker help
+        actions-test test-docker test-this-docker \
+        release-check release help
 
 
 all: test
@@ -46,6 +52,24 @@ actions-test: install setup unit
 # EMACS_VERSION can be overridden: make test-docker EMACS_VERSION=28.2
 test-docker:
 	@bash test/run-tests-locally.sh $(EMACS_VERSION)
+
+release-check:
+	@GH="$(GH)" \
+	 RELEASE_REPO="$(RELEASE_REPO)" \
+	 RELEASE_BRANCH="$(RELEASE_BRANCH)" \
+	 RELEASE_TAG="$(RELEASE_TAG)" \
+	 RELEASE_NOTES_FILE="$(RELEASE_NOTES_FILE)" \
+	 RELEASE_GENERATE_NOTES="$(RELEASE_GENERATE_NOTES)" \
+	 bash test/release.sh check
+
+release:
+	@GH="$(GH)" \
+	 RELEASE_REPO="$(RELEASE_REPO)" \
+	 RELEASE_BRANCH="$(RELEASE_BRANCH)" \
+	 RELEASE_TAG="$(RELEASE_TAG)" \
+	 RELEASE_NOTES_FILE="$(RELEASE_NOTES_FILE)" \
+	 RELEASE_GENERATE_NOTES="$(RELEASE_GENERATE_NOTES)" \
+	 bash test/release.sh release
 
 # Include the test-some rule only when GNU Make is used.
 #
@@ -72,12 +96,16 @@ The following targets are supported:\n\
 - make test-concurrent                        : execute all Ert tests, but concurrently.\n\
 - make test-docker                            : run tests locally in Docker (default: Emacs 29.4)\n\
 - make test-docker EMACS_VERSION=X.Y          : run tests in Docker with a specific Emacs version\n\
+- make release-check                          : validate release prerequisites and run tests\n\
+- make release                                : tag/push current version and create GitHub release\n\
 - make help                                   : prints this help.\n\n\
 Notes:\n\
 - 'test-concurrent' shows # of skipped tests due to unavailability of a search tool, others do not.\n\
 - 'test-this' and 'test-this-docker' are only available when using GNU Make.\n\
 - Use 'test-this' to identify a set of tests by complete or partial names.\n\
 - Use 'test-this-docker' to run a filtered test set in Docker.\n\
-- 'test-docker' requires Docker. Supported Emacs versions: 26.3  27.2  28.2  29.4  30.2\n\n"
+- 'test-docker' requires Docker. Supported Emacs versions: 26.3  27.2  28.2  29.4  30.2\n\
+- 'release' expects a clean '$(RELEASE_BRANCH)' checkout with ';; Version:' set in dumb-jump.el.\n\
+- Optional release vars: RELEASE_TAG=vX.Y.Z RELEASE_NOTES_FILE=path RELEASE_GENERATE_NOTES=0\n\n"
 
 # ----------------------------------------------------------------------------
