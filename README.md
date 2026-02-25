@@ -30,6 +30,7 @@ There is currently basic support for the following languages:
 * Coq
 * Crystal
 * Dart
+* D
 * Elixir
 * Emacs Lisp
 * Erlang

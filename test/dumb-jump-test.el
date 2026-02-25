@@ -121,10 +121,14 @@
   (let ((lang1 (dumb-jump-get-language-by-filename "sldkfj.el"))
         (lang1b (dumb-jump-get-language-by-filename "sldkfj.el.gz"))
         (lang2 (dumb-jump-get-language-by-filename "/askdfjkl/somefile.js"))
+        (lang3 (dumb-jump-get-language-by-filename "/askdfjkl/somefile.d"))
+        (lang3b (dumb-jump-get-language-by-filename "/askdfjkl/somefile.di"))
         (nolang (dumb-jump-get-language-by-filename "/blah/somefile.bin")))
     (should (string= lang1 "elisp"))
     (should (string= lang1b "elisp"))
     (should (string= lang2 "javascript"))
+    (should (string= lang3 "dlang"))
+    (should (string= lang3b "dlang"))
     (should (null nolang))))
 
 (ert-deftest dumb-jump-get-lang-major-mode-test ()
@@ -135,6 +139,11 @@
     (should (string= lang1 "php"))
     (should (string= lang1b "php"))
     (should (string= lang2 "javascript"))))
+
+(ert-deftest dumb-jump-get-lang-major-mode-alias-test ()
+  (let* ((major-mode 'd-mode)
+         (lang (dumb-jump-get-language "blah/file.install")))
+    (should (string= lang "dlang"))))
 
 (ert-deftest dumb-jump-current-files-results-test ()
   (let ((results '((:path "blah") (:path "rarr")))

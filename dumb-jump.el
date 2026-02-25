@@ -1739,6 +1739,37 @@ If nil add also the language type of current src block."
            :tests ("class test(object) {"
                    "class test{"))
 
+    ;;-- dlang
+    (:language "dlang" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^[[:space:]]*([][[:alnum:]_!.*<>]+[[:space:]]+)+JJJ[[:space:]]*\\\([^;{}]*\\\)([[:space:]]+@?[[:alnum:]_]+)*[[:space:]]*[{]"
+           :tests ("void test() {"
+                   "public static int test(int value) {"
+                   "auto test(T)(T value) {"
+                   "void test() pure {"
+                   "void test() @safe {")
+           :not ("return test();"
+                 "auto value = test(arg);"
+                 "test();"))
+
+    (:language "dlang" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\s*\\bJJJ\\s*=[^=\\n)]+"
+           :tests ("int test = 1234;"
+                   "immutable test = 1;"
+                   "auto test = foo();")
+           :not ("if (test == 1234)"
+                 "int nottest = 44;"))
+
+    (:language "dlang" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(class|interface|struct|union|enum|alias)\\s+JJJ\\b"
+           :tests ("class test {"
+                   "struct test {"
+                   "alias test = int;")
+           :not ("class testnot {"
+                 "alias nottest = test;"))
+
     ;;-- faust
     (:language "faust" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
@@ -2933,6 +2964,8 @@ More information using the search tool command line help."
     (:language "typescript"    :ext "tsx"         :agtype "ts"        :rgtype "ts")
     (:language "typescript"    :ext "vue"         :agtype "ts"        :rgtype "ts")
     (:language "dart"          :ext "dart"        :agtype nil         :rgtype "dart")
+    (:language "dlang"         :ext "d"           :agtype "dlang"     :rgtype "d")
+    (:language "dlang"         :ext "di"          :agtype "dlang"     :rgtype "d")
     (:language "lua"           :ext "lua"         :agtype "lua"       :rgtype "lua")
     ;; the extension "m" is also used by obj-c so must use matlab-mode
     ;; since obj-c will win by file extension, but here for searcher types
@@ -3639,6 +3672,7 @@ Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
 
 (defcustom dumb-jump-language-aliases-alist
   '(("sh" . "shell")
+    ("d" . "dlang")
     ("cperl" . "perl")
     ("octave" . "matlab")
     ("emacs-lisp" . "elisp")
@@ -4019,6 +4053,9 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "//" :language "javascript")
     (:comment "//" :language "typescript")
     (:comment "//" :language "dart")
+    (:comment "//" :language "dlang")
+    (:comment "/*" :language "dlang")
+    (:comment "/+" :language "dlang")
     (:comment "--" :language "haskell")
     (:comment "--" :language "lua")
     (:comment "//" :language "rust")
