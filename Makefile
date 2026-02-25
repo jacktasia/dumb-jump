@@ -22,7 +22,7 @@ EMACS_VERSION ?= 29.4
 # declared PHONY to avoid conflict with a file name.
 #
 .PHONY: all test unit install setup \
-        actions-test test-docker help
+        actions-test test-docker test-this-docker help
 
 
 all: test
@@ -53,7 +53,7 @@ test-docker:
 # - NetBSD Make (bmake) will see '-include ' (empty) and do nothing as
 #   expected because the content of gnu.mk can only be parsed by GNU Make.
 # - The gnu.mk parses Make command line and builds the logic for the test-this
-#   rule.
+#   and test-this-docker rules.
 #
 -include $(_GNU_MAKE_ONLY_FILE)
 
@@ -68,14 +68,16 @@ The following targets are supported:\n\
 - make unit                                   : execute all Ert tests\n\
 - make test                                   : execute all Ert tests\n\
 - make test-this T1 [T2...]                   : execute specified Ert test(s) T1, T2...\n\
+- make test-this-docker T1 [T2...]            : execute specified Ert test(s) in Docker\n\
 - make test-concurrent                        : execute all Ert tests, but concurrently.\n\
 - make test-docker                            : run tests locally in Docker (default: Emacs 29.4)\n\
 - make test-docker EMACS_VERSION=X.Y          : run tests in Docker with a specific Emacs version\n\
 - make help                                   : prints this help.\n\n\
 Notes:\n\
 - 'test-concurrent' shows # of skipped tests due to unavailability of a search tool, others do not.\n\
-- 'test-this' is only available when using GNU Make.\n\
+- 'test-this' and 'test-this-docker' are only available when using GNU Make.\n\
 - Use 'test-this' to identify a set of tests by complete or partial names.\n\
+- Use 'test-this-docker' to run a filtered test set in Docker.\n\
 - 'test-docker' requires Docker. Supported Emacs versions: 26.3  27.2  28.2  29.4  30.2\n\n"
 
 # ----------------------------------------------------------------------------

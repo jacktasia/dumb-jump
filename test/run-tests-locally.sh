@@ -6,18 +6,20 @@
 # On Apple Silicon, Docker Desktop emulates amd64 via Rosetta 2 automatically.
 #
 # Usage:
-#   bash test/run-tests-locally.sh [EMACS_VERSION]
+#   bash test/run-tests-locally.sh [EMACS_VERSION] [TEST_PATTERN]
 #   make test-docker
-#   make test-docker EMACS_VERSION=28.1
+#   make test-docker EMACS_VERSION=28.2
+#   make test-this-docker dumb-jump-test-rg-rules-test
 #
 # Arguments:
 #   EMACS_VERSION  Emacs version to test against (default: 29.4)
 #                  Must be one of: 26.3  27.2  28.2  29.4  30.2
+#   TEST_PATTERN   Optional ert-runner -p regex to run a filtered subset
 #
 # Examples:
 #   bash test/run-tests-locally.sh          # uses default (29.4)
-#   bash test/run-tests-locally.sh 28.1
-#   bash test/run-tests-locally.sh 25.3
+#   bash test/run-tests-locally.sh 28.2
+#   bash test/run-tests-locally.sh 29.4 "dumb-jump-test-rg-rules-test"
 
 set -euo pipefail
 
@@ -39,6 +41,7 @@ fi
 
 # Positional arg takes priority over env var; env var is the Make-friendly path.
 EMACS_VERSION="${1:-${EMACS_VERSION:-29.4}}"
+TEST_PATTERN="${2:-${TEST_PATTERN:-}}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOCKERFILE="${REPO_ROOT}/test/Dockerfile.local"
 
@@ -75,6 +78,9 @@ echo "==> Running tests locally in Docker (engine: ${DOCKER})"
 echo "    Emacs version : ${EMACS_VERSION}"
 echo "    Docker image  : ${IMAGE_TAG}"
 echo "    Repo root     : ${REPO_ROOT}"
+if [[ -n "$TEST_PATTERN" ]]; then
+	echo "    Test pattern  : ${TEST_PATTERN}"
+fi
 echo ""
 
 # ── Build image ───────────────────────────────────────────────────────────────
@@ -109,6 +115,8 @@ echo "==> Launching test container..."
 # subprocesses (ag, rg, grep) via shell-command. With --tty, those child
 # processes inherit the pseudo-TTY and can block waiting for terminal input
 # instead of exiting when done. Plain pipe I/O (no --tty) keeps them clean.
-"$DOCKER" run \
-	--rm \
-	"${IMAGE_TAG}"
+docker_run_args=(--rm)
+if [[ -n "$TEST_PATTERN" ]]; then
+	docker_run_args+=(--env "TEST_PATTERN=${TEST_PATTERN}")
+fi
+"$DOCKER" run "${docker_run_args[@]}" "${IMAGE_TAG}"

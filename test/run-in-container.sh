@@ -42,5 +42,10 @@ EOF
 # </dev/null: close Emacs's stdin. Without this, shell-command (used by ag
 #   and git-grep tests) inherits the open stdin pipe and passes it to child
 #   processes; ag detects the open pipe and waits on it instead of exiting.
-stdbuf -oL cask exec ert-runner --verbose --load "$SHIM" </dev/null
+if [[ -n "${TEST_PATTERN:-}" ]]; then
+	echo "    Running filtered tests (-p): ${TEST_PATTERN}"
+	stdbuf -oL cask exec ert-runner --verbose -p "$TEST_PATTERN" --load "$SHIM" </dev/null
+else
+	stdbuf -oL cask exec ert-runner --verbose --load "$SHIM" </dev/null
+fi
 rm -f "$SHIM"

@@ -338,6 +338,11 @@ To run against a specific Emacs version:
 make test-docker EMACS_VERSION=28.2
 ~~~
 
+To run a subset of tests in Docker (GNU Make only):
+~~~sh
+make test-this-docker clojure org
+~~~
+
 Supported versions: `26.3 27.2 28.2 29.4 30.2`
 
 
