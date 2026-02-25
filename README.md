@@ -122,6 +122,26 @@ Note that the function `xref-show-definitions-completing-read`
 requires at least Xref 1.1.0. This can either be downloaded from ELPA
 or is bundled with Emacs 28.1 or newer.
 
+If you use [Consult](https://github.com/minad/consult), you can set
+`xref-show-definitions-function` to `consult-xref` to get live preview
+of definition candidates while you cycle through them:
+
+~~~lisp
+(setq xref-show-definitions-function #'consult-xref)
+~~~
+
+`use-package` example:
+
+~~~lisp
+(use-package dumb-jump
+  :ensure t
+  :custom
+  (dumb-jump-prefer-searcher 'rg)
+  (xref-show-definitions-function #'consult-xref)
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+~~~
+
 [xref]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html
 
 ## Configuration
