@@ -1934,13 +1934,64 @@ If nil add also the language type of current src block."
 
     (:language "typescript" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "class\\s*JJJ\\s*[\\\(\\\{]"
-           :tests ("class test{"))
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s*[\\\(\\\{]"
+           :tests ("class test{"
+                   "class test<T>{"))
 
     (:language "typescript" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "class\\s*JJJ\\s+extends"
-           :tests ("class test extends Component{"))
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s+extends"
+           :tests ("class test extends Component{"
+                   "class test<T> extends Component{"))
+
+    (:language "typescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s*[\\\(\\\{]"
+           :tests ("class test{"
+                   "class test<T>{"))
+
+    (:language "typescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s+extends"
+           :tests ("class test extends Component{"
+                   "class test<T> extends Component{"))
+
+    (:language "typescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(export\\s+)?interface\\s+JJJ\\b"
+           :tests ("interface test{"
+                   "interface test extends Thing{"
+                   "export interface test{")
+           :not ("interface testnot{"))
+
+    (:language "typescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(export\\s+)?type\\s+JJJ\\b"
+           :tests ("type test = number"
+                   "type test<T> = T"
+                   "export type test = number")
+           :not ("type testnot = number"))
+
+    (:language "typescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(export\\s+)?enum\\s+JJJ\\b"
+           :tests ("enum test{"
+                   "export enum test{")
+           :not ("enum testnot{"))
+
+    (:language "typescript" :type "module"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(declare\\s+)?namespace\\s+JJJ\\b"
+           :tests ("declare namespace test"
+                   "namespace test")
+           :not ("declare testnot"))
+
+    (:language "typescript" :type "module"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(export\\s+)?module\\s+JJJ\\b"
+           :tests ("export module test"
+                   "module test")
+           :not ("module testnot"))
 
     (:language "typescript" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
@@ -2986,6 +3037,8 @@ type for that tool."
     (:language "javascript" :type "variable"  :left nil           :right "^\\." )
     (:language "javascript" :type "variable"  :left nil           :right "^;" )
     (:language "typescript" :type "function"  :left nil           :right "^(" )
+    (:language "typescript" :type "type"      :left "\\(?:[:<>,|&]\\|\\_<\\(?:as\\|extends\\|implements\\)\\_>\\)\\s-*$" :right nil)
+    (:language "typescript" :type "type"      :left "\\_<\\(?:type\\|interface\\|enum\\|class\\)\\_>\\s-+$" :right nil)
     (:language "perl"       :type "function"  :left nil           :right "^(" )
     (:language "tcl"        :type "function"  :left "\\[$"        :right nil)
     (:language "tcl"        :type "function"  :left "^\\s*$"      :right nil)
