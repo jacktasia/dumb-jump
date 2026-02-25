@@ -145,6 +145,18 @@
          (lang (dumb-jump-get-language "blah/file.install")))
     (should (string= lang "dlang"))))
 
+(ert-deftest dumb-jump-get-lang-major-mode-ambiguous-ext-preference-test ()
+  (let* ((major-mode 'vue-mode)
+         (dumb-jump-ambiguous-language-file-exts '(("vue" . "typescript")))
+         (lang (dumb-jump-get-language "/askdfjkl/somefile.vue")))
+    (should (string= lang "typescript"))))
+
+(ert-deftest dumb-jump-get-lang-major-mode-supported-over-ambiguous-ext-test ()
+  (let* ((major-mode 'matlab-mode)
+         (dumb-jump-ambiguous-language-file-exts '(("m" . "objc")))
+         (lang (dumb-jump-get-language "/askdfjkl/somefile.m")))
+    (should (string= lang "matlab"))))
+
 (ert-deftest dumb-jump-current-files-results-test ()
   (let ((results '((:path "blah") (:path "rarr")))
         (expected '((:path "blah"))))
@@ -177,6 +189,20 @@
 (ert-deftest dumb-jump-generate-cmd-include-args ()
   (let ((args (dumb-jump-get-ext-includes "javascript"))
         (expected " --include \\*.js --include \\*.jsx --include \\*.vue --include \\*.html --include \\*.css "))
+    (should (string= expected args))))
+
+(ert-deftest dumb-jump-get-search-languages-vue-test ()
+  (should (equal '("javascript" "typescript")
+                 (dumb-jump-get-search-languages "typescript" "/foo/bar/App.vue")))
+  (should (equal '("typescript")
+                 (dumb-jump-get-search-languages "typescript" "/foo/bar/App.ts"))))
+
+(ert-deftest dumb-jump-generate-cmd-include-args-vue-mixed-test ()
+  (let ((args (dumb-jump-get-ext-includes-by-languages '("javascript" "typescript")))
+        (expected (concat
+                   " --include \\*.js --include \\*.jsx --include \\*.vue"
+                   " --include \\*.html --include \\*.css"
+                   " --include \\*.ts --include \\*.tsx ")))
     (should (string= expected args))))
 
 (defconst dumb-jump--expected-elisp-regexps-templates
@@ -338,6 +364,17 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                       "tester" "blah.el" "/path/to/proj-root" regexes "elisp"
                       '("/path/to/proj-root/this/is/excluded"))))))
 
+(ert-deftest dumb-jump-generate-rg-command-vue-mixed-types-test ()
+  (let* ((regexes '("JJJ"))
+         (expected
+          (concat "rg --color never --no-heading --line-number -U --pcre2"
+                  " --type js --type html --type css --type ts -- "
+                  (shell-quote-argument "tester")
+                  " .")))
+    (should (string= expected
+                     (dumb-jump-generate-rg-command
+                      "tester" "blah.vue" "." regexes "typescript" nil)))))
+
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
          (expected-regexes
@@ -352,6 +389,17 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
     (should (string= expected
                      (dumb-jump-generate-git-grep-command
                       "tester" "blah.el" "." regexes "elisp" excludes)))))
+
+(ert-deftest dumb-jump-generate-grep-command-vue-mixed-includes-test ()
+  (let* ((system-type 'darwin)
+         (regexes '("JJJ"))
+         (expected
+          (concat "LANG=C grep -REn --include \\*.js --include \\*.jsx --include \\*.vue"
+                  " --include \\*.html --include \\*.css --include \\*.ts --include \\*.tsx"
+                  " -e tester .")))
+    (should (string= expected
+                     (dumb-jump-generate-grep-command
+                      "tester" "blah.vue" "." regexes "typescript" nil)))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-extra-args ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))

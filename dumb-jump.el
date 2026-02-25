@@ -3589,9 +3589,17 @@ looking for another root."
 
 (defun dumb-jump-get-language (file)
   "Get language from FILE extension.  Fallback to using `major-mode' name."
-  (let* ((language (or (dumb-jump-get-language-from-mode)
-                       (dumb-jump-get-language-by-filename file)
-                       (dumb-jump-get-mode-base-name))))
+  (let* ((mode-language (dumb-jump-get-language-from-mode))
+         (file-language (dumb-jump-get-language-by-filename file))
+         (mode-base-language (dumb-jump-get-mode-base-name))
+         (fallback-language
+          (or
+           ;; Keep mode-derived language precedence for ambiguous extensions.
+           (and (dumb-jump-supported-language-p mode-base-language)
+                mode-base-language)
+           (dumb-jump-get-preferred-language-by-filename file)
+           mode-base-language))
+         (language (or mode-language file-language fallback-language)))
                                         ; src edit buffer ? org-edit-src-exit
     (if (and (fboundp 'org-src-edit-buffer-p)
              (org-src-edit-buffer-p))
@@ -3604,9 +3612,7 @@ looking for another root."
             (save-buffer))))
     (if (string= language "org")
         (setq language (dumb-jump-get-language-in-org)))
-    (if (member language (-distinct
-                          (--map (plist-get it :language)
-                                 dumb-jump-find-rules)))
+    (if (dumb-jump-supported-language-p language)
         language
       (format ".%s file" (or (file-name-extension file) "")))))
 
@@ -3685,10 +3691,28 @@ For example: \"cperl\" for the \"perl\" language."
                   (string :tag "alias   ")
                   (string :tag "language"))))
 
+(defcustom dumb-jump-ambiguous-language-file-exts
+  '(("vue" . "typescript"))
+  "Preferred language for file extensions mapped to multiple languages.
+The key is a file extension without the leading dot and the value is a
+language name present in `dumb-jump-find-rules'.  This preference is used as
+a fallback when `dumb-jump-get-language-by-filename' cannot pick a unique
+language."
+  :group 'dumb-jump
+  :type '(repeat (cons
+                  (string :tag "file extension")
+                  (string :tag "language"))))
+
 (defun dumb-jump-get-language-from-aliases (lang)
   "Return the dumb-jump language name for a possible alias if there is one.
 Return nil if LANG is not one of the supported aliases."
   (assoc-default lang dumb-jump-language-aliases-alist))
+
+(defun dumb-jump-supported-language-p (language)
+  "Return non-nil if LANGUAGE has dumb-jump rules."
+  (member language (-distinct
+                    (--map (plist-get it :language)
+                           dumb-jump-find-rules))))
 
 (defun dumb-jump-get-mode-base-name ()
   "Get the base name of the mode."
@@ -3699,19 +3723,42 @@ Return nil if LANG is not one of the supported aliases."
 Currently just everything before \"-mode\"."
   (dumb-jump-get-language-from-aliases (dumb-jump-get-mode-base-name)))
 
+(defun dumb-jump-normalize-filename (file)
+  "Return FILE normalized for extension matching."
+  (if (string-suffix-p ".gz" file)
+      (file-name-sans-extension file)
+    file))
+
+(defun dumb-jump-get-matching-language-file-exts (file)
+  "Return all matching language/extension entries for FILE."
+  (let ((filename (dumb-jump-normalize-filename file)))
+    (--filter
+     (string-suffix-p (concat "." (plist-get it :ext)) filename)
+     dumb-jump-language-file-exts)))
+
+(defun dumb-jump-get-languages-by-filename (file)
+  "Return all matching languages for FILE extension."
+  (-distinct
+   (--map (plist-get it :language)
+          (dumb-jump-get-matching-language-file-exts file))))
+
+(defun dumb-jump-get-preferred-language-by-filename (file)
+  "Return preferred language for FILE extension in ambiguous cases."
+  (let* ((filename (dumb-jump-normalize-filename file))
+         (extension (file-name-extension filename))
+         (preferred (and extension
+                         (cdr (assoc-string extension
+                                            dumb-jump-ambiguous-language-file-exts)))))
+    (when (and preferred
+               (member preferred
+                       (dumb-jump-get-languages-by-filename filename)))
+      preferred)))
+
 (defun dumb-jump-get-language-by-filename (file)
   "Get the programming language name from the specified FILE extension."
-  ;; Search in `dumb-jump-language-file-exts' for an entry that has the :ext
-  ;; attribute equal to the file extension and return the corresponding
-  ;; :language value.
-  (let* ((filename (if (string-suffix-p ".gz" file)
-                       (file-name-sans-extension file)
-                     file))
-         (result (--filter
-                  (string-suffix-p (concat "." (plist-get it :ext)) filename)
-                  dumb-jump-language-file-exts)))
-    (when (and result (eq (length result) 1))
-      (plist-get (car result) :language))))
+  (let ((languages (dumb-jump-get-languages-by-filename file)))
+    (when (eq (length languages) 1)
+      (car languages))))
 
 ;; --
 
@@ -4729,12 +4776,25 @@ that are both strings."
     (when (and usable-ctxs use-ctx)
       (plist-get (car usable-ctxs) :type))))
 
-(defun dumb-jump-get-ext-includes (language)
-  "Return the --include grep argument of file extensions for LANGUAGE."
-  (let ((exts (dumb-jump-get-file-exts-by-language language)))
+(defun dumb-jump-get-search-languages (language cur-file)
+  "Return languages to search for LANGUAGE in CUR-FILE.
+When searching from a Vue single file component, include both JavaScript and
+TypeScript file groups."
+  (if (and (member language '("javascript" "typescript"))
+           (string-suffix-p ".vue" (dumb-jump-normalize-filename cur-file)))
+      '("javascript" "typescript")
+    (list language)))
+
+(defun dumb-jump-get-ext-includes-by-languages (languages)
+  "Return --include grep argument for all file extensions in LANGUAGES."
+  (let ((exts (dumb-jump-get-file-exts-by-languages languages)))
     (dumb-jump-arg-joiner
      "--include"
      (--map (format "\\*.%s" it) exts))))
+
+(defun dumb-jump-get-ext-includes (language)
+  "Return the --include grep argument of file extensions for LANGUAGE."
+  (dumb-jump-get-ext-includes-by-languages (list language)))
 
 (defun dumb-jump-arg-joiner (prefix values)
   "Helper to generate command arg with its PREFIX for each value in VALUES."
@@ -4812,8 +4872,9 @@ The arguments are:
 - LANG: string: handled language.
 - EXCLUDE-PATHS: list of strings: directories to exclude from search."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'ag))
-         (agtypes (dumb-jump-get-ag-type-by-language lang))
-         (lang-exts (dumb-jump-get-file-exts-by-language lang))
+         (search-languages (dumb-jump-get-search-languages lang cur-file))
+         (agtypes (dumb-jump-get-ag-type-by-languages search-languages))
+         (lang-exts (dumb-jump-get-file-exts-by-languages search-languages))
          (proj-dir (file-name-as-directory proj))
          ;; TODO: --search-zip always? in case the include is the in gz area
          ;;       like emacs lisp code.
@@ -4917,7 +4978,7 @@ The arguments are:
 
 ;; --
 (defun dumb-jump-generate-rg-command (look-for
-                                      _cur-file proj
+                                      cur-file proj
                                       regexes lang
                                       exclude-paths)
   "Return the rg command to search for LOOK-FOR in the PROJ directory.
@@ -4930,7 +4991,8 @@ The arguments are:
 - LANG: string: handled language.
 - EXCLUDE-PATHS: list of strings: directories to exclude from search."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'rg))
-         (rgtypes (dumb-jump-get-rg-type-by-language lang))
+         (search-languages (dumb-jump-get-search-languages lang cur-file))
+         (rgtypes (dumb-jump-get-rg-type-by-languages search-languages))
          (proj-dir (file-name-as-directory proj))
          (cmd (concat dumb-jump-rg-cmd
                       " --color never --no-heading --line-number -U"
@@ -4966,8 +5028,9 @@ The arguments are:
 - LANG: string: handled language.
 - EXCLUDE_PATHS:list of strings: directories to exclude from search."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'git-grep))
+         (search-languages (dumb-jump-get-search-languages lang cur-file))
          (ggtypes (when (file-name-extension cur-file)
-                    (dumb-jump-get-git-grep-type-by-language lang)))
+                    (dumb-jump-get-git-grep-type-by-languages search-languages)))
          (cmd (concat dumb-jump-git-grep-cmd
                       " --color=never --line-number"
                       (if (member lang dumb-jump--case-insensitive-languages)
@@ -5009,6 +5072,7 @@ The arguments are:
   (let* ((filled-regexes
           (--map (shell-quote-argument it)
                  (dumb-jump-populate-regexes look-for regexes 'grep)))
+         (search-languages (dumb-jump-get-search-languages lang cur-file))
          (cmd (concat
                (if (eq system-type 'windows-nt)
                    ""
@@ -5020,7 +5084,7 @@ The arguments are:
                         " --ignore-case"
                       ""))
          (exclude-args (dumb-jump-arg-joiner "--exclude-dir" exclude-paths))
-         (include-args (dumb-jump-get-ext-includes lang))
+         (include-args (dumb-jump-get-ext-includes-by-languages search-languages))
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
     (if (null regexes)
         ""
@@ -5074,33 +5138,47 @@ The arguments are:
 
 (defun dumb-jump-get-file-exts-by-language (language)
   "Return list of file extensions for a LANGUAGE."
-  (--map (plist-get it :ext)
-         (--filter (string= (plist-get it :language) language)
-                   dumb-jump-language-file-exts)))
+  (dumb-jump-get-file-exts-by-languages (list language)))
+
+(defun dumb-jump-get-file-exts-by-languages (languages)
+  "Return list of file extensions for LANGUAGES."
+  (-distinct (--map (plist-get it :ext)
+                    (--filter (and
+                               (plist-get it :ext)
+                               (member (plist-get it :language) languages))
+                              dumb-jump-language-file-exts))))
 
 (defun dumb-jump-get-ag-type-by-language (language)
   "Return list of ag type argument for a LANGUAGE."
+  (dumb-jump-get-ag-type-by-languages (list language)))
+
+(defun dumb-jump-get-ag-type-by-languages (languages)
+  "Return list of ag type arguments for LANGUAGES."
   (-distinct (--map (plist-get it :agtype)
                     (--filter (and
                                (plist-get it :agtype)
-                               (string= (plist-get it :language) language))
+                               (member (plist-get it :language) languages))
                               dumb-jump-language-file-exts))))
 
 (defun dumb-jump-get-rg-type-by-language (language)
   "Return list of rg type argument for a LANGUAGE."
+  (dumb-jump-get-rg-type-by-languages (list language)))
+
+(defun dumb-jump-get-rg-type-by-languages (languages)
+  "Return list of rg type arguments for LANGUAGES."
   (-distinct (--map (plist-get it :rgtype)
                     (--filter (and
                                (plist-get it :rgtype)
-                               (string= (plist-get it :language) language))
+                               (member (plist-get it :language) languages))
                               dumb-jump-language-file-exts))))
 
 (defun dumb-jump-get-git-grep-type-by-language (language)
   "Return list of git grep type argument for a LANGUAGE."
-  (-distinct (--map (plist-get it :ext)
-                    (--filter (and
-                               (plist-get it :ext)
-                               (string= (plist-get it :language) language))
-                              dumb-jump-language-file-exts))))
+  (dumb-jump-get-git-grep-type-by-languages (list language)))
+
+(defun dumb-jump-get-git-grep-type-by-languages (languages)
+  "Return list of git grep type arguments for LANGUAGES."
+  (dumb-jump-get-file-exts-by-languages languages))
 
 (defun dumb-jump-get-rules-by-language (language searcher)
   "Return a list of rules for the LANGUAGE by SEARCHER."
