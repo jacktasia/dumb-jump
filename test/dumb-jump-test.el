@@ -4,7 +4,6 @@
 (require 'dash)
 (require 'noflet)
 (require 'el-mock)
-(require 'popup)
 ;;
 (require 'dumb-jump)
 ;;; Code:
@@ -723,10 +722,11 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
     (should (string= ctx-type "type"))))
 
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-test ()
-  (let* ((results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
+  (let* ((dumb-jump-selector 'completing-read)
+         (results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
                     (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
     (with-mock
-     (mock (popup-menu* *) => "/test2.txt:52: var thing = function()")
+     (mock (dumb-jump--select-choice * *) => "/test2.txt:52: var thing = function()")
      (mock (dumb-jump-result-follow '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
@@ -831,7 +831,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (forward-char 13)
       (with-mock
         (stub dumb-jump-rg-installed? => t)
-        (mock (popup-tip "/src/js/fake.js:3: function doSomeStuff() {"))
+        (mock (dumb-jump--show-preview "/src/js/fake.js:3: function doSomeStuff() {"))
         (should (string= go-js-file (with-no-warnings (dumb-jump-quick-look))))))))
 
 (ert-deftest dumb-jump-go-js2-test ()
@@ -1190,7 +1190,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
 
 (ert-deftest dumb-jump-message-result-follow-tooltip-test ()
   (with-mock
-   (mock (popup-tip "/file.js:62: var isNow = true"))
+   (mock (dumb-jump--show-preview "/file.js:62: var isNow = true"))
    (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
      (dumb-jump--result-follow result t "src"))))
 
@@ -1908,7 +1908,9 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
                    (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
     (with-mock
-     (mock (popup-menu* '("relfile.js:62: var isNow = true" "src/absfile.js:69: isNow = false")) :times 1)
+     (mock (dumb-jump--select-choice '("relfile.js:62: var isNow = true" "src/absfile.js:69: isNow = false") "Matches: ")
+           => "src/absfile.js:69: isNow = false")
+     (mock (dumb-jump--show-preview "src/absfile.js:69: isNow = false") :times 1)
      (dumb-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" t nil))))
 
 ;; Make sure it jumps when there's only one possibility in non-aggressive mode.
