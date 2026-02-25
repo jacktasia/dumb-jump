@@ -708,6 +708,20 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (ctx-type (dumb-jump-get-ctx-type-by-language "javascript" pt-ctx)))
     (should (string= ctx-type "function"))))
 
+(ert-deftest dumb-jump-context-point-typescript-type-annotation-test ()
+  (let* ((sentence "const foo: MyType = {}")
+         (sym "MyType")
+         (pt-ctx (dumb-jump-get-point-context sentence sym 11))
+         (ctx-type (dumb-jump-get-ctx-type-by-language "typescript" pt-ctx)))
+    (should (string= ctx-type "type"))))
+
+(ert-deftest dumb-jump-context-point-typescript-type-alias-test ()
+  (let* ((sentence "type MyType = { foo: string }")
+         (sym "MyType")
+         (pt-ctx (dumb-jump-get-point-context sentence sym 5))
+         (ctx-type (dumb-jump-get-ctx-type-by-language "typescript" pt-ctx)))
+    (should (string= ctx-type "type"))))
+
 (ert-deftest dumb-jump-prompt-user-for-choice-correct-test ()
   (let* ((results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
                     (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
