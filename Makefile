@@ -16,6 +16,8 @@ EMACS_VERSION ?= 29.4
 GH ?= gh
 RELEASE_REPO ?= jacktasia/dumb-jump
 RELEASE_BRANCH ?= master
+RELEASE_VERSION ?=
+RELEASE_BUMP ?=
 RELEASE_NOTES_FILE ?=
 RELEASE_GENERATE_NOTES ?= 1
 
@@ -28,7 +30,7 @@ RELEASE_GENERATE_NOTES ?= 1
 #
 .PHONY: all test unit install setup \
         actions-test test-docker test-this-docker \
-        release-check release help
+        release-dry-run release-check release help
 
 
 all: test
@@ -53,10 +55,23 @@ actions-test: install setup unit
 test-docker:
 	@bash test/run-tests-locally.sh $(EMACS_VERSION)
 
+release-dry-run:
+	@GH="$(GH)" \
+	 RELEASE_REPO="$(RELEASE_REPO)" \
+	 RELEASE_BRANCH="$(RELEASE_BRANCH)" \
+	 RELEASE_VERSION="$(RELEASE_VERSION)" \
+	 RELEASE_BUMP="$(RELEASE_BUMP)" \
+	 RELEASE_TAG="$(RELEASE_TAG)" \
+	 RELEASE_NOTES_FILE="$(RELEASE_NOTES_FILE)" \
+	 RELEASE_GENERATE_NOTES="$(RELEASE_GENERATE_NOTES)" \
+	 bash test/release.sh dry-run
+
 release-check:
 	@GH="$(GH)" \
 	 RELEASE_REPO="$(RELEASE_REPO)" \
 	 RELEASE_BRANCH="$(RELEASE_BRANCH)" \
+	 RELEASE_VERSION="$(RELEASE_VERSION)" \
+	 RELEASE_BUMP="$(RELEASE_BUMP)" \
 	 RELEASE_TAG="$(RELEASE_TAG)" \
 	 RELEASE_NOTES_FILE="$(RELEASE_NOTES_FILE)" \
 	 RELEASE_GENERATE_NOTES="$(RELEASE_GENERATE_NOTES)" \
@@ -66,6 +81,8 @@ release:
 	@GH="$(GH)" \
 	 RELEASE_REPO="$(RELEASE_REPO)" \
 	 RELEASE_BRANCH="$(RELEASE_BRANCH)" \
+	 RELEASE_VERSION="$(RELEASE_VERSION)" \
+	 RELEASE_BUMP="$(RELEASE_BUMP)" \
 	 RELEASE_TAG="$(RELEASE_TAG)" \
 	 RELEASE_NOTES_FILE="$(RELEASE_NOTES_FILE)" \
 	 RELEASE_GENERATE_NOTES="$(RELEASE_GENERATE_NOTES)" \
@@ -96,7 +113,8 @@ The following targets are supported:\n\
 - make test-concurrent                        : execute all Ert tests, but concurrently.\n\
 - make test-docker                            : run tests locally in Docker (default: Emacs 29.4)\n\
 - make test-docker EMACS_VERSION=X.Y          : run tests in Docker with a specific Emacs version\n\
-- make release-check                          : validate release prerequisites and run tests\n\
+- make release-dry-run                        : show planned release version/tag and readiness checks\n\
+- make release-check                          : validate release prerequisites\n\
 - make release                                : tag/push current version and create GitHub release\n\
 - make help                                   : prints this help.\n\n\
 Notes:\n\
@@ -105,7 +123,9 @@ Notes:\n\
 - Use 'test-this' to identify a set of tests by complete or partial names.\n\
 - Use 'test-this-docker' to run a filtered test set in Docker.\n\
 - 'test-docker' requires Docker. Supported Emacs versions: 26.3  27.2  28.2  29.4  30.2\n\
+- 'release' does not run tests; run them manually before cutting a release.\n\
 - 'release' expects a clean '$(RELEASE_BRANCH)' checkout with ';; Version:' set in dumb-jump.el.\n\
-- Optional release vars: RELEASE_TAG=vX.Y.Z RELEASE_NOTES_FILE=path RELEASE_GENERATE_NOTES=0\n\n"
+- Default release bump behavior: if current vX.Y.Z tag exists, patch bumps to next version.\n\
+- Optional release vars: RELEASE_VERSION=X.Y.Z RELEASE_BUMP=patch|minor|major RELEASE_TAG=vX.Y.Z RELEASE_NOTES_FILE=path RELEASE_GENERATE_NOTES=0\n\n"
 
 # ----------------------------------------------------------------------------
