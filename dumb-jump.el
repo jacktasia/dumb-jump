@@ -1742,10 +1742,12 @@ If nil add also the language type of current src block."
     ;;-- dlang
     (:language "dlang" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "^[[:space:]]*([][[:alnum:]_!.*<>]+[[:space:]]+)+JJJ[[:space:]]*\\\([^;{}]*\\\)[[:space:]]*[{]"
+           :regex "^[[:space:]]*([][[:alnum:]_!.*<>]+[[:space:]]+)+JJJ[[:space:]]*\\\([^;{}]*\\\)([[:space:]]+@?[[:alnum:]_]+)*[[:space:]]*[{]"
            :tests ("void test() {"
                    "public static int test(int value) {"
-                   "auto test(T)(T value) {")
+                   "auto test(T)(T value) {"
+                   "void test() pure {"
+                   "void test() @safe {")
            :not ("return test();"
                  "auto value = test(arg);"
                  "test();"))
@@ -2962,8 +2964,8 @@ More information using the search tool command line help."
     (:language "typescript"    :ext "tsx"         :agtype "ts"        :rgtype "ts")
     (:language "typescript"    :ext "vue"         :agtype "ts"        :rgtype "ts")
     (:language "dart"          :ext "dart"        :agtype nil         :rgtype "dart")
-    (:language "dlang"         :ext "d"           :agtype nil         :rgtype nil)
-    (:language "dlang"         :ext "di"          :agtype nil         :rgtype nil)
+    (:language "dlang"         :ext "d"           :agtype "dlang"     :rgtype "d")
+    (:language "dlang"         :ext "di"          :agtype "dlang"     :rgtype "d")
     (:language "lua"           :ext "lua"         :agtype "lua"       :rgtype "lua")
     ;; the extension "m" is also used by obj-c so must use matlab-mode
     ;; since obj-c will win by file extension, but here for searcher types
@@ -4053,6 +4055,7 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "//" :language "dart")
     (:comment "//" :language "dlang")
     (:comment "/*" :language "dlang")
+    (:comment "/+" :language "dlang")
     (:comment "--" :language "haskell")
     (:comment "--" :language "lua")
     (:comment "//" :language "rust")
