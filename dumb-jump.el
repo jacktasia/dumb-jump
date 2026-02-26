@@ -1,5 +1,5 @@
 ;;; dumb-jump.el --- Jump to definition for 60+ languages without configuration -*- lexical-binding: t; -*-
-;; Copyright (C) 2015-2021 jack angers
+;; Copyright (C) 2015-2026 jack angers
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/jacktasia/dumb-jump
 ;; Version: 0.5.5
@@ -4583,17 +4583,20 @@ The parameters are:
                       proj))
          (cmd (funcall generate-fn look-for cur-file proj-root regexes lang exclude-args))
          (shell-command-switch (dumb-jump-shell-command-switch))
-         (rawresults (shell-command-to-string cmd)))
+         (rawresults ""))
 
-    (dumb-jump-debug-message cmd rawresults)
+    (dumb-jump-debug-message cmd)
+    (setq rawresults (shell-command-to-string cmd))
+    (dumb-jump-debug-message rawresults)
     (when (and (string-blank-p rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn
                          look-for cur-file
                          proj-root regexes
                          lang exclude-args))
+      (dumb-jump-debug-message cmd)
       (setq rawresults (shell-command-to-string cmd))
-      (dumb-jump-debug-message cmd rawresults))
+      (dumb-jump-debug-message rawresults))
     (unless (string-blank-p (or cmd ""))
       (let ((results (funcall parse-fn rawresults cur-file line-num))
             (ignore-case (member lang dumb-jump--case-insensitive-languages)))
