@@ -533,6 +533,48 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (should (s-contains? "/fake.el" (plist-get first-result :path)))
       (should (= (plist-get first-result :line) 6)))))
 
+(ert-deftest dumb-jump-run-cmd-debug-before-shell-command-test ()
+  (let ((dumb-jump-debug t)
+        (dumb-jump-fallback-search t)
+        (debug-args '())
+        (shell-calls 0))
+    (cl-letf (((symbol-function 'dumb-jump-message)
+               (lambda (&rest args)
+                 (setq debug-args (cons args debug-args))
+                 nil))
+              ((symbol-function 'shell-command-to-string)
+               (lambda (cmd)
+                 (setq shell-calls (1+ shell-calls))
+                 (should debug-args)
+                 (should (equal cmd (cadr (car debug-args))))
+                 (if (= shell-calls 1)
+                     ""
+                   "fake.el:6:(defun another-fake-function)"))))
+      (let* ((generate-fn (lambda (_look-for _cur-file _proj-root run-regexes _lang _exclude-args)
+                            (if (equal run-regexes (list dumb-jump-fallback-regex))
+                                "fallback-cmd"
+                              "primary-cmd")))
+             (parse-fn (lambda (rawresults _cur-file _line-num)
+                         (if (string-blank-p rawresults)
+                             nil
+                           (list (list :context "another-fake-function"
+                                       :path "fake.el"
+                                       :line 6)))))
+             (results (dumb-jump-run-command
+                       "another-fake-function"
+                       test-data-dir-elisp
+                       (list "fake-regex")
+                       "elisp"
+                       nil
+                       "blah.el"
+                       3
+                       parse-fn
+                       generate-fn)))
+        (should (= shell-calls 2))
+        (should (= (length results) 1))
+        (should (equal (plist-get (car results) :path) "fake.el"))
+        (should (= (plist-get (car results) :line) 6))))))
+
 (ert-deftest dumb-jump-run-cmd-fail-test ()
   (with-mock
     (stub dumb-jump-rg-installed? => t)
