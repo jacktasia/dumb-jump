@@ -986,6 +986,16 @@ If nil add also the language type of current src block."
            :not ("if test == 1234:"
                  "int nottest = 44"))
 
+    (:language "csharp" :type "variable"
+           :supports ("ag" "rg")
+           :regex "\\bforeach\\s*\\(\\s*[\\w\\[\\]<>,\\.?]+\\s+JJJ\\s+in\\b"
+           :tests ("foreach (int test in items)"
+                   "foreach (var test in items)"
+                   "foreach (string test in items)"
+                   "foreach (List<int> test in items)")
+           :not ("foreach (int nottest in items)"
+                 "test in items"))
+
     (:type "type"
            :supports ("ag" "grep" "rg" "git-grep")
            :language "csharp"
