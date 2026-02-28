@@ -1,0 +1,339 @@
+================================================================================
+DUMB-JUMP LANGUAGE SUPPORT ARCHITECTURE - VISUAL OVERVIEW
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         LANGUAGE SUPPORT DATA STRUCTURES                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+1. dumb-jump-find-rules (Lines 348-2705)
+   └─ 433 Rule Entries defining regex patterns for each language
+      │
+      ├─ Property List Structure:
+      │  ├─ :language      → "language-name" (e.g., "rust", "javascript")
+      │  ├─ :type          → "function", "variable", "type", "class", etc.
+      │  ├─ :supports      → ("ag" "grep" "rg" "git-grep")
+      │  ├─ :regex         → Pattern with JJJ placeholder
+      │  ├─ :tests         → Positive test cases (MUST match)
+      │  ├─ :not           → Negative test cases (MUST NOT match)
+      │  └─ :tags (opt)    → ("es6" "angular") for variants
+      │
+      └─ Example for Rust:
+         (:language "rust" :type "function"
+          :supports ("ag" "grep" "rg" "git-grep")
+          :regex "\\bfn\\s+JJJ\\s*\\("
+          :tests ("fn test()" "fn test ())
+          :not ("fn testing()"))
+
+
+2. dumb-jump-language-file-exts (Lines 2705-2852)
+   └─ ~120 Extension Entries mapping to languages
+      │
+      ├─ Property List Structure:
+      │  ├─ :language  → "language-name"
+      │  ├─ :ext       → file extension (e.g., "js", "ts", "rs")
+      │  ├─ :agtype    → ag search tool type (or nil)
+      │  └─ :rgtype    → rg search tool type (or nil)
+      │
+      └─ Examples:
+         (:language "javascript" :ext "js"   :agtype "js" :rgtype "js")
+         (:language "typescript" :ext "ts"   :agtype "ts" :rgtype "ts")
+         (:language "python"     :ext "py"   :agtype "python" :rgtype "py")
+
+
+3. dumb-jump-language-aliases-alist (Lines 3471-3488)
+   └─ Maps Emacs major-mode names to dumb-jump language names
+      │
+      └─ Current Aliases:
+         ("sh" . "shell")
+         ("cperl" . "perl")
+         ("octave" . "matlab")
+         ("emacs-lisp" . "elisp")
+         ("R" . "r")
+
+
+4. dumb-jump-language-contexts (Lines 2867-2903)
+   └─ Context hints for better result filtering
+      │
+      └─ Example:
+         (:language "javascript" :type "function" :left nil :right "^(")
+         (:language "javascript" :type "variable" :left "($" :right nil)
+
+
+5. dumb-jump-language-comments (Lines 3844-3902)
+   └─ Comment syntax per language
+      │
+      └─ Examples:
+         (:comment "//" :language "javascript")
+         (:comment "#" :language "python")
+         (:comment ";" :language "elisp")
+
+
+================================================================================
+                        LANGUAGE DETECTION FLOW
+================================================================================
+
+    User File: "src/utils.js"
+           │
+           ▼
+    dumb-jump-get-language(filename)
+           │
+           ├─ TRY 1: Check Major Mode
+           │         (current-major-mode) → "javascript-mode"
+           │         dumb-jump-get-mode-base-name() → "javascript"
+           │         Found! Return "javascript"
+           │
+           ├─ TRY 2: File Extension (fallback)
+           │         Extract extension: "js"
+           │         Search dumb-jump-language-file-exts
+           │         Find: (:language "javascript" :ext "js" ...)
+           │         Return "javascript"
+           │
+           └─ TRY 3: Org-mode special handling
+                     Check embedded language blocks
+
+
+================================================================================
+                       RULE RESOLUTION FLOW
+================================================================================
+
+    dumb-jump-get-rules-by-language("javascript", 'ag)
+           │
+           ▼
+    Filter dumb-jump-find-rules:
+       ├─ WHERE :language = "javascript"
+       ├─ AND :supports contains "ag"
+       │
+       └─ RESULT: List of all matching rules
+           ├─ Rule 1: ES6 arrow functions
+           ├─ Rule 2: Regular function declarations
+           ├─ Rule 3: Variable assignments
+           ├─ Rule 4: Function expressions
+           └─ ... (multiple rules per language)
+
+
+================================================================================
+                       REGEX POPULATION FLOW
+================================================================================
+
+    Symbol: "test"
+    Template Regex: "\\bfn\\s+JJJ\\s*\\("
+    Search Tool: 'ag
+           │
+           ▼
+    dumb-jump-populate-regex()
+           │
+           ├─ Replace JJJ with (regexp-quote "test")
+           │  → "\\bfn\\s+test\\s*\\("
+           │
+           ├─ Replace \\j with tool-specific boundary
+           │  (ag uses: "(?![a-zA-Z0-9\\?\\*-])")
+           │
+           ├─ Replace \\s with [[:space:]] (Windows only)
+           │
+           └─ RESULT: "\\bfn\\s+test\\s*\\("
+               Ready for ag command execution
+
+
+================================================================================
+                        SUPPORTED LANGUAGES (54+)
+================================================================================
+
+    apex              clojure           fsharp            perl
+    bash              cobol             go                php
+    c/c++             coffeescript      groovy            protobuf
+    c#                commonlisp        haskell           python
+    crystal           coq               jai                r
+    dart              elisp             java               racket
+    elixir            erlang            javascript         ruby
+    objective-c       ocaml             kotlin             rust
+    odin              openscad          lua                scala
+    org-mode          pascal            matlab             scheme
+    sass              scala             nim                sml
+    shell             sql               nix                solidity
+    swift             systemverilog     tacl               tex
+    typescript        vala              terraform/hcl     vhdl
+    zig
+
+
+================================================================================
+                    ADDING A NEW LANGUAGE (STEP-BY-STEP)
+================================================================================
+
+1. ADD FILE EXTENSION MAPPING
+   Edit: dumb-jump-language-file-exts
+   Add: (:language "purescript" :ext "purs" :agtype nil :rgtype nil)
+
+2. ADD LANGUAGE RULES
+   Edit: dumb-jump-find-rules
+   Add: Multiple rule entries with :tests and :not
+
+3. ADD COMMENT SYNTAX (Optional)
+   Edit: dumb-jump-language-comments
+   Add: (:comment "--" :language "purescript")
+
+4. ADD MODE ALIAS (If Needed)
+   Edit: dumb-jump-language-aliases-alist
+   Add: ("purescript-mode" . "purescript")
+
+5. ADD CONTEXT RULES (Optional)
+   Edit: dumb-jump-language-contexts
+   Add: (:language "purescript" :type "function" :left nil :right "^(")
+
+ 6. TEST RULES
+    Run: M-x dumb-jump-test-ag-rules
+         M-x dumb-jump-test-rg-rules
+         etc.
+
+ 7. ADD ERT TESTS (Recommended)
+    Add tests to test/dumb-jump-test.el
+
+
+================================================================================
+                           KEY FUNCTIONS
+================================================================================
+
+LANGUAGE DETECTION:
+  ├─ dumb-jump-get-language (3388)              Main language detection
+  ├─ dumb-jump-get-language-from-mode (3494)    From major-mode
+  ├─ dumb-jump-get-language-by-filename (3499)  From file extension
+  └─ dumb-jump-get-language-from-aliases (3485) Resolve alias
+
+RULE MANAGEMENT:
+  ├─ dumb-jump-get-rules-by-language (4884)     Get all rules for language
+  ├─ dumb-jump-get-contextual-regexes (4529)    Get rules by type
+  ├─ dumb-jump-populate-regex (4546)            Replace JJJ and boundaries
+  └─ dumb-jump-populate-regexes (4568)          Batch populate
+
+SEARCH TOOL INTEGRATION:
+  ├─ dumb-jump-generate-ag-command (4582)       Build ag command
+  ├─ dumb-jump-generate-rg-command (4677)       Build rg command
+  ├─ dumb-jump-generate-grep-command (4714)     Build grep command
+  └─ dumb-jump-generate-git-grep-command (4762) Build git-grep command
+
+COMMENT HANDLING:
+  ├─ dumb-jump-get-comment-by-language (3904)   Get comment syntax
+  └─ dumb-jump-filter-no-start-comments (3925)  Filter results in comments
+
+TESTING:
+  ├─ dumb-jump-test-ag-rules (3171)             Test ag rules
+  ├─ dumb-jump-test-rg-rules (3195)             Test rg rules
+  ├─ dumb-jump-test-grep-rules (3146)           Test grep rules
+  └─ dumb-jump-test-git-grep-rules (3219)       Test git-grep rules
+
+
+================================================================================
+                            CODE STATISTICS
+================================================================================
+
+Total Lines:              7,083
+  ├─ Main file (dumb-jump.el):  5,019
+  ├─ Test file:                 2,064
+  
+Language Rules:           433 rule entries
+Supported Languages:      54+
+File Extensions:          ~120 entries
+Test Functions:           40+ ERT tests
+Language Aliases:         5 entries
+Context Hints:            ~20 entries
+Comment Definitions:      ~50 entries
+Search Tools Supported:   8 (grep, gnu-grep, ag, rg, git-grep, git-grep-plus-ag, ugrep)
+
+
+================================================================================
+                          RULE STRUCTURE EXAMPLE
+================================================================================
+
+JavaScript Function Rules:
+
+  (:language "javascript" :tags ("es6") :type "function"
+    :supports ("ag" "grep" "rg" "git-grep")
+    :regex "\\bJJJ\\s*[=:]\\s*\\([^\\)]*\\)\\s*=>"
+    :tests ("const test = (foo) => " 
+            "test: (foo) => {" 
+            "  test: (foo) => {")
+    :not ())
+
+  (:language "javascript" :type "function"
+    :supports ("ag" "grep" "rg" "git-grep")
+    :regex "function\\s*JJJ\\s*\\("
+    :tests ("function test()" "function test ()")
+    :not ("test = blah.then(function(){"))
+
+  (:language "javascript" :type "function"
+    :supports ("ag" "grep" "rg" "git-grep")
+    :regex "class\\s*JJJ\\s*[\\\(\\\{]"
+    :tests ("class test(object) {" "class test{")
+    :not ())
+
+JavaScript Variable Rules:
+
+  (:language "javascript" :type "variable"
+    :supports ("ag" "grep" "rg" "git-grep")
+    :regex "\\s*\\bJJJ\\s*=[^=\\n]+"
+    :tests ("test = 1234" "const test = props =>")
+    :not ("if (test === 1234)"))
+
+  (:language "javascript" :type "variable"
+    :supports ("ag" "grep" "rg" "git-grep")
+    :regex "\\bfunction\\b[^\\(]*\\(\\s*[^\\)]*\\bJJJ\\b\\s*,?\\s*\\)?"
+    :tests ("function (test)" "function (test, blah)")
+    :not ("function (testLen)" "function (test1, blah)"))
+
+
+================================================================================
+                      WORKFLOW: JUMP TO DEFINITION
+================================================================================
+
+1. User Position: In file "src/main.rs" at symbol "helper_function"
+2. User presses: M-.
+
+3. DETECTION PHASE:
+   ├─ Get current file: "src/main.rs"
+   ├─ Get language: "rust" (via .rs extension)
+   └─ Get symbol under cursor: "helper_function"
+
+4. RULE SELECTION PHASE:
+   ├─ Call: dumb-jump-get-rules-by-language("rust", 'ag)
+   ├─ Filter: Find all rules where :language="rust" and "ag" in :supports
+   └─ Result: ~10 rules for rust (functions, variables, types, etc.)
+
+5. CONTEXT FILTERING PHASE:
+   ├─ Analyze context around symbol
+   ├─ Get context type hints from dumb-jump-language-contexts
+   └─ Result: Filter to likely "function" rules
+
+6. REGEX POPULATION PHASE:
+   ├─ For each rust function rule:
+   │  ├─ Get template: "\\bfn\\s+JJJ\\s*\\("
+   │  ├─ Call: dumb-jump-populate-regex(template, "helper_function", 'ag)
+   │  ├─ Replace JJJ: "\\bfn\\s+helper_function\\s*\\("
+   │  ├─ Replace \\j: (ag specific word boundary)
+   │  └─ Result: Ready-to-use regex
+   │
+   └─ Result: List of populated regexes to search for
+
+7. SEARCH EXECUTION PHASE:
+   ├─ Build ag command with all populated regexes
+   ├─ Example: ag --nocolor "fn.*helper_function.*(" .
+   ├─ Execute in project root
+   └─ Result: List of matches with file:line:context
+
+8. RESULT PROCESSING PHASE:
+   ├─ Parse search results
+   ├─ Filter out matches in comments
+   ├─ Sort by heuristics:
+   │  ├─ Distance from definition (prefer closer definitions)
+   │  ├─ Type match (exact type match preferred)
+   │  ├─ File proximity (prefer current file, then nearby files)
+   │  └─ Line number
+   │
+   └─ Result: Ranked list of candidates
+
+9. USER PRESENTATION PHASE:
+   ├─ If only 1 result: Jump to it
+   ├─ If multiple results: Show popup/helm/ivy/xref
+   └─ User selects: Jump to chosen definition
+
+
+================================================================================
