@@ -7,8 +7,8 @@
 - **Language**: Emacs Lisp
 - **Main File**: `dumb-jump.el` (5,243 lines)
 - **Test File**: `test/dumb-jump-test.el`
-- **Min Emacs Version**: 24.4
-- **Dependencies**: `dash` (>= 2.9.0)
+- **Min Emacs Version**: 26.1
+- **Dependencies**: None
 
 ## Architecture
 

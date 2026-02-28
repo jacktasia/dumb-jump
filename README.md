@@ -5,7 +5,7 @@
 ![Dumb Jump GIF](media/dumb-jump-example-v2.gif?raw=true)
 
 ## About
-**Dumb Jump** is an Emacs "jump to definition" package with support for 60+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes. Dumb Jump requires at least GNU Emacs `24.4` (the package uses `subr-x` helpers such as `string-trim`, `string-blank-p`, `string-prefix-p`, and `string-suffix-p` in `dumb-jump.el`).
+**Dumb Jump** is an Emacs "jump to definition" package with support for 60+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes. Dumb Jump requires at least GNU Emacs `26.1`.
 
 
 ### How it works
@@ -300,10 +300,6 @@ interface. These are:
 The minor mode `dumb-jump-mode` binds a few of these commands by
 default.
 
-If you still use Emacs 24 or older, you won't have xref, and have to
-use the legacy interface instead. In that case, there will also be no
-"obsolete" warnings.
-
 ## Why?
 
 I wanted "jump to definition" functionality to "just work" in emacs. I use IntelliJ for Java and this functionality is basically the only thing I miss when I switch back to emacs for work in other languages. There are certainly other packages that offer this type of functionality, but they all require significantly more configuration and are often limited to a particular language. An alternative may be worth setting up if you are in a specific project or language often (see [alternatives](#alternatives)).
@@ -364,7 +360,7 @@ To run a subset of tests in Docker (GNU Make only):
 make test-this-docker clojure org
 ~~~
 
-Supported versions: `26.3 27.2 28.2 29.4 30.2`
+Supported versions: `26.1 27.1 28.1 29.4 30.1`
 
 
 ## Alternatives
