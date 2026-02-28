@@ -131,7 +131,7 @@ make test-concurrent
 
 ## Code Conventions
 
-- Uses `dash` library for functional operations (`--filter`, `--map`, etc.)
+- Uses built-in `seq` and `mapcar` for functional operations (`seq-filter`, `seq-map`, `mapcar`, etc.)
 - Property lists for data structures (`:keyword value`)
 - `defcustom` for user-configurable variables
 - Comprehensive test cases in rules (`:tests` for positive, `:not` for negative)
