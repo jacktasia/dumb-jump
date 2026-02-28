@@ -25,12 +25,14 @@ FROM --platform=linux/amd64 silex/emacs:${EMACS_VERSION}-ci-cask
 
 # ── Search tools ──────────────────────────────────────────────────────────────
 # dumb-jump tests exercise ag (The Silver Searcher) and ripgrep.
-# Install from the Debian repos included in the silex base image.
+# Install ag from Debian repos, and ripgrep 15.1.0 to match GitHub Actions.
 RUN apt-get -qq update \
  && apt-get install -y --no-install-recommends \
         silversearcher-ag \
-        ripgrep \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* \
+ && curl -LO https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep_15.1.0-1_amd64.deb \
+ && dpkg -i ripgrep_15.1.0-1_amd64.deb \
+ && rm ripgrep_15.1.0-1_amd64.deb
 
 # ── Workspace snapshot ────────────────────────────────────────────────────────
 # Copy the repository into the image so tests run against an internal filesystem
