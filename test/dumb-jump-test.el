@@ -501,6 +501,21 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
     (should (string= (plist-get test-result :path) "dumb-jump.el"))
     (should (= (plist-get test-result ':line) 26))))
 
+(ert-deftest dumb-jump-ag-parse-wsl-test ()
+  (let* ((resp "/wsl$/Ubuntu/test.js:10:function test() {}")
+         (parsed (dumb-jump-parse-ag-response resp "other.js" 1))
+         (test-result (car parsed)))
+    (should (string= (plist-get test-result :path) "//wsl$/Ubuntu/test.js"))
+    (should (= (plist-get test-result :line) 10))))
+
+(ert-deftest dumb-jump-ag-parse-cmd-unc-warning-test ()
+  (let* ((resp "CMD.EXE was started with the above path as the current directory.\nUNC paths are not supported.  Defaulting to Windows directory.\n./dumb-jump.el:22:(defun test ())")
+         (parsed (dumb-jump-parse-ag-response resp "other.js" 1))
+         (test-result (car parsed)))
+    (should (= (length parsed) 1))
+    (should (string= (plist-get test-result :path) "dumb-jump.el"))
+    (should (= (plist-get test-result :line) 22))))
+
 (ert-deftest dumb-jump-rg-parse-test ()
   (let* ((resp "./dumb-jump.el:22:(defun dumb-jump-asdf ()\n./dumb-jump.el:26:(defvar some-var )\n./dumb-jump2.el:28:1:(defvar some-var)")
          (parsed (dumb-jump-parse-rg-response resp "dumb-jump2.el" 28))
