@@ -4673,11 +4673,21 @@ Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
                         resp-no-warnings)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
 
+(defun dumb-jump--clean-wsl-response (resp)
+  "Clean up RESP for Windows WSL/UNC path issues.
+Filters CMD.exe UNC path warnings and fixes /wsl$/ to //wsl$/."
+  (let* ((cleaned (replace-regexp-in-string
+                   "CMD\\.EXE was started with the above path as the current directory\\.\nUNC paths are not supported\\..*?\n"
+                   "" resp))
+         (fixed (replace-regexp-in-string "^/wsl\\$/" "//wsl$/" cleaned)))
+    (replace-regexp-in-string "\n/wsl\\$/" "\n//wsl$/" fixed)))
+
 (defun dumb-jump-parse-ag-response (resp cur-file cur-line-num)
   "Parse raw ag search response RESP into a list of plists.
 - CUR-FILE:     current file.
 - CUR-LINE-NUM: current line number."
-  (let* ((resp-lines (dumb-jump--split "\n" (dumb-jump--trim resp)))
+  (let* ((cleaned (dumb-jump--clean-wsl-response resp))
+         (resp-lines (dumb-jump--split "\n" (dumb-jump--trim cleaned)))
          (parsed (--map (dumb-jump-parse-response-line it cur-file)
                         resp-lines)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
