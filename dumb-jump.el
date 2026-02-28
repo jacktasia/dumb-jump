@@ -2927,6 +2927,7 @@ More information using the search tool command line help."
     (:language "c++"           :ext "hh"          :agtype "cpp"       :rgtype "cpp")
     (:language "c++"           :ext "c++"         :agtype nil         :rgtype nil)
     (:language "c++"           :ext "h++"         :agtype nil         :rgtype nil)
+    (:language "c++"           :ext "ino"         :agtype "cpp"       :rgtype nil)
     (:language "coq"           :ext "v"           :agtype nil         :rgtype nil)
     (:language "ocaml"         :ext "ml"          :agtype "ocaml"     :rgtype "ocaml")
     (:language "ocaml"         :ext "mli"         :agtype "ocaml"     :rgtype "ocaml")
@@ -3686,7 +3687,8 @@ Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
     ("cperl" . "perl")
     ("octave" . "matlab")
     ("emacs-lisp" . "elisp")
-    ("R" . "r"))
+    ("R" . "r")
+    ("arduino" . "c++"))
   "An alist of language alias to language name.
 Aliases are major mode base name sometimes used for some files.
 For example: \"cperl\" for the \"perl\" language."
@@ -4949,11 +4951,12 @@ The arguments are:
 - CUR-FILE:
 - PROJ: string: project root path.
 - REGEXES: list of strings: each string is a dumb-jump generic regular
-                            expression.
+                             expression.
 - LANG: string: handled language.
 - EXCLUDE-PATHS: list of strings: directories to exclude from search."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'rg))
          (rgtypes (dumb-jump-get-rg-type-by-language lang))
+         (rg-nontype-exts (dumb-jump-get-rg-nontype-exts-by-language lang))
          (proj-dir (file-name-as-directory proj))
          (cmd (concat dumb-jump-rg-cmd
                       " --color never --no-heading --line-number -U"
@@ -4962,7 +4965,9 @@ The arguments are:
                         "")
                       (unless (string-blank-p dumb-jump-rg-search-args)
                         (concat " " dumb-jump-rg-search-args))
-                      (dumb-jump--join "" (--map (format " --type %s" it) rgtypes))))
+                       (dumb-jump--join "" (--map (format " --type %s" it) rgtypes))
+                       (if rgtypes ""
+                         (dumb-jump--join "" (--map (format " -g \"*.%s\"" it) rg-nontype-exts)))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g"
                         (--map
@@ -5114,6 +5119,17 @@ The arguments are:
   (-distinct (--map (plist-get it :rgtype)
                     (--filter (and
                                (plist-get it :rgtype)
+                               (string= (plist-get it :language) language))
+                              dumb-jump-language-file-exts))))
+
+(defun dumb-jump-get-rg-nontype-exts-by-language (language)
+  "Return list of file extensions for a LANGUAGE that have no rgtype.
+These extensions need to be explicitly added as glob patterns since
+they are not covered by ripgrep's built-in type definitions."
+  (-distinct (--map (plist-get it :ext)
+                    (--filter (and
+                               (plist-get it :ext)
+                               (null (plist-get it :rgtype))
                                (string= (plist-get it :language) language))
                               dumb-jump-language-file-exts))))
 
