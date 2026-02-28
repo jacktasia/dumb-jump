@@ -4966,7 +4966,7 @@ The arguments are:
                       (unless (string-blank-p dumb-jump-rg-search-args)
                         (concat " " dumb-jump-rg-search-args))
                       (dumb-jump--join "" (--map (format " --type %s" it) rgtypes))
-                      (dumb-jump--join "" (--map (format " -g *.%s" it) rg-nontype-exts))))
+                      (dumb-jump--join "" (--map (format " -g %s" (shell-quote-argument (concat "*." it))) rg-nontype-exts))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g"
                         (--map
