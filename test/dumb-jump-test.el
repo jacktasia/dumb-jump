@@ -608,6 +608,25 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
     (should (string= found-project test-data-dir-proj1))
     (should (string= ".dumbjump" (dumb-jump-get-config found-project)))))
 
+(ert-deftest dumb-jump-find-proj-root-project-el-test ()
+  "When no denoter is found, project.el root should be used over default project."
+  (with-mock
+    (stub project-current => '(vc Git "/tmp/fake-project/"))
+    (stub project-root => "/tmp/fake-project/")
+    (mock (locate-dominating-file * *))
+    (let ((dumb-jump-project nil)
+          (found-project (dumb-jump-get-project-root "/tmp/fake-project/src/foo.c")))
+      (should (string= found-project "/tmp/fake-project")))))
+
+(ert-deftest dumb-jump-find-proj-root-project-el-override-test ()
+  "When `dumb-jump-project' is set, it should take priority over project.el."
+  (with-mock
+    (stub project-current => '(vc Git "/tmp/fake-project/"))
+    (stub project-root => "/tmp/fake-project/")
+    (let* ((dumb-jump-project "/tmp/explicit-override")
+           (found-project (dumb-jump-get-project-root "/tmp/fake-project/src/foo.c")))
+      (should (string= found-project "/tmp/explicit-override")))))
+
 (ert-deftest dumb-jump-find-proj-root-default-test ()
   (with-mock
     (mock (locate-dominating-file * *))

@@ -47,6 +47,7 @@
 (require 'cl-generic nil :noerror)
 (require 'cl-lib)
 (require 'subr-x)                       ; use: `string-blank-p'
+(require 'project nil 'noerror)
 
 (defun dumb-jump--chop-prefix (prefix text)
   "Remove PREFIX from TEXT when present."
@@ -3578,14 +3579,28 @@ available otherwise default to `completing-read'."
 
 (defun dumb-jump-get-project-root (filepath)
   "Return project root holding FILEPATH.
-Keep looking at the parent dir of FILEPATH until we find a denoter file/dir.
+Keep looking at the parent dir of FILEPATH until a denoter file/dir is found.
+Fall back to `project.el' when available and no denoter is found.
 Return a directory name without the trailing slash."
-  (directory-file-name
-   (expand-file-name
-    (or
-     dumb-jump-project
-     (locate-dominating-file filepath #'dumb-jump-get-config)
-     dumb-jump-default-project))))
+  (let* ((path (expand-file-name filepath))
+         (dir (if (file-directory-p path)
+                  (file-name-as-directory path)
+                (file-name-directory path)))
+         (project-el-root
+          (when (and (null dumb-jump-project)
+                     dir
+                     (fboundp 'project-current)
+                     (fboundp 'project-root))
+            (let ((default-directory dir))
+              (let ((proj (ignore-errors (project-current nil))))
+                (when proj
+                  (project-root proj)))))))
+    (directory-file-name
+     (expand-file-name
+      (or dumb-jump-project
+          (locate-dominating-file path #'dumb-jump-get-config)
+          project-el-root
+          dumb-jump-default-project)))))
 
 (defun dumb-jump-get-config (dir)
   "If a project denoter is in DIR then return it, otherwise nil.
