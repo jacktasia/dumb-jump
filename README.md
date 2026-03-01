@@ -7,6 +7,9 @@
 ## About
 **Dumb Jump** is an Emacs "jump to definition" package with support for 60+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes. Dumb Jump requires at least GNU Emacs `26.1`.
 
+### Pre-Emacs 26 Support
+Version `0.5.5` is the last release that supports Emacs versions below 26. If you need Emacs 24 or 25 support, use version 0.5.5 or earlier.
+
 
 ### How it works
 Dumb Jump uses [The Silver Searcher](https://github.com/ggreer/the_silver_searcher) `ag`, [ripgrep](https://github.com/BurntSushi/ripgrep) `rg`, or `grep` to find potential definitions of a function or variable under point. It uses a set of regular expressions based on the file extension, or `major-mode`, of the current buffer. The matches are run through a shared set of heuristic methods to find the best candidate to jump to. If it can't decide and you are using the legacy selector path, it will present the user with a list using `completing-read`, helm, or ivy via `dumb-jump-selector`. The `xref` UI is described separately later in this README.
@@ -359,8 +362,6 @@ To run a subset of tests in Docker (GNU Make only):
 ~~~sh
 make test-this-docker clojure org
 ~~~
-
-Supported versions: `26.1 27.1 28.1 29.4 30.1`
 
 
 ## Alternatives
