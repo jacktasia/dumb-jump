@@ -4158,12 +4158,11 @@ A language may have more than 1 comment string."
   "Filter out RESULTS with a :context starting with a LANG comment in file."
   (let ((comments (dumb-jump-get-comment-by-language lang)))
     (if comments
-        (apply #'append
-               (list (seq-filter (lambda (it)
-                                   (not (dumb-jump--context-startswith-comment
-                                         (plist-get it :context)
-                                         comments)))
-                                 results)))
+        (seq-filter (lambda (it)
+                      (not (dumb-jump--context-startswith-comment
+                            (plist-get it :context)
+                            comments)))
+                    results)
       results)))
 
 (defun dumb-jump-handle-results (results cur-file proj-root
@@ -4233,9 +4232,9 @@ LANGUAGE is the optional given language, if nil it will be found by
 Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
   (let* ((lang (if language language
                  (dumb-jump-get-language-by-filename cur-file)))
-         (match-sorted (seq-sort (lambda (x y)
-                                   (< (plist-get x :diff) (plist-get y :diff)))
-                                 results))
+(match-sorted (seq-sort (lambda (x y)
+                           (< (plist-get x :diff) (plist-get y :diff)))
+                         results))
          (match-no-comments (dumb-jump-filter-no-start-comments match-sorted
                                                                 lang))
 
