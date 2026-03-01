@@ -135,6 +135,7 @@ make test-concurrent
 - Property lists for data structures (`:keyword value`)
 - `defcustom` for user-configurable variables
 - Comprehensive test cases in rules (`:tests` for positive, `:not` for negative)
+- **Always run `make test` after making changes to verify nothing is broken**
 
 ## Common Development Tasks
 

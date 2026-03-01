@@ -41,6 +41,7 @@ all: test
 test: unit
 
 unit: .cask
+	@rm -f dumb-jump.elc
 	${CASK} exec ert-runner
 
 install:
