@@ -13,7 +13,7 @@
 #
 # Arguments:
 #   EMACS_VERSION  Emacs version to test against (default: 29.4)
-#                  Must be one of: 26.3  27.2  28.2  29.4  30.2
+#                  Must be one of: 26.1 26.3 27.2 28.2 29.4 30.1 30.2
 #   TEST_PATTERN   Optional ert-runner -p regex to run a filtered subset
 #
 # Examples:
@@ -50,7 +50,7 @@ DOCKERFILE="${REPO_ROOT}/test/Dockerfile.local"
 IMAGE_TAG="dumb-jump-test:emacs-${EMACS_VERSION}"
 
 # Emacs versions matching the CI matrix (from .github/workflows/test.yml)
-SUPPORTED_VERSIONS="26.3 27.2 28.2 29.4 30.2"
+SUPPORTED_VERSIONS="26.1 26.3 27.2 28.2 29.4 30.1 30.2"
 
 # ── Validation ────────────────────────────────────────────────────────────────
 
