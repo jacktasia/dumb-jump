@@ -41,9 +41,8 @@
 ;; (previous-error).
 
 ;;; Code:
-(unless (require 'xref nil :noerror)
-  (require 'etags))
-(require 'cl-generic nil :noerror)
+(require 'xref)
+(require 'cl-generic)
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
@@ -4420,17 +4419,10 @@ PROJ and RESULT information."
 
 (defun dumb-jump-goto-file-line (thefile theline column)
   "Open THEFILE, move point to line THELINE at COLUMN.
-Push current position in the xref stack if available or inside
-the old `find-tag-marker-ring' otherwise.
+Push current position to the xref marker stack.
 Run the `dumb-jump-before-jump-hook' hooks before jumping and
 the `dumb-jump-after-jump-hook' hooks after the jump."
-  ;; Push current position
-  (if (fboundp 'xref-push-marker-stack)
-      ;; On Emacs 25 and later: use xref
-      (xref-push-marker-stack)
-    ;; on older Emacs use the obsolete mechanism (but don't warn)
-    (with-no-warnings
-      (ring-insert find-tag-marker-ring (point-marker))))
+  (xref-push-marker-stack)
   ;; Run the before-jump hooks
   (with-demoted-errors "Error running `dumb-jump-before-jump-hook': %S"
     (run-hooks 'dumb-jump-before-jump-hook))
@@ -5200,103 +5192,103 @@ they are not covered by ripgrep's built-in type definitions."
 ;; -----------------------------------------------------------------------------
 ;;; Xref Backend
 
-(when (featurep 'xref)
-  (unless dumb-jump-disable-obsolete-warnings
-    (dolist (obsolete
-             '(dumb-jump-mode
-               dumb-jump-go
-               dumb-jump-go-prefer-external-other-window
-               dumb-jump-go-prompt
-               dumb-jump-quick-look
-               dumb-jump-go-other-window
-               dumb-jump-go-current-window
-               dumb-jump-go-prefer-external
-               dumb-jump-go-current-window))
-      (make-obsolete
-       obsolete
-       (format "`%s' has been obsoleted by the xref interface."
-               obsolete)
-       "2020-06-26"))
-    (make-obsolete 'dumb-jump-back
-                   "`dumb-jump-back' has been obsoleted by `xref-pop-marker-stack'."
-                   "2020-06-26"))
+(unless dumb-jump-disable-obsolete-warnings
+  (dolist (obsolete
+           '(dumb-jump-mode
+             dumb-jump-go
+             dumb-jump-go-prefer-external-other-window
+             dumb-jump-go-prompt
+             dumb-jump-quick-look
+             dumb-jump-go-other-window
+             dumb-jump-go-current-window
+             dumb-jump-go-prefer-external
+             dumb-jump-go-current-window))
+    (make-obsolete
+     obsolete
+     (format "`%s' has been obsoleted by the xref interface."
+             obsolete)
+     "2020-06-26"))
+  (make-obsolete 'dumb-jump-back
+                 "`dumb-jump-back' has been obsoleted by `xref-pop-marker-stack'."
+                 "2020-06-26"))
 
-  (cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumb-jump)))
-    (let ((bounds (bounds-of-thing-at-point 'symbol)))
-      (and bounds (let* ((ident (dumb-jump-get-point-symbol))
-			 (start (car bounds))
-			 (col (- start (line-beginning-position)))
-			 (line (dumb-jump-get-point-line))
-			 (ctx (dumb-jump-get-point-context line ident col)))
-		    (propertize ident :dumb-jump-ctx ctx)))))
+(cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumb-jump)))
+  (let ((bounds (bounds-of-thing-at-point 'symbol)))
+    (and bounds (let* ((ident (dumb-jump-get-point-symbol))
+                       (start (car bounds))
+                       (col (- start (line-beginning-position)))
+                       (line (dumb-jump-get-point-line))
+                       (ctx (dumb-jump-get-point-context line ident col)))
+                  (propertize ident :dumb-jump-ctx ctx)))))
 
-  (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump))
-                                          entered-name)
-    (let* ((info (dumb-jump-get-results entered-name))
-           (results (plist-get info :results))
-           (look-for (or entered-name (plist-get info :symbol)))
-           (proj-root (plist-get info :root))
-           (issue (plist-get info :issue))
-           (lang (plist-get info :lang))
-           (processed (dumb-jump-process-results
-                       results
-                       (plist-get info :file)
-                       proj-root
-                       (plist-get info :ctx-type)
-                       look-for
-                       nil
-                       nil
-                       lang))
-           (results (plist-get processed :results))
-           (do-var-jump (plist-get processed :do-var-jump))
-           (var-to-jump (plist-get processed :var-to-jump))
-           (match-cur-file-front (plist-get processed :match-cur-file-front)))
+(cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump))
+                                        entered-name)
+  (let* ((info (dumb-jump-get-results entered-name))
+         (results (plist-get info :results))
+         (look-for (or entered-name (plist-get info :symbol)))
+         (proj-root (plist-get info :root))
+         (issue (plist-get info :issue))
+         (lang (plist-get info :lang))
+         (processed (dumb-jump-process-results
+                     results
+                     (plist-get info :file)
+                     proj-root
+                     (plist-get info :ctx-type)
+                     look-for
+                     nil
+                     nil
+                     lang))
+         (results (plist-get processed :results))
+         (do-var-jump (plist-get processed :do-var-jump))
+         (var-to-jump (plist-get processed :var-to-jump))
+         (match-cur-file-front (plist-get processed :match-cur-file-front)))
 
-      (dumb-jump-debug-message
-        look-for
-        (plist-get info :ctx-type)
-        var-to-jump
-        (pp-to-string match-cur-file-front)
-        (pp-to-string results)
-        match-cur-file-front
-        proj-root
-        (plist-get info :file))
-      (cond ((eq issue 'nogrep)
-             (dumb-jump-message "Please install ag, rg, git grep or grep!"))
-            ((eq issue 'nosymbol)
-             (dumb-jump-message "No symbol under point."))
-            ((string-suffix-p " file" lang)
-             (dumb-jump-message "Could not find rules for '%s'." lang))
-            ((= (length results) 0)
-             (dumb-jump-message "'%s' %s %s declaration not found."
-                                look-for
-                                (if (string-blank-p (or lang ""))
-                                    "with unknown language so"
-                                  lang)
-                                (plist-get info :ctx-type)))
-            (t (mapcar (lambda (res)
-                         (with-no-warnings
-                           (xref-make
-                            (plist-get res :context)
-                            (xref-make-file-location
-                             (let* ((path (plist-get res :path))
-                                    (remote-prefix (file-remote-p default-directory)))
-                               (if remote-prefix
-                                   (if (file-name-absolute-p path)
-                                       (concat remote-prefix path)
-                                     (concat default-directory path))
-                                 (expand-file-name path)))
-                             (plist-get res :line)
-                             0))))
-                       (if do-var-jump
-                           (list var-to-jump)
-                         match-cur-file-front))))))
+    (dumb-jump-debug-message
+      look-for
+      (plist-get info :ctx-type)
+      var-to-jump
+      (pp-to-string match-cur-file-front)
+      (pp-to-string results)
+      match-cur-file-front
+      proj-root
+      (plist-get info :file))
+    (cond ((eq issue 'nogrep)
+           (dumb-jump-message "Please install ag, rg, git grep or grep!"))
+          ((eq issue 'nosymbol)
+           (dumb-jump-message "No symbol under point."))
+          ((string-suffix-p " file" lang)
+           (dumb-jump-message "Could not find rules for '%s'." lang))
+          ((= (length results) 0)
+           (dumb-jump-message "'%s' %s %s declaration not found."
+                              look-for
+                              (if (string-blank-p (or lang ""))
+                                  "with unknown language so"
+                                lang)
+                              (plist-get info :ctx-type)))
+          (t (mapcar (lambda (res)
+                       (with-no-warnings
+                         (xref-make
+                          (plist-get res :context)
+                          (xref-make-file-location
+                           (let* ((path (plist-get res :path))
+                                  (remote-prefix (file-remote-p default-directory)))
+                             (if remote-prefix
+                                 (if (file-name-absolute-p path)
+                                     (concat remote-prefix path)
+                                   (concat default-directory path))
+                               (expand-file-name path)))
+                           (plist-get res :line)
+                           0))))
+                     (if do-var-jump
+                         (list var-to-jump)
+                       match-cur-file-front))))))
 
-  (cl-defmethod xref-backend-apropos ((_backend (eql dumb-jump)) pattern)
-    (xref-backend-definitions 'dumb-jump pattern))
-  (cl-defmethod xref-backend-identifier-completion-table
-    ((_backend (eql dumb-jump)))
-    nil))
+(cl-defmethod xref-backend-apropos ((_backend (eql dumb-jump)) pattern)
+  (xref-backend-definitions 'dumb-jump pattern))
+
+(cl-defmethod xref-backend-identifier-completion-table
+  ((_backend (eql dumb-jump)))
+  nil)
 
 ;;;###autoload
 (defun dumb-jump-xref-activate ()
