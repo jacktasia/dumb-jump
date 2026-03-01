@@ -3466,14 +3466,14 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
           (when (or
                  (and (not run-not-tests) (not (dumb-jump--contains-p test resp)))
                  (and run-not-tests (> (length resp) 0)))
-            (list (dumb-jump--search-failure-msg "git-grep"
-                                                 test
-                                                 run-not-tests
-                                                 resp
-                                                 cmd
-                                                 rule)))))
-      (plist-get rule (if run-not-tests :not :tests))))
-   (seq-filter (lambda (it) (member "grep" (plist-get it :supports))) dumb-jump-find-rules)))
+             (list (dumb-jump--search-failure-msg "git-grep"
+                                                  test
+                                                  run-not-tests
+                                                  resp
+                                                  cmd
+                                                  rule)))))
+       (plist-get rule (if run-not-tests :not :tests))))
+   (seq-filter (lambda (it) (member "git-grep" (plist-get it :supports))) dumb-jump-find-rules)))
 
 ;; ---------------------------------------------------------------------------
 
@@ -5193,15 +5193,14 @@ they are not covered by ripgrep's built-in type definitions."
 
 (unless dumb-jump-disable-obsolete-warnings
   (dolist (obsolete
-           '(dumb-jump-mode
-             dumb-jump-go
-             dumb-jump-go-prefer-external-other-window
-             dumb-jump-go-prompt
-             dumb-jump-quick-look
-             dumb-jump-go-other-window
-             dumb-jump-go-current-window
-             dumb-jump-go-prefer-external
-             dumb-jump-go-current-window))
+            '(dumb-jump-mode
+              dumb-jump-go
+              dumb-jump-go-prefer-external-other-window
+              dumb-jump-go-prompt
+              dumb-jump-quick-look
+              dumb-jump-go-other-window
+              dumb-jump-go-current-window
+              dumb-jump-go-prefer-external))
     (make-obsolete
      obsolete
      (format "`%s' has been obsoleted by the xref interface."
