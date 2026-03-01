@@ -3453,7 +3453,10 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
 
 (defun dumb-jump-test-git-grep-rules (&optional run-not-tests)
   "Test all the git grep rules and return count of those that fail.
-Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
+Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules.
+
+Note: Tests rules that support \"grep\" since git-grep uses the same
+ERE syntax. Testing actual git-grep would require temp git repos."
   (mapcan
    (lambda (rule)
      (mapcan
@@ -3472,8 +3475,8 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
                                                   resp
                                                   cmd
                                                   rule)))))
-       (plist-get rule (if run-not-tests :not :tests))))
-   (seq-filter (lambda (it) (member "git-grep" (plist-get it :supports))) dumb-jump-find-rules)))
+      (plist-get rule (if run-not-tests :not :tests))))
+   (seq-filter (lambda (it) (member "grep" (plist-get it :supports))) dumb-jump-find-rules)))
 
 ;; ---------------------------------------------------------------------------
 
