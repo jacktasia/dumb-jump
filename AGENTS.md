@@ -7,8 +7,8 @@
 - **Language**: Emacs Lisp
 - **Main File**: `dumb-jump.el` (5,243 lines)
 - **Test File**: `test/dumb-jump-test.el`
-- **Min Emacs Version**: 24.4
-- **Dependencies**: `dash` (>= 2.9.0)
+- **Min Emacs Version**: 26.1
+- **Dependencies**: None
 
 ## Architecture
 
@@ -131,10 +131,11 @@ make test-concurrent
 
 ## Code Conventions
 
-- Uses `dash` library for functional operations (`--filter`, `--map`, etc.)
+- Uses built-in `seq` and `mapcar` for functional operations (`seq-filter`, `seq-map`, `mapcar`, etc.)
 - Property lists for data structures (`:keyword value`)
 - `defcustom` for user-configurable variables
 - Comprehensive test cases in rules (`:tests` for positive, `:not` for negative)
+- **Always run `make test` after making changes to verify nothing is broken**
 
 ## Common Development Tasks
 
