@@ -4234,10 +4234,10 @@ LANGUAGE is the optional given language, if nil it will be found by
 `dumb-jump-get-language-by-filename'.
 Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
   (let* ((lang (if language language
-                 (dumb-jump-get-language-by-filename cur-file)))
-(match-sorted (seq-sort (lambda (x y)
-                           (< (plist-get x :diff) (plist-get y :diff)))
-                         results))
+                  (dumb-jump-get-language-by-filename cur-file)))
+         (match-sorted (seq-sort (lambda (x y)
+                                   (< (plist-get x :diff) (plist-get y :diff)))
+                                 results))
          (match-no-comments (dumb-jump-filter-no-start-comments match-sorted
                                                                 lang))
 
