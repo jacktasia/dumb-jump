@@ -3632,9 +3632,12 @@ Results are cached per project root."
       (let ((dep-paths
              (when (file-exists-p (expand-file-name "Cargo.toml" proj-root))
                (let* ((default-directory proj-root)
-                      (json-output (shell-command-to-string
-                                    "cargo metadata --format-version=1 2>/dev/null"))
-                      (json-data (ignore-errors (json-read-from-string json-output)))
+                      (json-output (with-temp-buffer
+                                     (let ((exit-code (call-process "cargo" nil t nil
+                                                                    "metadata" "--format-version=1")))
+                                       (when (eq exit-code 0)
+                                         (buffer-string)))))
+                      (json-data (ignore-errors (when json-output (json-read-from-string json-output))))
                       (packages (when json-data (cdr (assoc 'packages json-data))))
                       (paths (when packages
                                (seq-uniq
