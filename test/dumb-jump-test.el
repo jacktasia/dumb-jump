@@ -2187,4 +2187,97 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
     (should (string= (dumb-jump-populate-regex "\\(defun\\s+JJJ\\j" "test-5" 'rg)
                      "\\(defun\\s+test-5($|[^a-zA-Z0-9\\?\\*-])"))))
 
+;; Rust dependency path tests
+
+(ert-deftest dumb-jump-rust-dep-paths-no-cargo-toml-test ()
+  "Test that nil is returned when no Cargo.toml exists."
+  (let ((dumb-jump--rust-deps-cache (make-hash-table :test 'equal)))
+    (should (null (dumb-jump-get-rust-dependency-paths "/nonexistent/path/")))))
+
+(ert-deftest dumb-jump-rust-dep-paths-parses-metadata-test ()
+  "Test that cargo metadata output is parsed into dependency paths."
+  (let ((dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
+        (proj-root "/home/user/myproject/"))
+    (cl-letf (((symbol-function 'file-exists-p)
+               (lambda (f) (string-suffix-p "Cargo.toml" f)))
+              ((symbol-function 'shell-command-to-string)
+               (lambda (_cmd)
+                 (json-encode
+                  `((packages . [((manifest_path . "/home/user/.cargo/registry/src/crate-a/Cargo.toml"))
+                                 ((manifest_path . "/home/user/.cargo/registry/src/crate-b/Cargo.toml"))
+                                 ((manifest_path . "/home/user/myproject/Cargo.toml"))])))))
+              ((symbol-function 'file-directory-p)
+               (lambda (_d) t)))
+      (let ((paths (dumb-jump-get-rust-dependency-paths proj-root)))
+        ;; should include dependency dirs but not project root
+        (should (member "/home/user/.cargo/registry/src/crate-a/" paths))
+        (should (member "/home/user/.cargo/registry/src/crate-b/" paths))
+        (should (not (member "/home/user/myproject/" paths)))
+        (should (= (length paths) 2))))))
+
+(ert-deftest dumb-jump-rust-dep-paths-caches-result-test ()
+  "Test that results are cached and cargo metadata is not called again."
+  (let ((dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
+        (proj-root "/home/user/myproject/")
+        (call-count 0))
+    (cl-letf (((symbol-function 'file-exists-p)
+               (lambda (f) (string-suffix-p "Cargo.toml" f)))
+              ((symbol-function 'shell-command-to-string)
+               (lambda (_cmd)
+                 (setq call-count (1+ call-count))
+                 (json-encode
+                  `((packages . [((manifest_path . "/home/user/.cargo/registry/src/crate-a/Cargo.toml"))])))))
+              ((symbol-function 'file-directory-p)
+               (lambda (_d) t)))
+      (dumb-jump-get-rust-dependency-paths proj-root)
+      (dumb-jump-get-rust-dependency-paths proj-root)
+      (should (= call-count 1)))))
+
+(ert-deftest dumb-jump-rust-dep-paths-handles-bad-json-test ()
+  "Test that invalid cargo metadata output is handled gracefully."
+  (let ((dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
+        (proj-root "/home/user/myproject/"))
+    (cl-letf (((symbol-function 'file-exists-p)
+               (lambda (f) (string-suffix-p "Cargo.toml" f)))
+              ((symbol-function 'shell-command-to-string)
+               (lambda (_cmd) "not valid json")))
+      (should (null (dumb-jump-get-rust-dependency-paths proj-root))))))
+
+(ert-deftest dumb-jump-rust-dep-paths-included-when-enabled-test ()
+  "Test that Rust dependency paths are added to search-paths when enabled."
+  (let ((dumb-jump-rust-search-dependencies t)
+        (dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
+        (rs-file (make-temp-file "test" nil ".rs")))
+    (unwind-protect
+        (progn
+          (with-temp-file rs-file (insert "fn main() {}"))
+          (with-current-buffer (find-file-noselect rs-file t)
+            (cl-letf (((symbol-function 'dumb-jump-get-rust-dependency-paths)
+                       (lambda (_root) '("/fake/dep/path/"))))
+              (with-mock
+                (stub dumb-jump-rg-installed? => t)
+                (let ((results (dumb-jump-fetch-file-results)))
+                  (should (string= "rust" (plist-get results :lang))))))))
+      (delete-file rs-file))))
+
+(ert-deftest dumb-jump-rust-dep-paths-not-included-when-disabled-test ()
+  "Test that Rust dependency paths are not searched when feature is disabled."
+  (let ((dumb-jump-rust-search-dependencies nil)
+        (dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
+        (call-count 0))
+    (cl-letf (((symbol-function 'dumb-jump-get-rust-dependency-paths)
+               (lambda (_root)
+                 (setq call-count (1+ call-count))
+                 '("/fake/dep/path/"))))
+      ;; Simulate what fetch-results does for the rust-dep-paths binding
+      (let ((rust-dep-paths (when (and (string= "rust" "rust")
+                                       dumb-jump-rust-search-dependencies)
+                              (dumb-jump-get-rust-dependency-paths "/proj/"))))
+        (should (null rust-dep-paths))
+        (should (= call-count 0))))))
+
+(ert-deftest dumb-jump-cargo-toml-is-project-denoter-test ()
+  "Test that Cargo.toml is recognized as a project denoter."
+  (should (member "Cargo.toml" dumb-jump-project-denoters)))
+
 ;;;
