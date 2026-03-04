@@ -2233,6 +2233,21 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (dumb-jump-get-rust-dependency-paths proj-root)
       (should (= call-count 1)))))
 
+(ert-deftest dumb-jump-rust-dep-paths-caches-nil-result-test ()
+  "Test that a nil result from bad JSON is cached and cargo is not called again."
+  (let ((dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
+        (proj-root "/home/user/myproject/")
+        (call-count 0))
+    (cl-letf (((symbol-function 'file-exists-p)
+               (lambda (f) (string-suffix-p "Cargo.toml" f)))
+              ((symbol-function 'shell-command-to-string)
+               (lambda (_cmd)
+                 (setq call-count (1+ call-count))
+                 "not valid json")))
+      (dumb-jump-get-rust-dependency-paths proj-root)
+      (dumb-jump-get-rust-dependency-paths proj-root)
+      (should (= call-count 1)))))
+
 (ert-deftest dumb-jump-rust-dep-paths-handles-bad-json-test ()
   "Test that invalid cargo metadata output is handled gracefully."
   (let ((dumb-jump--rust-deps-cache (make-hash-table :test 'equal))

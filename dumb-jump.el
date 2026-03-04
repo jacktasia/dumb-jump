@@ -3626,27 +3626,30 @@ Return a directory name without the trailing slash."
   "Return list of source directories for Rust dependencies in PROJ-ROOT.
 Uses `cargo metadata' to discover dependency crate source paths.
 Results are cached per project root."
-  (or (gethash proj-root dumb-jump--rust-deps-cache)
-      (when (file-exists-p (expand-file-name "Cargo.toml" proj-root))
-        (let* ((default-directory proj-root)
-               (json-output (shell-command-to-string
-                             "cargo metadata --format-version=1 2>/dev/null"))
-               (json-data (ignore-errors (json-read-from-string json-output)))
-               (packages (when json-data (cdr (assoc 'packages json-data))))
-               (paths (when packages
-                        (seq-uniq
-                         (seq-filter
-                          #'file-directory-p
-                          (mapcar (lambda (pkg)
-                                    (file-name-directory
-                                     (cdr (assoc 'manifest_path pkg))))
-                                  packages))))))
-          (let ((dep-paths (seq-remove
-                            (lambda (p) (string= (directory-file-name p)
-                                                 (directory-file-name proj-root)))
-                            paths)))
-            (puthash proj-root dep-paths dumb-jump--rust-deps-cache)
-            dep-paths)))))
+  (let ((cached (gethash proj-root dumb-jump--rust-deps-cache 'dumb-jump--no-cache)))
+    (if (not (eq cached 'dumb-jump--no-cache))
+        cached
+      (let ((dep-paths
+             (when (file-exists-p (expand-file-name "Cargo.toml" proj-root))
+               (let* ((default-directory proj-root)
+                      (json-output (shell-command-to-string
+                                    "cargo metadata --format-version=1 2>/dev/null"))
+                      (json-data (ignore-errors (json-read-from-string json-output)))
+                      (packages (when json-data (cdr (assoc 'packages json-data))))
+                      (paths (when packages
+                               (seq-uniq
+                                (seq-filter
+                                 #'file-directory-p
+                                 (mapcar (lambda (pkg)
+                                           (file-name-directory
+                                            (cdr (assoc 'manifest_path pkg))))
+                                         packages))))))
+                 (seq-remove
+                  (lambda (p) (string= (directory-file-name p)
+                                       (directory-file-name proj-root)))
+                  paths)))))
+        (puthash proj-root dep-paths dumb-jump--rust-deps-cache)
+        dep-paths))))
 
 (defun dumb-jump-get-config (dir)
   "If a project denoter is in DIR then return it, otherwise nil.
