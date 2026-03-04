@@ -2273,15 +2273,17 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         (dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
         (rs-file (make-temp-file "test" nil ".rs")))
     (unwind-protect
-        (progn
+        (let (buf)
           (with-temp-file rs-file (insert "fn main() {}"))
-          (with-current-buffer (find-file-noselect rs-file t)
+          (setq buf (find-file-noselect rs-file t))
+          (with-current-buffer buf
             (cl-letf (((symbol-function 'dumb-jump-get-rust-dependency-paths)
                        (lambda (_root) '("/fake/dep/path/"))))
               (with-mock
                 (stub dumb-jump-rg-installed? => t)
                 (let ((results (dumb-jump-fetch-file-results)))
-                  (should (string= "rust" (plist-get results :lang))))))))
+                  (should (string= "rust" (plist-get results :lang)))))))
+          (kill-buffer buf))
       (delete-file rs-file))))
 
 (ert-deftest dumb-jump-rust-dep-paths-not-included-when-disabled-test ()
