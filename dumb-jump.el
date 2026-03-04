@@ -3894,7 +3894,7 @@ For instance, remove clojure namespace prefix."
                             dumb-jump-language-file-exts)))
     (mapcar (lambda (it) (plist-get it :language)) found)))
 
-(defun dumb-jump-fetch-results (cur-file proj-root lang _config
+(defun dumb-jump-fetch-results (cur-file proj-root lang config
                                          &optional entered-name)
   "Search for symbol in ENTERED-NAME or symbol at point.
 
@@ -3914,9 +3914,6 @@ The returned property list has the following members:
 - :file    : string: file name
 - :root    : string: project root."
   (let* ((cur-line-num (line-number-at-pos))
-         (proj-config (dumb-jump-get-config proj-root))
-         (config (when (string-suffix-p ".dumbjump" proj-config)
-                   (dumb-jump-read-config proj-root proj-config)))
          (found-symbol (or entered-name (dumb-jump-get-point-symbol)))
          (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
          (pt-ctx (if entered-name
