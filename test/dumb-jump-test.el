@@ -2271,36 +2271,53 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
   "Test that Rust dependency paths are added to search-paths when enabled."
   (let ((dumb-jump-rust-search-dependencies t)
         (dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
-        (rs-file (make-temp-file "test" nil ".rs")))
+        (rs-file (make-temp-file "test" nil ".rs"))
+        (searched-paths nil)
+        buf)
     (unwind-protect
-        (let (buf)
+        (progn
           (with-temp-file rs-file (insert "fn main() {}"))
           (setq buf (find-file-noselect rs-file t))
           (with-current-buffer buf
             (cl-letf (((symbol-function 'dumb-jump-get-rust-dependency-paths)
-                       (lambda (_root) '("/fake/dep/path/"))))
+                       (lambda (_root) '("/fake/dep/path/")))
+                      ((symbol-function 'dumb-jump-run-command)
+                       (lambda (_look-for path &rest _args)
+                         (push path searched-paths)
+                         nil)))
               (with-mock
                 (stub dumb-jump-rg-installed? => t)
                 (let ((results (dumb-jump-fetch-file-results)))
-                  (should (string= "rust" (plist-get results :lang)))))))
-          (kill-buffer buf))
+                  (should (string= "rust" (plist-get results :lang)))
+                  (should (member "/fake/dep/path/" searched-paths)))))))
+      (when buf (kill-buffer buf))
       (delete-file rs-file))))
 
 (ert-deftest dumb-jump-rust-dep-paths-not-included-when-disabled-test ()
   "Test that Rust dependency paths are not searched when feature is disabled."
   (let ((dumb-jump-rust-search-dependencies nil)
         (dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
-        (call-count 0))
-    (cl-letf (((symbol-function 'dumb-jump-get-rust-dependency-paths)
-               (lambda (_root)
-                 (setq call-count (1+ call-count))
-                 '("/fake/dep/path/"))))
-      ;; Simulate what fetch-results does for the rust-dep-paths binding
-      (let ((rust-dep-paths (when (and (string= "rust" "rust")
-                                       dumb-jump-rust-search-dependencies)
-                              (dumb-jump-get-rust-dependency-paths "/proj/"))))
-        (should (null rust-dep-paths))
-        (should (= call-count 0))))))
+        (rs-file (make-temp-file "test" nil ".rs"))
+        (call-count 0)
+        buf)
+    (unwind-protect
+        (progn
+          (with-temp-file rs-file (insert "fn main() {}"))
+          (setq buf (find-file-noselect rs-file t))
+          (with-current-buffer buf
+            (cl-letf (((symbol-function 'dumb-jump-get-rust-dependency-paths)
+                       (lambda (_root)
+                         (setq call-count (1+ call-count))
+                         '("/fake/dep/path/")))
+                      ((symbol-function 'dumb-jump-run-command)
+                       (lambda (&rest _args) nil)))
+              (with-mock
+                (stub dumb-jump-rg-installed? => t)
+                (let ((results (dumb-jump-fetch-file-results)))
+                  (should (string= "rust" (plist-get results :lang)))
+                  (should (= call-count 0)))))))
+      (when buf (kill-buffer buf))
+      (delete-file rs-file))))
 
 (ert-deftest dumb-jump-cargo-toml-is-project-denoter-test ()
   "Test that Cargo.toml is recognized as a project denoter."
