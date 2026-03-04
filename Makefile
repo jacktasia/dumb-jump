@@ -41,6 +41,7 @@ all: test
 test: unit
 
 unit: .cask
+	@rm -f dumb-jump.elc
 	${CASK} exec ert-runner
 
 install:
@@ -122,7 +123,7 @@ Notes:\n\
 - 'test-this' and 'test-this-docker' are only available when using GNU Make.\n\
 - Use 'test-this' to identify a set of tests by complete or partial names.\n\
 - Use 'test-this-docker' to run a filtered test set in Docker.\n\
-- 'test-docker' requires Docker. Supported Emacs versions: 26.3  27.2  28.2  29.4  30.2\n\
+- 'test-docker' requires Docker. Supported Emacs versions: 26.1 26.3 27.2 28.2 29.4 30.1 30.2\n\
 - 'release' does not run tests; run them manually before cutting a release.\n\
 - 'release' expects a clean '$(RELEASE_BRANCH)' checkout with ';; Version:' set in dumb-jump.el.\n\
 - Default release bump behavior: if current vX.Y.Z tag exists, patch bumps to next version.\n\
