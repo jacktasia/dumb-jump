@@ -5066,7 +5066,13 @@ The arguments are:
          (case-args (if (member lang dumb-jump--case-insensitive-languages)
                         " --ignore-case"
                       ""))
-         (exclude-args (dumb-jump-arg-joiner "--exclude-dir" exclude-paths))
+         (proj-dir (file-name-as-directory proj))
+         (exclude-args (dumb-jump-arg-joiner
+                        "--exclude-dir"
+                        (mapcar
+                         (lambda (it)
+                           (dumb-jump--replace proj-dir "" it))
+                         exclude-paths)))
          (include-args (dumb-jump-get-ext-includes lang))
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
     (if (null regexes)

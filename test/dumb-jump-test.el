@@ -454,6 +454,23 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
     ;; the point context being passed is ignored so ALL should return
     (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
 
+(ert-deftest dumb-jump-generate-grep-command-exclude-test ()
+  "Test that grep exclude paths are converted from absolute to relative (#462)."
+  (let* ((system-type 'darwin)
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'grep))
+         (expected-regexes (mapcar (lambda (it) (concat " -e " (shell-quote-argument it)))
+                                   (dumb-jump--elisp-expected-regexps 'grep)))
+         (expected (concat
+                    "LANG=C grep -REn --exclude-dir this/is/excluded"
+                    " --include \\*.el --include \\*.el.gz"
+                    (string-join expected-regexes "")
+                    " /path/to/proj-root")))
+    (should (string= expected
+                     (dumb-jump-generate-grep-command
+                      "tester" "blah.el" "/path/to/proj-root"
+                      regexes "elisp"
+                      '("/path/to/proj-root/this/is/excluded"))))))
+
 (ert-deftest dumb-jump-generate-bad-grep-command-test ()
     (should (string-blank-p (dumb-jump-generate-grep-command "tester" "blah.el" "." nil "" (list "skaldjf")))))
 
