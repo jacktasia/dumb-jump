@@ -301,7 +301,15 @@ interface. These are:
 * `dumb-jump-confirm-jump-to-modified-file`
 
 The minor mode `dumb-jump-mode` binds a few of these commands by
-default.
+default and enables them globally.
+
+If you want to enable dumb-jump in specific major modes only, use
+`dumb-jump-local-mode` instead:
+
+```elisp
+(add-hook 'python-mode-hook #'dumb-jump-local-mode)
+(add-hook 'rust-mode-hook #'dumb-jump-local-mode)
+```
 
 ## Why?
 

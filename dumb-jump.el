@@ -5187,6 +5187,15 @@ they are not covered by ripgrep's built-in type definitions."
       results)))
 
 ;;;###autoload
+(define-minor-mode dumb-jump-local-mode
+  "Buffer-local minor mode for jumping to variable and function definitions.
+Use this to selectively enable dumb-jump in specific major modes, e.g.:
+  (add-hook \\='python-mode-hook #\\='dumb-jump-local-mode)
+For enabling globally, use `dumb-jump-mode' instead."
+  :global nil
+  :keymap dumb-jump-mode-map)
+
+;;;###autoload
 (define-minor-mode dumb-jump-mode
   "Minor mode for jumping to variable and function definitions."
   ;; Note: independent of the Emacs xref interface.
