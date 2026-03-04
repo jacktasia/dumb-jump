@@ -46,6 +46,7 @@
 (require 'cl-lib)
 (require 'seq)
 (require 'subr-x)
+(require 'json)
 
 (defun dumb-jump--chop-prefix (prefix text)
   "Remove PREFIX from TEXT when present."
@@ -3149,7 +3150,8 @@ a symbol then it's probably a function call."
     "Makefile"
     "PkgInfo"
     "-pkg.el"
-    "_FOSSIL_")
+    "_FOSSIL_"
+    "Cargo.toml")
   "Files and directories that signify a directory is a project root.
 If any of these denoting files are present in project sub-directories
 (like Makefile) then you can either remove the culprit denoter from the
@@ -3167,6 +3169,13 @@ list or create a .dumbjumpignore file in the project sub-directory."
 This should only be needed in the rarest of cases."
   :group 'dumb-jump
   :type 'string)
+
+(defcustom dumb-jump-rust-search-dependencies nil
+  "When non-nil, automatically include Rust dependency source paths.
+Uses `cargo metadata' to discover crate source directories.
+Requires `cargo' to be installed and a Cargo.toml in the project."
+  :group 'dumb-jump
+  :type 'boolean)
 
 (defcustom dumb-jump-before-jump-hook nil
   "Hooks called before jumping."
@@ -3610,6 +3619,41 @@ Return a directory name without the trailing slash."
      (locate-dominating-file filepath #'dumb-jump-get-config)
      dumb-jump-default-project))))
 
+(defvar dumb-jump--rust-deps-cache (make-hash-table :test 'equal)
+  "Cache of Rust dependency paths keyed by project root.")
+
+(defun dumb-jump-get-rust-dependency-paths (proj-root)
+  "Return list of source directories for Rust dependencies in PROJ-ROOT.
+Uses `cargo metadata' to discover dependency crate source paths.
+Results are cached per project root."
+  (let ((cached (gethash proj-root dumb-jump--rust-deps-cache 'dumb-jump--no-cache)))
+    (if (not (eq cached 'dumb-jump--no-cache))
+        cached
+      (let ((dep-paths
+             (when (file-exists-p (expand-file-name "Cargo.toml" proj-root))
+               (let* ((default-directory proj-root)
+                      (json-output (with-temp-buffer
+                                     (let ((exit-code (call-process "cargo" nil t nil
+                                                                    "metadata" "--format-version=1")))
+                                       (when (eq exit-code 0)
+                                         (buffer-string)))))
+                      (json-data (ignore-errors (when json-output (json-read-from-string json-output))))
+                      (packages (when json-data (cdr (assoc 'packages json-data))))
+                      (paths (when packages
+                               (seq-uniq
+                                (seq-filter
+                                 #'file-directory-p
+                                 (mapcar (lambda (pkg)
+                                           (file-name-directory
+                                            (cdr (assoc 'manifest_path pkg))))
+                                         packages))))))
+                 (seq-remove
+                  (lambda (p) (string= (directory-file-name p)
+                                       (directory-file-name proj-root)))
+                  paths)))))
+        (puthash proj-root dep-paths dumb-jump--rust-deps-cache)
+        dep-paths))))
+
 (defun dumb-jump-get-config (dir)
   "If a project denoter is in DIR then return it, otherwise nil.
 However, if DIR contains a `.dumbjumpignore' it returns nil to keep
@@ -3934,8 +3978,13 @@ The returned property list has the following members:
 
          (exclude-paths (when config (plist-get config :exclude)))
          (include-paths (when config (plist-get config :include)))
+         (rust-dep-paths (when (and (string= lang "rust")
+                                    dumb-jump-rust-search-dependencies)
+                           (dumb-jump-get-rust-dependency-paths proj-root)))
          ;; we will search proj root and all include paths
-         (search-paths (seq-uniq (apply #'append (list proj-root) (list include-paths))))
+         (search-paths (seq-uniq (append (list proj-root)
+                                         include-paths
+                                         (or rust-dep-paths '()))))
          (raw-results (mapcan
                        (lambda (it)
                          (dumb-jump-run-command look-for it

@@ -154,7 +154,7 @@ of definition candidates while you cycle through them:
 
 Dumb Jump will automatically look for a project root. If it's not finding one then either put a `.dumbjump` file in your project root and optionally add excluded directories to make it faster.
 
-Project root directory denoters: `.dumbjump` `.projectile` `.git` `.hg` `.fslckout` `.bzr` `_darcs` `.svn` `Makefile` `PkgInfo` `-pkg.el` `_FOSSIL_`.
+Project root directory denoters: `.dumbjump` `.projectile` `.git` `.hg` `.fslckout` `.bzr` `_darcs` `.svn` `Makefile` `PkgInfo` `-pkg.el` `_FOSSIL_` `Cargo.toml`.
 
 If you want to stop a directory from registering as the project root (and have Dumb Jump keep looking) add an empty `.dumbjumpignore` file in that directory.
 
@@ -240,6 +240,19 @@ You can also force an overriding in a specific directory by setting `dumb-jump-f
 ~~~
 
 To learn more about how Dumb Jump picks a searcher see [this issue](https://github.com/jacktasia/dumb-jump/issues/109) and this [pull request](https://github.com/jacktasia/dumb-jump/pull/111).
+
+##### Rust dependency searching
+
+When working in a Rust project, you can configure Dumb Jump to automatically search dependency crate sources. This uses `cargo metadata` to discover where Cargo has downloaded your project's dependencies, allowing you to jump to definitions in external crates.
+
+~~~lisp
+(setq dumb-jump-rust-search-dependencies t)
+(setq dumb-jump-force-searcher 'rg)  ; required — git-grep can't search outside the repo
+~~~
+
+When enabled, Dumb Jump will run `cargo metadata --format-version=1` to find the source directories of all dependencies and include them in the search. Results are cached per project root so the command is only run once per session.
+
+This requires `cargo` to be installed and a `Cargo.toml` in the project root. Since dependency sources live outside the git repository, you must use `rg` or `ag` as the searcher (not `git-grep`).
 
 ##### Hydra for effieciency
 
