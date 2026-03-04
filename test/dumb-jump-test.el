@@ -258,7 +258,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
           (concat
            "ag --nocolor --nogroup --elisp --ignore-dir this/is/excluded -- "
            (shell-quote-argument expected-regexes)
-           " /path/to/proj-root")))
+           " " (shell-quote-argument "/path/to/proj-root"))))
     (should (string= expected
                      (dumb-jump-generate-ag-command
                       "tester" "blah.el" "/path/to/proj-root"
@@ -274,7 +274,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
           ;; NOTE no "--elisp" and the `-G` arg is new
           (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' "
                   (shell-quote-argument expected-regexes)
-                  " /path/to/proj-root")))
+                  " " (shell-quote-argument "/path/to/proj-root"))))
     (with-mock
       (mock
        (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
@@ -294,7 +294,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
           ;; NOTE no "--elisp" and the `-G` arg is new
           (concat "ag --nocolor --nogroup -G '(/path/to/proj-root/blah.el)' --ignore-dir this/is/excluded "
                   (shell-quote-argument expected-regexes)
-                  " /path/to/proj-root")))
+                  " " (shell-quote-argument "/path/to/proj-root"))))
     (with-mock
       (mock (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg * *) => "'(/path/to/proj-root/blah.el)'")
       (should (string= expected
@@ -323,11 +323,46 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (expected
           (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -g \\!this/is/excluded -- "
                   (shell-quote-argument expected-regexes)
-                  " /path/to/proj-root")))
+                  " " (shell-quote-argument "/path/to/proj-root"))))
     (should (string= expected
                      (dumb-jump-generate-rg-command
                       "tester" "blah.el" "/path/to/proj-root" regexes "elisp"
                       '("/path/to/proj-root/this/is/excluded"))))))
+
+(ert-deftest dumb-jump-generate-ag-command-unicode-path-test ()
+  "Test that ag command correctly quotes unicode characters in project path."
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
+         (proj "/path/to/проект")
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'ag)
+                     "|"))
+         (expected
+          (concat
+           "ag --nocolor --nogroup --elisp -- "
+           (shell-quote-argument expected-regexes)
+           " " (shell-quote-argument proj))))
+    (should (string= expected
+                     (dumb-jump-generate-ag-command
+                      "tester" "blah.el" proj
+                      regexes "elisp" nil)))))
+
+(ert-deftest dumb-jump-generate-rg-command-unicode-path-test ()
+  "Test that rg command correctly quotes unicode characters in project path."
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
+         (proj "/path/to/проект")
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'rg)
+                     "|"))
+         (expected
+          (concat "rg --color never --no-heading --line-number -U --pcre2 --type elisp -- "
+                  (shell-quote-argument expected-regexes)
+                  " " (shell-quote-argument proj))))
+    (should (string= expected
+                     (dumb-jump-generate-rg-command
+                      "tester" "blah.el" proj
+                      regexes "elisp" nil)))))
 
 (ert-deftest dumb-jump-generate-git-grep-command-no-ctx-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'git-grep))
@@ -439,7 +474,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
            (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type 'grep))
            (expected-regexes (mapcar (lambda (it) (concat " -e " (shell-quote-argument it)))
                                      (dumb-jump--elisp-expected-regexps 'grep 'elisp-functions)))
-           (expected (concat "grep -REn" (string-join expected-regexes "") " .")))
+           (expected (concat "grep -REn" (string-join expected-regexes "") " " (shell-quote-argument "."))))
       (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil))))))
 
 (ert-deftest dumb-jump-generate-grep-command-with-ctx-but-ignored-test ()

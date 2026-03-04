@@ -4880,14 +4880,14 @@ The arguments are:
          (regex-args (shell-quote-argument (dumb-jump--join "|" filled-regexes))))
     (if (null regexes)
         ""
-      (dumb-jump-concat-command cmd exclude-args "--" regex-args proj))))
+      (dumb-jump-concat-command cmd exclude-args "--" regex-args (shell-quote-argument proj)))))
 
 ;; --
 (defun dumb-jump-get-git-grep-files-matching-symbol (symbol proj-root)
   "Return a list of file names in PROJ-ROOT holding the literal SYMBOL.
 Search for matching files using git grep."
   (let* ((cmd (format "git grep --full-name -F -c %s %s"
-                      (shell-quote-argument symbol) proj-root))
+                      (shell-quote-argument symbol) (shell-quote-argument proj-root)))
          (result (dumb-jump--trim (shell-command-to-string cmd)))
          ;; result: '\n\ separated lines of: "path-name:count"
          ;; extract the name of files and return them in a list.
@@ -4954,7 +4954,7 @@ The arguments are:
          (regex-args (shell-quote-argument (dumb-jump--join "|" filled-regexes))))
     (if (null regexes)
         ""
-      (dumb-jump-concat-command cmd exclude-args regex-args proj))))
+      (dumb-jump-concat-command cmd exclude-args regex-args (shell-quote-argument proj)))))
 
 ;; --
 (defun dumb-jump-generate-rg-command (look-for
@@ -4994,7 +4994,7 @@ The arguments are:
          (regex-args (shell-quote-argument (dumb-jump--join "|" filled-regexes))))
     (if (null regexes)
         ""
-      (dumb-jump-concat-command cmd exclude-args "--" regex-args proj))))
+      (dumb-jump-concat-command cmd exclude-args "--" regex-args (shell-quote-argument proj)))))
 
 (defun dumb-jump-generate-git-grep-command (look-for
                                             cur-file proj
@@ -5079,7 +5079,7 @@ The arguments are:
         ""
       (dumb-jump-concat-command cmd dumb-jump-grep-args
                                 case-args exclude-args
-                                include-args regex-args proj))))
+                                include-args regex-args (shell-quote-argument proj)))))
 
 (defun dumb-jump-generate-gnu-grep-command (look-for
                                             cur-file proj
@@ -5115,7 +5115,7 @@ The arguments are:
         ""
       (dumb-jump-concat-command cmd dumb-jump-gnu-grep-args
                                 case-args exclude-args
-                                include-args regex-args proj))))
+                                include-args regex-args (shell-quote-argument proj)))))
 
 ;; ---------------------------------------------------------------------------
 
