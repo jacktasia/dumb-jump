@@ -2140,7 +2140,8 @@ If nil add also the language type of current src block."
     (:language "haskell" :type "module"
            :supports ("ag" "rg" "grep" "git-grep")
            :regex "^module\\s+JJJ\\s+"
-           :tests ("module test (exportA, exportB) where"))
+           :tests ("module test (exportA, exportB) where")
+           :not ("-- module test" "import test"))
 
                                         ; TODO Doesn't support any '=' in arguments. E.g. 'foo A{a = b,..} = bar'.
     (:language "haskell" :type "top level function"
@@ -3992,16 +3993,23 @@ The returned property list has the following members:
          (regexes (dumb-jump-get-contextual-regexes lang ctx-type searcher))
 
          ;; If selected searcher has no rules for this language, try alternatives.
-         ;; Respect dumb-jump-force-searcher (don't override explicit user choice).
+         ;; Only block fallback when dumb-jump-force-searcher is a direct
+         ;; searcher symbol.  When it's a function or directory list that
+         ;; didn't match this project, the auto-selected searcher should
+         ;; still be eligible for fallback.
          (_alt-searcher
           (when (and (null regexes)
-                     (not dumb-jump-force-searcher))
+                     (not (memq dumb-jump-force-searcher
+                                '(ag rg grep gnu-grep git-grep
+                                     git-grep-plus-ag))))
             (let ((alt (seq-find
                         (lambda (s)
                           (and (not (eq s searcher))
-                               (funcall (plist-get
-                                         (dumb-jump-generators-by-searcher s)
-                                         :installed))
+                               (if (eq s 'gnu-grep)
+                                   (eq (dumb-jump-grep-installed?) 'gnu)
+                                 (funcall (plist-get
+                                           (dumb-jump-generators-by-searcher s)
+                                           :installed)))
                                (dumb-jump-get-rules-by-language lang s)))
                         '(ag rg git-grep gnu-grep grep))))
               (when alt
