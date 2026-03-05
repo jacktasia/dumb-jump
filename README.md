@@ -167,7 +167,7 @@ If you want to stop a directory from registering as the project root (and have D
     +../some-lib/src
     +/usr/lib/src
 
-*NOTE* When adding paths outside of the project (using `+`) ensure you use `dumb-jump-force-searcher` of either `'ag` or `'rg` (see below). This is required because the default searcher (`git-grep`) won't be able to search outside of the project root. This edge case will be fixed in a future release. That is, `git-grep` will NOT be set as the default searcher if a `.dumbjump` is present with a `+` path outside of the repo.
+*NOTE* When adding paths outside of the project (using `+`) ensure you use a searcher that can search outside the project root. The `git-grep` searcher cannot do this, so if you have explicitly set `dumb-jump-force-searcher` or `dumb-jump-prefer-searcher` to `'git-grep`, switch to `'ag` or `'rg` instead (see below). The default automatic searcher selection (see the fallback order below) does not include `git-grep`, so this caveat only applies when git-grep has been explicitly configured.
 
 ##### `.emacs` options
 
