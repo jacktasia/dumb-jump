@@ -2005,6 +2005,63 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (variant (dumb-jump-pick-grep-variant)))
     (should (generator-plist-equal gen-funcs variant))))
 
+(ert-deftest dumb-jump-get-rules-by-language-haskell-rg ()
+  "Haskell rules should be available for rg searcher."
+  (let ((rules (dumb-jump-get-rules-by-language "haskell" 'rg)))
+    (should (> (length rules) 0))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "module")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "top level function")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "typeclass")) rules))))
+
+(ert-deftest dumb-jump-get-rules-by-language-haskell-grep ()
+  "Haskell portable rules should be available for grep searcher.
+Non-portable rules (multiline/lookahead) should not be."
+  (let ((rules (dumb-jump-get-rules-by-language "haskell" 'grep)))
+    (should (> (length rules) 0))
+    ;; Portable rules should be present
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "module")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "type-like")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "typeclass")) rules))
+    ;; Non-portable rules should NOT be present
+    (should-not (seq-find (lambda (r) (string= (plist-get r :type) "top level function")) rules))
+    (should-not (seq-find (lambda (r) (string= (plist-get r :type) "(data)type constructor 1")) rules))
+    (should-not (seq-find (lambda (r) (string= (plist-get r :type) "data/newtype record field")) rules))))
+
+(ert-deftest dumb-jump-searcher-fallback-when-no-rules ()
+  "When selected searcher has no rules for a language, fall back to one that does.
+Exercises the actual fallback path in dumb-jump-fetch-results."
+  (let ((dumb-jump-force-searcher nil)
+        ;; Prefer rg so it's selected initially (not ag).
+        (dumb-jump-prefer-searcher 'rg)
+        (dumb-jump--ag-installed? t)
+        (dumb-jump--rg-installed? t)
+        (dumb-jump--grep-installed? nil)
+        (dumb-jump--git-grep-installed? nil)
+        ;; fakelang only has ag rules — rg has no rules for it.
+        (dumb-jump-find-rules
+         (list '(:language "fakelang" :type "function"
+                 :supports ("ag")
+                 :regex "def\\s+JJJ\\b"
+                 :tests ("def test"))))
+        (used-generate-fn nil))
+    ;; Verify rg is selected but has no rules for fakelang
+    (should (eq (dumb-jump-selected-grep-variant) 'rg))
+    (should (null (dumb-jump-get-rules-by-language "fakelang" 'rg)))
+    (should (dumb-jump-get-rules-by-language "fakelang" 'ag))
+    ;; Call dumb-jump-fetch-results and verify the fallback switches to ag
+    (with-temp-buffer
+      (insert "def test")
+      (goto-char 5)
+      (let ((buffer-file-name "/tmp/fake.fakelang"))
+        (noflet ((dumb-jump-run-command
+                  (look-for proj regexes lang exclude-paths
+                            cur-file cur-line-num parse-fn generate-fn)
+                  (setq used-generate-fn generate-fn)
+                  nil))
+          (dumb-jump-fetch-results "/tmp/fake.fakelang" "/tmp" "fakelang" nil)
+          ;; The fallback should have switched from rg to ag
+          (should (eq used-generate-fn 'dumb-jump-generate-ag-command)))))))
+
 ;; This test makes sure that if the `cur-file' is absolute but results are relative, then it must
 ;; still find and sort results correctly.
 (ert-deftest dumb-jump-handle-results-relative-current-file-test ()
