@@ -2005,6 +2005,45 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (variant (dumb-jump-pick-grep-variant)))
     (should (generator-plist-equal gen-funcs variant))))
 
+(ert-deftest dumb-jump-get-rules-by-language-haskell-rg ()
+  "Haskell rules should be available for rg searcher."
+  (let ((rules (dumb-jump-get-rules-by-language "haskell" 'rg)))
+    (should (> (length rules) 0))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "module")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "top level function")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "typeclass")) rules))))
+
+(ert-deftest dumb-jump-get-rules-by-language-haskell-grep ()
+  "Haskell portable rules should be available for grep searcher."
+  (let ((rules (dumb-jump-get-rules-by-language "haskell" 'grep)))
+    (should (> (length rules) 0))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "module")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "type-like")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "typeclass")) rules))))
+
+(ert-deftest dumb-jump-searcher-fallback-when-no-rules ()
+  "When selected searcher has no rules for a language, fall back to one that does."
+  (let ((dumb-jump-force-searcher nil)
+        (dumb-jump-prefer-searcher nil)
+        ;; Simulate: only grep is available, but the language has no grep rules.
+        ;; ag is also available and has rules.
+        (dumb-jump--ag-installed? t)
+        (dumb-jump--rg-installed? nil)
+        (dumb-jump--grep-installed? nil)
+        (dumb-jump--git-grep-installed? nil))
+    ;; Create a fake language rule that only supports ag
+    (let ((dumb-jump-find-rules
+           (list '(:language "fakelang" :type "function"
+                   :supports ("ag")
+                   :regex "def\\s+JJJ\\b"
+                   :tests ("def test")))))
+      ;; With grep selected (fallback since nothing else "installed"),
+      ;; fakelang has no grep rules, so it should fall back to ag.
+      (let* ((regexes-grep (dumb-jump-get-rules-by-language "fakelang" 'grep))
+             (regexes-ag (dumb-jump-get-rules-by-language "fakelang" 'ag)))
+        (should (null regexes-grep))
+        (should (= (length regexes-ag) 1))))))
+
 ;; This test makes sure that if the `cur-file' is absolute but results are relative, then it must
 ;; still find and sort results correctly.
 (ert-deftest dumb-jump-handle-results-relative-current-file-test ()

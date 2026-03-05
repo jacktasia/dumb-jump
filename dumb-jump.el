@@ -1094,49 +1094,49 @@ If nil add also the language type of current src block."
 
     ;;-- coq (renamed Rocq in March 2025)
     (:language "coq" :type "function"
-           :supports ("ag" "rg" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "\\s*Variable\\s+JJJ\\b"
            :tests ("Variable test")
            :not ("Variable testx"))
 
     (:language "coq" :type "function"
-           :supports ("ag" "rg" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "\\s*Inductive\\s+JJJ\\b"
            :tests ("Inductive test")
            :not ("Inductive testx"))
 
     (:language "coq" :type "function"
-           :supports ("ag" "rg" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "\\s*Lemma\\s+JJJ\\b"
            :tests ("Lemma test")
            :not ("Lemma testx"))
 
     (:language "coq" :type "function"
-           :supports ("ag" "rg" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "\\s*Definition\\s+JJJ\\b"
            :tests ("Definition test")
            :not ("Definition testx"))
 
     (:language "coq" :type "function"
-           :supports ("ag" "rg" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "\\s*Hypothesis\\s+JJJ\\b"
            :tests ("Hypothesis test")
            :not ("Hypothesis testx"))
 
     (:language "coq" :type "function"
-           :supports ("ag" "rg" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "\\s*Theorm\\s+JJJ\\b"
            :tests ("Theorm test")
            :not ("Theorm testx"))
 
     (:language "coq" :type "function"
-           :supports ("ag" "rg" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "\\s*Fixpoint\\s+JJJ\\b"
            :tests ("Fixpoint test")
            :not ("Fixpoint testx"))
 
     (:language "coq" :type "function"
-           :supports ("ag" "rg" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "\\s*Module\\s+JJJ\\b"
            :tests ("Module test")
            :not ("Module testx"))
@@ -2138,13 +2138,13 @@ If nil add also the language type of current src block."
 
     ;;-- haskell
     (:language "haskell" :type "module"
-           :supports ("ag")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "^module\\s+JJJ\\s+"
-           :tests ("module Test (exportA, exportB) where"))
+           :tests ("module test (exportA, exportB) where"))
 
                                         ; TODO Doesn't support any '=' in arguments. E.g. 'foo A{a = b,..} = bar'.
     (:language "haskell" :type "top level function"
-           :supports ("ag")
+           :supports ("ag" "rg")
            :regex "^\\bJJJ(?!(\\s+::))\\s+((.|\\s)*?)=\\s+"
            :tests ("test n = n * 2"
                    "test X{..} (Y a b c) \n bcd \n =\n x * y"
@@ -2158,28 +2158,28 @@ If nil add also the language type of current src block."
                  "test :: Sometype -> AnotherType aoeu kek = undefined"))
 
     (:language "haskell" :type "type-like"
-           :supports ("ag")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "^\\s*((data(\\s+family)?)|(newtype)|(type(\\s+family)?))\\s+JJJ\\s+"
-           :tests ("newtype Test a = Something { b :: Kek }"
-                   "data Test a b = Somecase a | Othercase b"
-                   "type family Test (x :: *) (xs :: [*]) :: Nat where"
-                   "data family Test "
-                   "type Test = TestAlias")
-           :not ("newtype NotTest a = NotTest (Not a)"
-                 "data TestNot b = Aoeu"))
+           :tests ("newtype test a = Something { b :: Kek }"
+                   "data test a b = Somecase a | Othercase b"
+                   "type family test (x :: *) (xs :: [*]) :: Nat where"
+                   "data family test "
+                   "type test = TestAlias")
+           :not ("newtype nottest a = nottest (Not a)"
+                 "data testnot b = Aoeu"))
 
                                         ; datatype contstuctor that doesn't match type definition.
     (:language "haskell" :type "(data)type constructor 1"
-           :supports ("ag")
+           :supports ("ag" "rg")
            :regex "(data|newtype)\\s{1,3}(?!JJJ\\s+)([^=]{1,40})=((\\s{0,3}JJJ\\s+)|([^=]{0,500}?((?<!(-- ))\\|\\s{0,3}JJJ\\s+)))"
-           :tests ("data Something a = Test { b :: Kek }"
-                   "data Mem a = TrueMem { b :: Kek } | Test (Mem Int) deriving Mda"
-                   "newtype SafeTest a = Test (Kek a) deriving (YonedaEmbedding)")
-           :not ("data Test = Test { b :: Kek }"))
+           :tests ("data Something a = test { b :: Kek }"
+                   "data Mem a = TrueMem { b :: Kek } | test (Mem Int) deriving Mda"
+                   "newtype SafeTest a = test (Kek a) deriving (YonedaEmbedding)")
+           :not ("data test = test { b :: Kek }"))
 
 
     (:language "haskell" :type "data/newtype record field"
-           :supports ("ag")
+           :supports ("ag" "rg")
            :regex "(data|newtype)([^=]*)=[^=]*?({([^=}]*?)(\\bJJJ)\\s+::[^=}]+})"
            :tests ("data Mem = Mem { \n mda :: A \n  , test :: Kek \n , \n aoeu :: E \n }"
                    "data Mem = Mem { \n test :: A \n  , mda :: Kek \n , \n aoeu :: E \n }"
@@ -2194,17 +2194,17 @@ If nil add also the language type of current src block."
            :not ("data Heh = Mda { sometest :: Kek, testsome :: Mem }"))
 
     (:language "haskell" :type "typeclass"
-           :supports ("ag")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "^class\\s+(.+=>\\s*)?JJJ\\s+"
            :tests (
-                   "class (Constr1 m, Constr 2) => Test (Kek a) where"
-                   "class  Test  (Veryovka a)  where ")
-           :not ("class Test2 (Kek a) where"
-                 "class MakeTest (AoeuTest x y z) where"))
+                   "class (Constr1 m, Constr 2) => test (Kek a) where"
+                   "class  test  (Veryovka a)  where ")
+           :not ("class test2 (Kek a) where"
+                 "class maketest (AoeuTest x y z) where"))
 
     ;;-- ocaml
     (:language "ocaml" :type "type"
-           :supports ("ag" "rg")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "^\\s*(and|type)\\s+.*\\bJJJ\\b"
            :tests ("type test ="
                    "and test ="
@@ -2212,29 +2212,29 @@ If nil add also the language type of current src block."
                    "type ('a, _, 'c) test"))
 
     (:language "ocaml" :type "variable"
-           :supports ("ag" "rg")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "let\\s+JJJ\\b"
            :tests ("let test ="
                    "let test x y ="))
 
     (:language "ocaml" :type "variable"
-           :supports ("ag" "rg")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "let\\s+rec\\s+JJJ\\b"
            :tests ("let rec test ="
                    "let rec  test x y ="))
 
     (:language "ocaml" :type "variable"
-           :supports ("ag" "rg")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "\\s*val\\s*\\bJJJ\\b\\s*"
            :tests ("val test"))
 
     (:language "ocaml" :type "module"
-           :supports ("ag" "rg")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "^\\s*module\\s*\\bJJJ\\b"
            :tests ("module test ="))
 
      (:language "ocaml" :type "module"
-            :supports ("ag" "rg")
+            :supports ("ag" "rg" "grep" "git-grep")
             :regex "^\\s*module\\s*type\\s*\\bJJJ\\b"
             :tests ("module type test ="))
 
@@ -2722,7 +2722,7 @@ If nil add also the language type of current src block."
 
     ;;-- f#
     (:language "fsharp" :type "variable"
-           :supports ("ag" "grep" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "let\\s+JJJ\\b.*\\\="
            :tests ("let test = 1234"
                    "let test() = 1234"
@@ -2732,7 +2732,7 @@ If nil add also the language type of current src block."
                  "let testnot abc def = 1234"))
 
     (:language "fsharp" :type "interface"
-           :supports ("ag" "grep" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "member(\\b.+\\.|\\s+)JJJ\\b.*\\\="
            :tests ("member test = 1234"
                    "member this.test = 1234")
@@ -2740,7 +2740,7 @@ If nil add also the language type of current src block."
                  "member this.testnot = 1234"))
 
     (:language "fsharp" :type "type"
-           :supports ("ag" "grep" "git-grep")
+           :supports ("ag" "rg" "grep" "git-grep")
            :regex "type\\s+JJJ\\b.*\\\="
            :tests ("type test = 1234")
            :not ("type testnot = 1234"))
@@ -3990,6 +3990,27 @@ The returned property list has the following members:
          (searcher (plist-get gen-funcs :searcher))
 
          (regexes (dumb-jump-get-contextual-regexes lang ctx-type searcher))
+
+         ;; If selected searcher has no rules for this language, try alternatives.
+         ;; Respect dumb-jump-force-searcher (don't override explicit user choice).
+         (_alt-searcher
+          (when (and (null regexes)
+                     (not dumb-jump-force-searcher))
+            (let ((alt (seq-find
+                        (lambda (s)
+                          (and (not (eq s searcher))
+                               (funcall (plist-get
+                                         (dumb-jump-generators-by-searcher s)
+                                         :installed))
+                               (dumb-jump-get-rules-by-language lang s)))
+                        '(ag rg git-grep gnu-grep grep))))
+              (when alt
+                (setq gen-funcs (dumb-jump-generators-by-searcher alt))
+                (setq parse-fn (plist-get gen-funcs :parse))
+                (setq generate-fn (plist-get gen-funcs :generate))
+                (setq searcher (plist-get gen-funcs :searcher))
+                (setq regexes (dumb-jump-get-contextual-regexes
+                               lang ctx-type searcher))))))
 
          (exclude-paths (when config (plist-get config :exclude)))
          (include-paths (when config (plist-get config :include)))
