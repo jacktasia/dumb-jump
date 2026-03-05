@@ -910,6 +910,8 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
 
 (ert-deftest dumb-jump-go-shell-test ()
   (with-current-buffer (get-buffer-create "*shell*")
+    (require 'shell)
+    (shell-mode)
     (insert ".js doSomeStuff()")
     (goto-char (point-min))
     (forward-char 6)

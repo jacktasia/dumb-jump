@@ -3848,8 +3848,7 @@ Return the dumb-jump alist result:
              (dumb-jump-grep-installed?)))
     (dumb-jump-issue-result "nogrep"))
    ;; Inside a shell or eshell buffer,
-   ((or (string= (buffer-name) "*shell*")
-        (string= (buffer-name) "*eshell*"))
+   ((derived-mode-p 'shell-mode 'eshell-mode)
     (dumb-jump-fetch-shell-results entered-name))
    ;; When inside a normal buffer but no string specified by ENTERED-NAME,
    ;; point or region does not identify something to search,
