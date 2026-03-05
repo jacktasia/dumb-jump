@@ -3621,12 +3621,13 @@ Return a directory name without the trailing slash."
          (project-el-root
           (when (and (null dumb-jump-project)
                      dir
-                     (fboundp 'project-current)
-                     (fboundp 'project-root))
+                     (fboundp 'project-current))
             (let ((default-directory dir))
               (let ((proj (ignore-errors (project-current nil))))
                 (when proj
-                  (project-root proj)))))))
+                  (if (fboundp 'project-root)
+                      (project-root proj)
+                    (car (project-roots proj)))))))))
     (directory-file-name
      (expand-file-name
       (or dumb-jump-project
