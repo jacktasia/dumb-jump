@@ -1117,7 +1117,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (forward-char 4)
       (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
-        (mock (dumb-jump-message "'%s' %s %s declaration not found." "nothing" * *))
+        (mock (dumb-jump-message "'%s' %s %s %s not found." "nothing" * * "declaration"))
         (with-no-warnings (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-go-no-rules-test ()
@@ -2399,5 +2399,66 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
 (ert-deftest dumb-jump-cargo-toml-is-project-denoter-test ()
   "Test that Cargo.toml is recognized as a project denoter."
   (should (member "Cargo.toml" dumb-jump-project-denoters)))
+
+;; Find references tests
+
+(ert-deftest dumb-jump-pcre-to-emacs-basic-test ()
+  "Test PCRE to Emacs regex conversion for basic patterns."
+  ;; Literal parens: \( in PCRE → ( in Emacs
+  (should (string= "def[[:space:]]*test(" (dumb-jump-pcre-to-emacs "def[[:space:]]*test\\(")))
+  ;; Group and alternation: (a|b) in PCRE → \(a\|b\) in Emacs
+  (should (string= "\\(foo\\|bar\\)" (dumb-jump-pcre-to-emacs "(foo|bar)")))
+  ;; Quantifiers: + and ? in PCRE → \+ and \? in Emacs
+  (should (string= "[[:space:]]\\+" (dumb-jump-pcre-to-emacs "[[:space:]]+")))
+  (should (string= "x\\?" (dumb-jump-pcre-to-emacs "x?")))
+  ;; Non-capturing group: (?:...) → \(?:...\)
+  (should (string= "\\(?:foo\\|bar\\)" (dumb-jump-pcre-to-emacs "(?:foo|bar)")))
+  ;; Braces: {1,3} → \{1,3\}
+  (should (string= "x\\{1,3\\}" (dumb-jump-pcre-to-emacs "x{1,3}"))))
+
+(ert-deftest dumb-jump-populate-regex-for-emacs-test ()
+  "Test populating a dumb-jump regex for Emacs string-match-p."
+  (let ((emacs-re (dumb-jump-populate-regex-for-emacs "def\\s*JJJ\\b\\s*\\\(" "test")))
+    ;; Should match a Python def line
+    (should (string-match-p emacs-re "def test():"))
+    (should (string-match-p emacs-re "  def test(x, y):"))
+    ;; Should NOT match a usage
+    (should-not (string-match-p emacs-re "  test()"))))
+
+(ert-deftest dumb-jump-filter-definition-results-test ()
+  "Test that definition results are filtered out from reference search."
+  (let ((results '((:path "test.py" :line 1 :context "def test():" :diff 1 :target "test")
+                   (:path "test.py" :line 5 :context "  test()" :diff 5 :target "test")
+                   (:path "test.py" :line 10 :context "x = test()" :diff 10 :target "test")))
+        (filtered nil))
+    (with-mock
+     (stub dumb-jump-get-rules-by-language =>
+           '((:type "function" :regex "def\\s*JJJ\\b\\s*\\\("
+              :language "python" :supports ("ag" "rg" "grep" "git-grep"))))
+     (setq filtered (dumb-jump-filter-definition-results results "python" "test" 'rg)))
+    ;; The "def test():" line should be filtered out
+    (should (= (length filtered) 2))
+    (should (string= (plist-get (nth 0 filtered) :context) "  test()"))
+    (should (string= (plist-get (nth 1 filtered) :context) "x = test()"))))
+
+(ert-deftest dumb-jump-find-references-js-test ()
+  "Test finding references from a definition in JavaScript."
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 2)
+      (forward-char 10)
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        (let* ((dumb-jump--search-mode 'references)
+               (results (dumb-jump-get-results)))
+          ;; Should find results
+          (should (> (length (plist-get results :results)) 0))
+          ;; None of the results should be the definition line
+          (should-not (cl-some
+                       (lambda (r)
+                         (string-match-p "function doSomeStuff"
+                                         (plist-get r :context)))
+                       (plist-get results :results))))))))
 
 ;;;
