@@ -4113,7 +4113,8 @@ This is the inverse of `dumb-jump-go' -- it finds where a symbol
 is used rather than where it is defined."
   ;; Note: independent of the Emacs xref interface.
   (interactive)
-  (let ((dumb-jump--search-mode 'references))
+  (let ((dumb-jump--search-mode 'references)
+        (dumb-jump-aggressive nil))
     (dumb-jump-go)))
 
 ;;;###autoload
@@ -4957,7 +4958,9 @@ The arguments are:
 
 (defun dumb-jump-pcre-to-emacs (regex)
   "Convert a PCRE-style REGEX string to Emacs regex syntax.
-Swaps the literal/special meaning of (, ), +, ?, |, {, and }."
+In PCRE and Emacs, +, ?, *, ., ^, $, [ are special without escaping.
+But (, ), |, {, } differ: special unescaped in PCRE, special escaped in Emacs.
+This function swaps the literal/special meaning of (, ), |, {, and }."
   (let ((i 0)
         (len (length regex))
         (out (list)))
@@ -4968,12 +4971,12 @@ Swaps the literal/special meaning of (, ), +, ?, |, {, and }."
          ((and (= ch ?\\) (< (1+ i) len))
           (let ((next (aref regex (1+ i))))
             (cond
-             ((memq next '(?\( ?\) ?+ ?? ?| ?{ ?}))
+             ((memq next '(?\( ?\) ?| ?{ ?}))
               ;; \X (literal in PCRE) → X (literal in Emacs)
               (push (char-to-string next) out)
               (setq i (+ i 2)))
              (t
-              ;; Other backslash sequences (\b, \w, \s, etc.) pass through
+              ;; Other backslash sequences (\b, \w, \+, \?, etc.) pass through
               (push (substring regex i (+ i 2)) out)
               (setq i (+ i 2))))))
          ;; (? prefixed groups: (?:, (?!, (?=, (?<=, (?<!, etc.
@@ -4984,26 +4987,30 @@ Swaps the literal/special meaning of (, ), +, ?, |, {, and }."
                (= (aref regex (1+ i)) ??))
           (push "\\(?" out)
           (setq i (+ i 2)))
-         ;; Unescaped special-in-PCRE chars → escaped for Emacs
+         ;; Unescaped chars that differ between PCRE and Emacs
          ((= ch ?\() (push "\\(" out) (cl-incf i))
          ((= ch ?\)) (push "\\)" out) (cl-incf i))
-         ((= ch ?+)  (push "\\+" out) (cl-incf i))
-         ((= ch ??)  (push "\\?" out) (cl-incf i))
          ((= ch ?|)  (push "\\|" out) (cl-incf i))
          ((= ch ?{)  (push "\\{" out) (cl-incf i))
          ((= ch ?})  (push "\\}" out) (cl-incf i))
-         ;; Everything else passes through
+         ;; Everything else passes through (including +, ?, *, ., etc.)
          (t (push (char-to-string ch) out) (cl-incf i)))))
     (apply #'concat (nreverse out))))
 
 (defun dumb-jump-populate-regex-for-emacs (regex look-for)
   "Populate dumb-jump generic REGEX for matching LOOK-FOR with Emacs `string-match-p'.
-Replaces dumb-jump meta-patterns and converts PCRE syntax to Emacs regex."
+Replaces dumb-jump meta-patterns and converts PCRE syntax to Emacs regex.
+The \\=\\j boundary is replaced after PCRE conversion with a character class
+matching the tool boundaries: not followed by [a-zA-Z0-9?*-]."
   (let ((text regex))
-    (setq text (dumb-jump--replace "\\j" "\\b" text))
     (setq text (dumb-jump--replace "\\s" "[[:space:]]" text))
     (setq text (dumb-jump--replace "JJJ" (regexp-quote look-for) text))
-    (dumb-jump-pcre-to-emacs text)))
+    (setq text (dumb-jump-pcre-to-emacs text))
+    ;; Replace \j after PCRE conversion since the replacement is Emacs syntax.
+    ;; Mirrors the tool boundaries: (?![a-zA-Z0-9\?\*-]) for ag,
+    ;; ($|[^a-zA-Z0-9\?\*-]) for rg/grep.
+    (setq text (dumb-jump--replace "\\j" "\\(?:[^a-zA-Z0-9?*-]\\|$\\)" text))
+    text))
 
 (defun dumb-jump-filter-definition-results (results lang look-for searcher)
   "Remove from RESULTS any that match definition patterns for LANG.
@@ -5016,7 +5023,7 @@ LOOK-FOR is the symbol being searched.  SEARCHER is the search tool."
     (seq-filter
      (lambda (r)
        (let ((ctx (plist-get r :context)))
-         (not (cl-some (lambda (re)
+         (not (seq-some (lambda (re)
                          (condition-case nil
                              (string-match-p re ctx)
                            (invalid-regexp nil)))

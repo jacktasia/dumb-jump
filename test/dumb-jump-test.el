@@ -2408,9 +2408,12 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
   (should (string= "def[[:space:]]*test(" (dumb-jump-pcre-to-emacs "def[[:space:]]*test\\(")))
   ;; Group and alternation: (a|b) in PCRE → \(a\|b\) in Emacs
   (should (string= "\\(foo\\|bar\\)" (dumb-jump-pcre-to-emacs "(foo|bar)")))
-  ;; Quantifiers: + and ? in PCRE → \+ and \? in Emacs
-  (should (string= "[[:space:]]\\+" (dumb-jump-pcre-to-emacs "[[:space:]]+")))
-  (should (string= "x\\?" (dumb-jump-pcre-to-emacs "x?")))
+  ;; Quantifiers: + and ? are special in both PCRE and Emacs, no conversion
+  (should (string= "[[:space:]]+" (dumb-jump-pcre-to-emacs "[[:space:]]+")))
+  (should (string= "x?" (dumb-jump-pcre-to-emacs "x?")))
+  ;; Escaped \+ and \? (literal in both) pass through unchanged
+  (should (string= "x\\+" (dumb-jump-pcre-to-emacs "x\\+")))
+  (should (string= "x\\?" (dumb-jump-pcre-to-emacs "x\\?")))
   ;; Non-capturing group: (?:...) → \(?:...\)
   (should (string= "\\(?:foo\\|bar\\)" (dumb-jump-pcre-to-emacs "(?:foo|bar)")))
   ;; Lookahead/lookbehind: (?!...) (?=...) (?<=...) → valid Emacs groups
@@ -2429,6 +2432,19 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
     (should (string-match-p emacs-re "  def test(x, y):"))
     ;; Should NOT match a usage
     (should-not (string-match-p emacs-re "  test()"))))
+
+(ert-deftest dumb-jump-populate-regex-for-emacs-boundary-test ()
+  "Test that \\j boundary distinguishes identifiers with special chars.
+The \\j boundary should not match when followed by ?, *, or - (Lisp identifiers)."
+  (let ((emacs-re (dumb-jump-populate-regex-for-emacs
+                   "\\(defun\\s+JJJ\\j" "test")))
+    ;; Should match (defun test followed by space or end
+    (should (string-match-p emacs-re "(defun test "))
+    (should (string-match-p emacs-re "(defun test)"))
+    ;; Should NOT match test? test- or tester (Lisp naming conventions)
+    (should-not (string-match-p emacs-re "(defun test?"))
+    (should-not (string-match-p emacs-re "(defun test-thing"))
+    (should-not (string-match-p emacs-re "(defun tester"))))
 
 (ert-deftest dumb-jump-filter-definition-results-test ()
   "Test that definition results are filtered out from reference search."
@@ -2459,7 +2475,8 @@ cause invalid-regexp errors in the filter."
     (should (string-match-p "Foo::bar" (plist-get (car filtered) :context)))))
 
 (ert-deftest dumb-jump-find-references-js-test ()
-  "Test finding references from a definition in JavaScript."
+  "Test finding references from a definition in JavaScript.
+Cursor on doSomeStuff definition in fake.js should find the call in fake2.js:1."
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
@@ -2468,19 +2485,24 @@ cause invalid-regexp errors in the filter."
       (with-mock
         (stub dumb-jump-rg-installed? => t)
         (let* ((dumb-jump--search-mode 'references)
-               (results (dumb-jump-get-results)))
-          ;; Should find results
-          (should (> (length (plist-get results :results)) 0))
-          ;; None of the results should be the definition line
-          (should-not (cl-some
+               (info (dumb-jump-get-results))
+               (results (plist-get info :results)))
+          ;; Should find the call in fake2.js line 1
+          (should (seq-some
+                   (lambda (r)
+                     (and (string-match-p "fake2\\.js" (plist-get r :path))
+                          (= 1 (plist-get r :line))))
+                   results))
+          ;; The definition line must not appear
+          (should-not (seq-some
                        (lambda (r)
                          (string-match-p "function doSomeStuff"
                                          (plist-get r :context)))
-                       (plist-get results :results))))))))
+                       results)))))))
 
 (ert-deftest dumb-jump-find-references-cpp-test ()
   "Test finding references in C++ using existing test data.
-Verifies that definition patterns with PCRE lookaround are filtered."
+Cursor on bar definition in test.cpp:3 should find the usage on test.cpp:9."
   (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "test.cpp")))
     (with-current-buffer (find-file-noselect cpp-file t)
       (goto-char (point-min))
@@ -2489,14 +2511,20 @@ Verifies that definition patterns with PCRE lookaround are filtered."
       (with-mock
         (stub dumb-jump-rg-installed? => t)
         (let* ((dumb-jump--search-mode 'references)
-               (results (dumb-jump-get-results)))
-          ;; Should find the usage on line 9: Foo::bar(42)
-          (should (> (length (plist-get results :results)) 0))
+               (info (dumb-jump-get-results))
+               (results (plist-get info :results)))
+          ;; Should find the usage Foo::bar(42) on line 9
+          (should (seq-some
+                   (lambda (r)
+                     (and (string-match-p "test\\.cpp" (plist-get r :path))
+                          (= 9 (plist-get r :line))
+                          (string-match-p "Foo::bar" (plist-get r :context))))
+                   results))
           ;; The function definition "int bar(int val)" should be filtered
-          (should-not (cl-some
+          (should-not (seq-some
                        (lambda (r)
                          (string-match-p "int bar(int val)"
                                          (plist-get r :context)))
-                       (plist-get results :results))))))))
+                       results)))))))
 
 ;;;
