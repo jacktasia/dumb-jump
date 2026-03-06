@@ -4976,13 +4976,14 @@ Swaps the literal/special meaning of (, ), +, ?, |, {, and }."
               ;; Other backslash sequences (\b, \w, \s, etc.) pass through
               (push (substring regex i (+ i 2)) out)
               (setq i (+ i 2))))))
-         ;; (?:  → Emacs shy group \(?:
+         ;; (? prefixed groups: (?:, (?!, (?=, (?<=, (?<!, etc.
+         ;; Emit \(? which in Emacs starts a shy group for (?:
+         ;; and produces a valid (if semantically different) group for others.
          ((and (= ch ?\()
-               (< (+ i 2) len)
-               (= (aref regex (1+ i)) ??)
-               (= (aref regex (+ i 2)) ?:))
-          (push "\\(?:" out)
-          (setq i (+ i 3)))
+               (< (1+ i) len)
+               (= (aref regex (1+ i)) ??))
+          (push "\\(?" out)
+          (setq i (+ i 2)))
          ;; Unescaped special-in-PCRE chars → escaped for Emacs
          ((= ch ?\() (push "\\(" out) (cl-incf i))
          ((= ch ?\)) (push "\\)" out) (cl-incf i))

@@ -2413,6 +2413,11 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
   (should (string= "x\\?" (dumb-jump-pcre-to-emacs "x?")))
   ;; Non-capturing group: (?:...) → \(?:...\)
   (should (string= "\\(?:foo\\|bar\\)" (dumb-jump-pcre-to-emacs "(?:foo|bar)")))
+  ;; Lookahead/lookbehind: (?!...) (?=...) (?<=...) → valid Emacs groups
+  (should (string= "\\(?!class\\)" (dumb-jump-pcre-to-emacs "(?!class)")))
+  (should (string= "\\(?=foo\\)" (dumb-jump-pcre-to-emacs "(?=foo)")))
+  (should (string= "\\(?<=bar\\)" (dumb-jump-pcre-to-emacs "(?<=bar)")))
+  (should (string= "\\(?<!baz\\)" (dumb-jump-pcre-to-emacs "(?<!baz)")))
   ;; Braces: {1,3} → \{1,3\}
   (should (string= "x\\{1,3\\}" (dumb-jump-pcre-to-emacs "x{1,3}"))))
 
@@ -2441,6 +2446,18 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
     (should (string= (plist-get (nth 0 filtered) :context) "  test()"))
     (should (string= (plist-get (nth 1 filtered) :context) "x = test()"))))
 
+(ert-deftest dumb-jump-filter-definition-results-cpp-lookaround-test ()
+  "Test that C++ rules with PCRE lookaround produce valid Emacs regexes.
+The C++ variable rule uses (?!...) negative lookahead which must not
+cause invalid-regexp errors in the filter."
+  (let* ((results '((:path "test.cpp" :line 3 :context "  int bar(int val) {" :diff 3 :target "bar")
+                    (:path "test.cpp" :line 9 :context "  return Foo::bar(42);" :diff 9 :target "bar")))
+         ;; Use real C++ rules (which contain (?! lookaround))
+         (filtered (dumb-jump-filter-definition-results results "c++" "bar" 'rg)))
+    ;; The function definition line should be filtered out
+    (should (= (length filtered) 1))
+    (should (string-match-p "Foo::bar" (plist-get (car filtered) :context)))))
+
 (ert-deftest dumb-jump-find-references-js-test ()
   "Test finding references from a definition in JavaScript."
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
@@ -2458,6 +2475,27 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
           (should-not (cl-some
                        (lambda (r)
                          (string-match-p "function doSomeStuff"
+                                         (plist-get r :context)))
+                       (plist-get results :results))))))))
+
+(ert-deftest dumb-jump-find-references-cpp-test ()
+  "Test finding references in C++ using existing test data.
+Verifies that definition patterns with PCRE lookaround are filtered."
+  (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "test.cpp")))
+    (with-current-buffer (find-file-noselect cpp-file t)
+      (goto-char (point-min))
+      (forward-line 2)
+      (forward-char 6)
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        (let* ((dumb-jump--search-mode 'references)
+               (results (dumb-jump-get-results)))
+          ;; Should find the usage on line 9: Foo::bar(42)
+          (should (> (length (plist-get results :results)) 0))
+          ;; The function definition "int bar(int val)" should be filtered
+          (should-not (cl-some
+                       (lambda (r)
+                         (string-match-p "int bar(int val)"
                                          (plist-get r :context)))
                        (plist-get results :results))))))))
 
