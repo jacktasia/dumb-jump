@@ -2921,10 +2921,11 @@ If nil add also the language type of current src block."
 
     (:language "odin" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\bJJJ\\s*:\\s*:?\\s*proc\\\("
+           :regex "\\bJJJ\\s*:\\s*:?\\s*proc\\s*[({]"
            :tests ("test :: proc(a: int)"
                    "test ::proc()"
-                   "test:: proc(a: i32) -> i32 {")
+                   "test:: proc(a: i32) -> i32 {"
+                   "test::proc{}")
            :not ("testnot :: proc()"))
 
     (:language "odin" :type "type"
@@ -4372,6 +4373,8 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "//" :language "protobuf")
     (:comment "#"  :language "hcl")
     (:comment "//" :language "apex")
+    (:comment "//" :language "odin")
+    (:comment "/*" :language "odin")
     (:comment "*>" :language "cobol"))
   "List of one-line comments organized by language.
 A language may have more than 1 comment string."
