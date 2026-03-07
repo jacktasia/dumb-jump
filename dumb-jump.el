@@ -5520,6 +5520,8 @@ For enabling globally, use `dumb-jump-mode' instead."
            (dumb-jump-message "Please install ag, rg, git grep or grep!"))
           ((eq issue 'nosymbol)
            (dumb-jump-message "No symbol under point."))
+          ((string-suffix-p " file" lang)
+           (dumb-jump-message "Could not find rules for '%s'." lang))
           ((= (length results) 0)
            (dumb-jump-message "'%s' %s references not found."
                               look-for
