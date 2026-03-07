@@ -1,6 +1,6 @@
 # dumb-jump
 
-![CI](https://github.com/jacktasia/dumb-jump/workflows/CI/badge.svg) [![MELPA](http://melpa.org/packages/dumb-jump-badge.svg?x=6)](http://melpa.org/#/dumb-jump) [![MELPA Stable](https://stable.melpa.org/packages/dumb-jump-badge.svg?x=1)](https://stable.melpa.org/#/dumb-jump)
+![CI](https://github.com/jacktasia/dumb-jump/workflows/CI/badge.svg) [![MELPA](https://melpa.org/packages/dumb-jump-badge.svg?x=6)](https://melpa.org/#/dumb-jump) [![MELPA Stable](https://stable.melpa.org/packages/dumb-jump-badge.svg?x=1)](https://stable.melpa.org/#/dumb-jump)
 
 ![Dumb Jump GIF](media/dumb-jump-example-v2.gif?raw=true)
 
@@ -34,8 +34,8 @@ There is currently basic support for the following languages:
 * Common Lisp
 * Coq
 * Crystal
-* Dart
 * D
+* Dart
 * Elixir
 * Emacs Lisp
 * Erlang
@@ -91,20 +91,20 @@ If you have any issues with the existing languages, or you want support for anot
 
 ## Installing
 
-The recommended way to install Dumb Jump is via `package.el`. It's available on [MELPA](http://melpa.org/#/dumb-jump): <kbd>M-x</kbd> `package-install dumb-jump`
+The recommended way to install Dumb Jump is via `package.el`. It's available on [MELPA](https://melpa.org/#/dumb-jump): <kbd>M-x</kbd> `package-install dumb-jump`
 
-#### Spacemacs
+### Spacemacs
 
-If you're using an up-to-date Spacemacs, then you already have Dumb Jump by default just make sure you install `ag` or `rg` (see below) to ensure you have the best experience.
+If you're using an up-to-date Spacemacs, then you already have Dumb Jump by default, just make sure you install `ag` or `rg` (see below) to ensure you have the best experience.
 
 
-#### Installing `ag` or `rg`
+### Installing `ag` or `rg`
 
 Dumb Jump performs best with The Silver Searcher `ag` ([ag install instructions](https://github.com/ggreer/the_silver_searcher#installing)) or ripgrep `rg` ([rg install instructions](https://github.com/BurntSushi/ripgrep#installation)) installed on your system.
 
 ## Usage
 
-#### Basic
+### Basic
 
 To enable the [xref][] backend (new in version 0.5.4), evaluate
 
@@ -153,7 +153,7 @@ of definition candidates while you cycle through them:
 
 ## Configuration
 
-##### Excluding project directories
+### Excluding project directories
 
 Dumb Jump will automatically look for a project root. If it's not finding one then either put a `.dumbjump` file in your project root and optionally add excluded directories to make it faster.
 
@@ -161,7 +161,7 @@ Project root directory denoters: `.dumbjump` `.projectile` `.git` `.hg` `.fslcko
 
 If you want to stop a directory from registering as the project root (and have Dumb Jump keep looking) add an empty `.dumbjumpignore` file in that directory.
 
-##### Example `.dumbjump`
+### Example `.dumbjump`
 
     -tests
     -node_modules
@@ -172,7 +172,7 @@ If you want to stop a directory from registering as the project root (and have D
 
 *NOTE* When adding paths outside of the project (using `+`) ensure you use a searcher that can search outside the project root. The `git-grep` searcher cannot do this, so if you have explicitly set `dumb-jump-force-searcher` or `dumb-jump-prefer-searcher` to `'git-grep`, switch to `'ag` or `'rg` instead (see below). The default automatic searcher selection (see the fallback order below) does not include `git-grep`, so this caveat only applies when git-grep has been explicitly configured.
 
-##### `.emacs` options
+### `.emacs` options
 
 * `(setq dumb-jump-default-project "~/code")` to change default project if one is not found (defaults to `~`)
 * `(setq dumb-jump-quiet t)` if Dumb Jump is too chatty.
@@ -187,7 +187,7 @@ Two user-options are used to select the search tool:
 * `dumb-jump-force-searcher`: identifies how the searcher selection is overridden:
   * If you want to force a specific tool like `ag` or `rg` set `dumb-jump-force-searcher` to that value.
   * If you want to use the tool selected by `dumb-jump-prefer-searcher` *except* for some directories where you prefer to use `git-grep`, then set `dumb-jump-force-searcher` to a list holding the path of these directories.
-  * If you want more flexibility in the overriding, then write a function that takes the project directory and return a symbol identifying the search tool to sue for that project directory, or nil to honor `dumb-jump-prefer-searcher` choice.
+  * If you want more flexibility in the overriding, then write a function that takes the project directory and return a symbol identifying the search tool to use for that project directory, or nil to honor `dumb-jump-prefer-searcher` choice.
 
 When both `dumb-jump-prefer-searcher` and `dumb-jump-force-searcher` are nil, Dumb Jump selects the first tool found from this list, in that order:
 * `ag`,
@@ -195,7 +195,7 @@ When both `dumb-jump-prefer-searcher` and `dumb-jump-force-searcher` are nil, Du
 * `gnu grep`,
 * `grep`.
 
-These can also all be set via Emacs customization.  Once `dump-jump` is loaded, type: <kbd>M-x</kbd> `customize-group dumb-jump` to open the customization buffer.
+These can also all be set via Emacs customization. Once `dumb-jump` is loaded, type: <kbd>M-x</kbd> `customize-group dumb-jump` to open the customization buffer.
 
 Here's a code example for using `ag` in most cases, but overriding this choice to `rg` in monorepos where git-grep has poor hit-rate, use `git grep` in some known directories like `~/src/emacs`:
 
@@ -230,9 +230,9 @@ You can also force an overriding in a specific directory by setting `dumb-jump-f
   ((nil . ((dumb-jump-force-searcher . rg))))
 ~~~
 
-#### If your project has multi-line method signatures [you should use `ag`](https://github.com/jacktasia/dumb-jump/issues/129) or [`rg` version `0.10.0` or higher](https://github.com/jacktasia/dumb-jump/issues/255).
+### If your project has multi-line method signatures [you should use `ag`](https://github.com/jacktasia/dumb-jump/issues/129) or [`rg` version `0.10.0` or higher](https://github.com/jacktasia/dumb-jump/issues/255).
 
-##### macOS and git-grep
+### macOS and git-grep
 
 `git-grep` does not work correctly on macOS as of git 2.39 and later. Between versions 2.37 and 2.39, git switched to using the platform's native BSD regex library instead of GNU grep, which breaks the `\b` word-boundary patterns that Dumb Jump relies on. Installing GNU grep does not fix this because it is git's internal regex engine that changed, not the system grep.
 
@@ -244,7 +244,7 @@ You can also force an overriding in a specific directory by setting `dumb-jump-f
 
 To learn more about how Dumb Jump picks a searcher see [this issue](https://github.com/jacktasia/dumb-jump/issues/109) and this [pull request](https://github.com/jacktasia/dumb-jump/pull/111).
 
-##### Rust dependency searching
+### Rust dependency searching
 
 When working in a Rust project, you can configure Dumb Jump to automatically search dependency crate sources. This uses `cargo metadata` to discover where Cargo has downloaded your project's dependencies, allowing you to jump to definitions in external crates.
 
@@ -257,11 +257,11 @@ When enabled, Dumb Jump will run `cargo metadata --format-version=1` to find the
 
 This requires `cargo` to be installed and a `Cargo.toml` in the project root. Since dependency sources live outside the git repository, you must use `rg` or `ag` as the searcher (not `git-grep`).
 
-##### Hydra for effieciency
+### Hydra for efficiency
 
 If you have [Hydra](https://github.com/abo-abo/hydra) installed, the following is an example hydra for easily using Dumb-Jump and not needing to remember the bindings or function names:
 
-```el
+~~~el
 (defhydra dumb-jump-hydra (:color blue :columns 3)
     "Dumb Jump"
     ("j" dumb-jump-go "Go")
@@ -272,11 +272,11 @@ If you have [Hydra](https://github.com/abo-abo/hydra) installed, the following i
     ("i" dumb-jump-go-prompt "Prompt")
     ("l" dumb-jump-quick-look "Quick look")
     ("b" dumb-jump-back "Back"))
-```
+~~~
 
 It can be explicitly bound or used inside another hydra (if you already use something like [Avy](https://github.com/abo-abo/avy)/[Ace](https://github.com/winterTTr/ace-jump-mode) or similar for general "jumping").
 
-#### Debugging a jump
+### Debugging a jump
 
 1. <kbd>M-x</kbd> `set-variable dumb-jump-debug t`
 1. try to jump
@@ -321,7 +321,7 @@ A few user options only have an effect when used with the original
 interface. These are:
 
 * `dumb-jump-after-jump-hook` (use `xref-after-jump-hook` instead)
-* `dumb-jump-before-jump-hook` (use `xref-after-return-hook` instead)
+* `dumb-jump-before-jump-hook` (no direct xref equivalent; `xref-after-return-hook` is the closest but serves a different purpose)
 * `dumb-jump-selector`
 * `dumb-jump-aggressive`
 * `dumb-jump-use-visible-window`
@@ -333,10 +333,10 @@ default and enables them globally.
 If you want to enable dumb-jump in specific major modes only, use
 `dumb-jump-local-mode` instead:
 
-```elisp
+~~~elisp
 (add-hook 'python-mode-hook #'dumb-jump-local-mode)
 (add-hook 'rust-mode-hook #'dumb-jump-local-mode)
-```
+~~~
 
 ## Why?
 
@@ -354,34 +354,27 @@ Opening a PR will use GitHub Actions to run all the tests against all supported 
 
 There are a lot of options for running the tests locally:
 
-#### Basic/Classic
+### Basic/Classic
 requires [Cask](https://github.com/cask/cask) using your local emacs
-```sh
+~~~sh
 cd /path/to/dumb-jump
 make test
-```
+~~~
 
 The first time you run this it will also run `cask` to
 setup your directory.
 
-##### Run a subset of tests
+#### Run a subset of tests
 is the same as before but use the `test-this` target followed by one or
-several full or partial test names.  For example, to run all tests that have 'clojure'
+several full or partial test names. For example, to run all tests that have 'clojure'
 or 'org' in their test function name do this:
 
-```sh
+~~~sh
 cd /path/to/dumb-jump
 make test-this clojure org
-```
+~~~
 
-#### Concurrent
-requires golang and [Cask](https://github.com/cask/cask) using your local emacs
-```sh
-cd /path/to/dumb-jump
-make test-concurrent
-```
-
-#### Docker
+### Docker
 only requires Docker; runs tests against the default Emacs version (29.4)
 ~~~sh
 cd /path/to/dumb-jump
@@ -404,9 +397,9 @@ make test-this-docker clojure org
 Here is a list of potential alternative packages for emacs:
 
 * [Tags](https://www.gnu.org/software/emacs/manual/html_node/emacs/Tags-Tables.html) supports multiple languages
-* [GNU Global](http://www.gnu.org/software/global/) supports multiple languages
-* [Tern](http://ternjs.net/) for JavaScript
+* [GNU Global](https://www.gnu.org/software/global/) supports multiple languages
+* [Tern](https://ternjs.net/) for JavaScript
 * [elpy](https://github.com/jorgenschaefer/elpy) for Python
 * [robe](https://github.com/dgutov/robe) for Ruby
 
-Most of these were sourced from this [emacs StackExchange answer](http://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project).
+Most of these were sourced from this [emacs StackExchange answer](https://emacs.stackexchange.com/questions/10125/can-emacs-support-go-to-declaration-of-function-in-an-entire-project).
