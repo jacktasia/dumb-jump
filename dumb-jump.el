@@ -1076,6 +1076,8 @@ If nil add also the language type of current src block."
                    "public @interface test {")
            :not ("@interface testnot {"))
 
+    ;; grep/git-grep fallback: requires access modifier because grep lacks
+    ;; PCRE features (?:...) and {n,m} used by the ag/rg rule above.
     (:language "java" :type "function"
            :supports ("grep" "git-grep")
            :regex "(public|protected|private|static)[^(]+JJJ\\s*\\\("
