@@ -2404,13 +2404,15 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
 
 (ert-deftest dumb-jump-extra-search-paths-included-test ()
   "Test that extra search paths from hook function are added to search-paths."
-  (let ((dumb-jump-extra-search-paths-function
-         (lambda (_lang _proj-root)
-           '("/extra/path/one/" "/extra/path/two/")))
-        (dumb-jump-rust-search-dependencies nil)
-        (js-file (make-temp-file "test" nil ".js"))
-        (searched-paths nil)
-        buf)
+  (let* ((extra-dir-one (make-temp-file "dj-extra1" t))
+         (extra-dir-two (make-temp-file "dj-extra2" t))
+         (dumb-jump-extra-search-paths-function
+          (lambda (_lang _proj-root)
+            (list extra-dir-one extra-dir-two)))
+         (dumb-jump-rust-search-dependencies nil)
+         (js-file (make-temp-file "test" nil ".js"))
+         (searched-paths nil)
+         buf)
     (unwind-protect
         (progn
           (with-temp-file js-file (insert "function doStuff() {}"))
@@ -2423,10 +2425,12 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
               (with-mock
                 (stub dumb-jump-rg-installed? => t)
                 (dumb-jump-fetch-file-results)
-                (should (member "/extra/path/one/" searched-paths))
-                (should (member "/extra/path/two/" searched-paths))))))
+                (should (member extra-dir-one searched-paths))
+                (should (member extra-dir-two searched-paths))))))
       (when buf (kill-buffer buf))
-      (delete-file js-file))))
+      (delete-file js-file)
+      (delete-directory extra-dir-one)
+      (delete-directory extra-dir-two))))
 
 (ert-deftest dumb-jump-extra-search-paths-nil-when-unset-test ()
   "Test that no extra paths are added when the function is nil."
@@ -2453,11 +2457,12 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
 
 (ert-deftest dumb-jump-extra-search-paths-receives-args-test ()
   "Test that the function receives the correct lang and proj-root."
-  (let* ((received-args nil)
+  (let* ((extra-dir (make-temp-file "dj-extra" t))
+         (received-args nil)
          (dumb-jump-extra-search-paths-function
           (lambda (lang proj-root)
             (setq received-args (list lang proj-root))
-            '("/dummy/")))
+            (list extra-dir)))
          (dumb-jump-rust-search-dependencies nil)
          (js-file (make-temp-file "test" nil ".js"))
          (searched-paths nil)
@@ -2474,11 +2479,12 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
               (with-mock
                 (stub dumb-jump-rg-installed? => t)
                 (dumb-jump-fetch-file-results)
-                (should (member "/dummy/" searched-paths))
+                (should (member extra-dir searched-paths))
                 (should received-args)
                 (should (stringp (nth 1 received-args)))))))
       (when buf (kill-buffer buf))
-      (delete-file js-file))))
+      (delete-file js-file)
+      (delete-directory extra-dir))))
 
 (ert-deftest dumb-jump-extra-search-paths-nil-return-test ()
   "Test that a function returning nil does not break the search."
@@ -2506,21 +2512,23 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
 
 (ert-deftest dumb-jump-extra-search-paths-with-rust-deps-test ()
   "Test that extra paths and Rust dependency paths coexist."
-  (let ((dumb-jump-extra-search-paths-function
-         (lambda (_lang _proj-root)
-           '("/extra/hook/path/")))
-        (dumb-jump-rust-search-dependencies t)
-        (dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
-        (rs-file (make-temp-file "test" nil ".rs"))
-        (searched-paths nil)
-        buf)
+  (let* ((extra-dir (make-temp-file "dj-extra" t))
+         (rust-dep-dir (make-temp-file "dj-rustdep" t))
+         (dumb-jump-extra-search-paths-function
+          (lambda (_lang _proj-root)
+            (list extra-dir)))
+         (dumb-jump-rust-search-dependencies t)
+         (dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
+         (rs-file (make-temp-file "test" nil ".rs"))
+         (searched-paths nil)
+         buf)
     (unwind-protect
         (progn
           (with-temp-file rs-file (insert "fn main() {}"))
           (setq buf (find-file-noselect rs-file t))
           (with-current-buffer buf
             (cl-letf (((symbol-function 'dumb-jump-get-rust-dependency-paths)
-                       (lambda (_root) '("/fake/rust/dep/")))
+                       (lambda (_root) (list rust-dep-dir)))
                       ((symbol-function 'dumb-jump-run-command)
                        (lambda (_look-for path &rest _args)
                          (push path searched-paths)
@@ -2528,10 +2536,12 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
               (with-mock
                 (stub dumb-jump-rg-installed? => t)
                 (dumb-jump-fetch-file-results)
-                (should (member "/fake/rust/dep/" searched-paths))
-                (should (member "/extra/hook/path/" searched-paths))))))
+                (should (member rust-dep-dir searched-paths))
+                (should (member extra-dir searched-paths))))))
       (when buf (kill-buffer buf))
-      (delete-file rs-file))))
+      (delete-file rs-file)
+      (delete-directory extra-dir)
+      (delete-directory rust-dep-dir))))
 
 ;; Find references tests
 

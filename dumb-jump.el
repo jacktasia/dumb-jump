@@ -4056,9 +4056,18 @@ The returned property list has the following members:
          (rust-dep-paths (when (and (string= lang "rust")
                                     dumb-jump-rust-search-dependencies)
                            (dumb-jump-get-rust-dependency-paths proj-root)))
-         (extra-paths (when dumb-jump-extra-search-paths-function
-                        (funcall dumb-jump-extra-search-paths-function
-                                 lang proj-root)))
+         (extra-paths
+          (when dumb-jump-extra-search-paths-function
+            (let ((paths (funcall dumb-jump-extra-search-paths-function
+                                  lang proj-root)))
+              (when (listp paths)
+                (mapcan
+                 (lambda (p)
+                   (when (stringp p)
+                     (let ((expanded (expand-file-name p proj-root)))
+                       (when (file-directory-p expanded)
+                         (list expanded)))))
+                 paths)))))
          ;; we will search proj root and all include paths
          (search-paths (seq-uniq (append (list proj-root)
                                          include-paths
