@@ -1062,6 +1062,29 @@ If nil add also the language type of current src block."
            :not ("class testnot:"
                  "public class testnot implements Something"))
 
+    (:language "java" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\benum\\s+JJJ\\b"
+           :tests ("enum test {"
+                   "public enum test {")
+           :not ("enum testnot {"))
+
+    (:language "java" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "@interface\\s+JJJ\\b"
+           :tests ("@interface test {"
+                   "public @interface test {")
+           :not ("@interface testnot {"))
+
+    (:language "java" :type "function"
+           :supports ("grep" "git-grep")
+           :regex "(public|protected|private|static)[^(]+JJJ\\s*\\\("
+           :tests ("public int test()"
+                   "private static String test(param)"
+                   "protected List<String> test()")
+           :not ("test()"
+                 "new test()"))
+
     ;;-- vala (again just like c#, exactly the same..)
     (:language "vala" :type "function"
            :supports ("ag" "rg")
@@ -1125,9 +1148,9 @@ If nil add also the language type of current src block."
 
     (:language "coq" :type "function"
            :supports ("ag" "rg" "grep" "git-grep")
-           :regex "\\s*Theorm\\s+JJJ\\b"
-           :tests ("Theorm test")
-           :not ("Theorm testx"))
+           :regex "\\s*Theorem\\s+JJJ\\b"
+           :tests ("Theorem test")
+           :not ("Theorem testx"))
 
     (:language "coq" :type "function"
            :supports ("ag" "rg" "grep" "git-grep")
@@ -1166,7 +1189,7 @@ If nil add also the language type of current src block."
            :regex "\\s*\\bJJJ\\b(\\s*:[^=]+)?\\s*=[^=]+"
            :tests ("test = 1234"
                    "test: int = 1234"
-                   "test: int | None = 12i34"
+                   "test: int | None = 1234"
                    "test: List[Optional[int]] = [1234, None]")
            :not ("if test == 1234:"
                  "_test = 1234"
@@ -1189,6 +1212,22 @@ If nil add also the language type of current src block."
                    "class test:")
            :not ("class testnot:"
                  "class testnot(object):"))
+
+    (:language "python" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "async\\s+def\\s*JJJ\\b\\s*\\\("
+           :tests ("async def test(param)"
+                   "async def test()")
+           :not ("async def testnot(param)"
+                 "async def testnot()"))
+
+    (:language "python" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*JJJ\\s*=\\s*lambda\\b"
+           :tests ("test = lambda x: x"
+                   "test = lambda: None")
+           :not ("testnot = lambda x: x"
+                 "foo(test=lambda x: x)"))
 
     ;;-- matlab
     (:language "matlab" :type "variable"
@@ -1895,6 +1934,23 @@ If nil add also the language type of current src block."
            :supports ("ag" "grep" "rg" "git-grep")
            :regex "type\\s+JJJ\\s+struct\\s+\\\{"
            :tests ("type test struct {"))
+
+    (:language "go" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "type\\s+JJJ(\\\[[^]]+\\\])?\\s+interface\\s*\\\{"
+           :tests ("type test interface {"
+                   "type test[T comparable] interface {")
+           :not ("type testnot interface {"))
+
+    (:language "go" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "type\\s+JJJ(\\\[[^]]+\\\])?\\s+"
+           :tests ("type test int"
+                   "type test[T any] []byte"
+                   "type test = string"
+                   "type test []byte"
+                   "type test string")
+           :not ("type testnot int"))
 
     ;;-- javascript extended
     (:language "javascript" :tags ("angular") :type "function"
@@ -2860,6 +2916,22 @@ If nil add also the language type of current src block."
                    "test:: proc(a: i32) -> i32 {"
                    "test::proc{}"
                    "test: :proc \"contextless\" {}"))
+
+    (:language "odin" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\bJJJ\\s*:\\s*:?\\s*proc\\\("
+           :tests ("test :: proc(a: int)"
+                   "test ::proc()"
+                   "test:: proc(a: i32) -> i32 {")
+           :not ("testnot :: proc()"))
+
+    (:language "odin" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\bJJJ\\s*:\\s*:\\s*(struct|enum|union|bit_set|bit_field)"
+           :tests ("test :: struct {"
+                   "test :: enum {"
+                   "test :: union {")
+           :not ("testnot :: struct {"))
 
     ;;-- cobol
     (:language "cobol" :type "variable"
