@@ -2929,11 +2929,14 @@ If nil add also the language type of current src block."
 
     (:language "odin" :type "type"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\bJJJ\\s*:\\s*:\\s*(struct|enum|union|bit_set|bit_field)"
+           :regex "\\bJJJ\\s*:\\s*:\\s*(struct|enum|union|bit_set|bit_field)\\b"
            :tests ("test :: struct {"
                    "test :: enum {"
-                   "test :: union {")
-           :not ("testnot :: struct {"))
+                   "test :: union {"
+                   "test :: bit_set {"
+                   "test :: bit_field {")
+           :not ("testnot :: struct {"
+                 "test :: structure_builder"))
 
     ;;-- cobol
     (:language "cobol" :type "variable"
