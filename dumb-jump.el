@@ -3180,6 +3180,30 @@ Requires `cargo' to be installed and a Cargo.toml in the project."
   :group 'dumb-jump
   :type 'boolean)
 
+(defcustom dumb-jump-extra-search-paths-function nil
+  "Function to compute extra search paths for jump-to-definition lookups.
+When non-nil, this function is called with two arguments: LANG (a
+string naming the programming language) and PROJ-ROOT (the project
+root directory).  It should return a list of additional directory
+paths to include in the search, or nil.
+
+This is useful for dynamically adding paths such as virtualenv
+site-packages, installed library sources, or SDK directories.
+
+Example:
+
+  (setq dumb-jump-extra-search-paths-function
+        (lambda (lang proj-root)
+          (when (string= lang \"python\")
+            (let ((path (string-trim
+                         (shell-command-to-string
+                          \"poetry run python -c \\\"import site; print(site.getsitepackages()[0])\\\"\"))))
+              (when (file-directory-p path)
+                (list path))))))"
+  :group 'dumb-jump
+  :type '(choice (const :tag "None" nil)
+                 function))
+
 (defcustom dumb-jump-before-jump-hook nil
   "Hooks called before jumping."
   :group 'dumb-jump
@@ -4032,10 +4056,14 @@ The returned property list has the following members:
          (rust-dep-paths (when (and (string= lang "rust")
                                     dumb-jump-rust-search-dependencies)
                            (dumb-jump-get-rust-dependency-paths proj-root)))
+         (extra-paths (when dumb-jump-extra-search-paths-function
+                        (funcall dumb-jump-extra-search-paths-function
+                                 lang proj-root)))
          ;; we will search proj root and all include paths
          (search-paths (seq-uniq (append (list proj-root)
                                          include-paths
-                                         (or rust-dep-paths '()))))
+                                         (or rust-dep-paths '())
+                                         (or extra-paths '()))))
          (raw-results (mapcan
                        (lambda (it)
                          (dumb-jump-run-command look-for it

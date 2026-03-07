@@ -2400,6 +2400,139 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
   "Test that Cargo.toml is recognized as a project denoter."
   (should (member "Cargo.toml" dumb-jump-project-denoters)))
 
+;; Extra search paths function tests
+
+(ert-deftest dumb-jump-extra-search-paths-included-test ()
+  "Test that extra search paths from hook function are added to search-paths."
+  (let ((dumb-jump-extra-search-paths-function
+         (lambda (_lang _proj-root)
+           '("/extra/path/one/" "/extra/path/two/")))
+        (dumb-jump-rust-search-dependencies nil)
+        (js-file (make-temp-file "test" nil ".js"))
+        (searched-paths nil)
+        buf)
+    (unwind-protect
+        (progn
+          (with-temp-file js-file (insert "function doStuff() {}"))
+          (setq buf (find-file-noselect js-file t))
+          (with-current-buffer buf
+            (cl-letf (((symbol-function 'dumb-jump-run-command)
+                       (lambda (_look-for path &rest _args)
+                         (push path searched-paths)
+                         nil)))
+              (with-mock
+                (stub dumb-jump-rg-installed? => t)
+                (dumb-jump-fetch-file-results)
+                (should (member "/extra/path/one/" searched-paths))
+                (should (member "/extra/path/two/" searched-paths))))))
+      (when buf (kill-buffer buf))
+      (delete-file js-file))))
+
+(ert-deftest dumb-jump-extra-search-paths-nil-when-unset-test ()
+  "Test that no extra paths are added when the function is nil."
+  (let ((dumb-jump-extra-search-paths-function nil)
+        (dumb-jump-rust-search-dependencies nil)
+        (js-file (make-temp-file "test" nil ".js"))
+        (searched-paths nil)
+        buf)
+    (unwind-protect
+        (progn
+          (with-temp-file js-file (insert "function doStuff() {}"))
+          (setq buf (find-file-noselect js-file t))
+          (with-current-buffer buf
+            (cl-letf (((symbol-function 'dumb-jump-run-command)
+                       (lambda (_look-for path &rest _args)
+                         (push path searched-paths)
+                         nil)))
+              (with-mock
+                (stub dumb-jump-rg-installed? => t)
+                (dumb-jump-fetch-file-results)
+                (should (= (length searched-paths) 1))))))
+      (when buf (kill-buffer buf))
+      (delete-file js-file))))
+
+(ert-deftest dumb-jump-extra-search-paths-receives-args-test ()
+  "Test that the function receives the correct lang and proj-root."
+  (let* ((received-args nil)
+         (dumb-jump-extra-search-paths-function
+          (lambda (lang proj-root)
+            (setq received-args (list lang proj-root))
+            '("/dummy/")))
+         (dumb-jump-rust-search-dependencies nil)
+         (js-file (make-temp-file "test" nil ".js"))
+         (searched-paths nil)
+         buf)
+    (unwind-protect
+        (progn
+          (with-temp-file js-file (insert "function doStuff() {}"))
+          (setq buf (find-file-noselect js-file t))
+          (with-current-buffer buf
+            (cl-letf (((symbol-function 'dumb-jump-run-command)
+                       (lambda (_look-for path &rest _args)
+                         (push path searched-paths)
+                         nil)))
+              (with-mock
+                (stub dumb-jump-rg-installed? => t)
+                (dumb-jump-fetch-file-results)
+                (should (member "/dummy/" searched-paths))
+                (should received-args)
+                (should (stringp (nth 1 received-args)))))))
+      (when buf (kill-buffer buf))
+      (delete-file js-file))))
+
+(ert-deftest dumb-jump-extra-search-paths-nil-return-test ()
+  "Test that a function returning nil does not break the search."
+  (let ((dumb-jump-extra-search-paths-function
+         (lambda (_lang _proj-root) nil))
+        (dumb-jump-rust-search-dependencies nil)
+        (js-file (make-temp-file "test" nil ".js"))
+        (searched-paths nil)
+        buf)
+    (unwind-protect
+        (progn
+          (with-temp-file js-file (insert "function doStuff() {}"))
+          (setq buf (find-file-noselect js-file t))
+          (with-current-buffer buf
+            (cl-letf (((symbol-function 'dumb-jump-run-command)
+                       (lambda (_look-for path &rest _args)
+                         (push path searched-paths)
+                         nil)))
+              (with-mock
+                (stub dumb-jump-rg-installed? => t)
+                (dumb-jump-fetch-file-results)
+                (should (= (length searched-paths) 1))))))
+      (when buf (kill-buffer buf))
+      (delete-file js-file))))
+
+(ert-deftest dumb-jump-extra-search-paths-with-rust-deps-test ()
+  "Test that extra paths and Rust dependency paths coexist."
+  (let ((dumb-jump-extra-search-paths-function
+         (lambda (_lang _proj-root)
+           '("/extra/hook/path/")))
+        (dumb-jump-rust-search-dependencies t)
+        (dumb-jump--rust-deps-cache (make-hash-table :test 'equal))
+        (rs-file (make-temp-file "test" nil ".rs"))
+        (searched-paths nil)
+        buf)
+    (unwind-protect
+        (progn
+          (with-temp-file rs-file (insert "fn main() {}"))
+          (setq buf (find-file-noselect rs-file t))
+          (with-current-buffer buf
+            (cl-letf (((symbol-function 'dumb-jump-get-rust-dependency-paths)
+                       (lambda (_root) '("/fake/rust/dep/")))
+                      ((symbol-function 'dumb-jump-run-command)
+                       (lambda (_look-for path &rest _args)
+                         (push path searched-paths)
+                         nil)))
+              (with-mock
+                (stub dumb-jump-rg-installed? => t)
+                (dumb-jump-fetch-file-results)
+                (should (member "/fake/rust/dep/" searched-paths))
+                (should (member "/extra/hook/path/" searched-paths))))))
+      (when buf (kill-buffer buf))
+      (delete-file rs-file))))
+
 ;; Find references tests
 
 (ert-deftest dumb-jump-pcre-to-emacs-basic-test ()
