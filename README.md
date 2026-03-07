@@ -257,6 +257,25 @@ When enabled, Dumb Jump will run `cargo metadata --format-version=1` to find the
 
 This requires `cargo` to be installed and a `Cargo.toml` in the project root. Since dependency sources live outside the git repository, you must use `rg` or `ag` as the searcher (not `git-grep`).
 
+### Dynamic extra search paths
+
+You can provide a function that dynamically computes additional search paths based on the current language and project root. This is useful for searching library sources that live outside your project (e.g., Python virtualenv site-packages, SDK directories).
+
+~~~lisp
+(setq dumb-jump-extra-search-paths-function
+      (lambda (lang proj-root)
+        (when (string= lang "python")
+          (let ((path (string-trim
+                       (shell-command-to-string
+                        "poetry run python -c \"import site; print(site.getsitepackages()[0])\""))))
+            (when (file-directory-p path)
+              (list path))))))
+~~~
+
+The function receives two arguments — `lang` (a string like `"python"` or `"javascript"`) and `proj-root` (the project root directory) — and should return a list of directory paths or nil. Relative paths are expanded against `proj-root`; non-existent directories are silently ignored.
+
+Since these paths typically live outside the git repository, you should use `rg` or `ag` as the searcher (not `git-grep`). If your function does something expensive (like running a shell command), consider caching results yourself.
+
 ### Hydra for efficiency
 
 If you have [Hydra](https://github.com/abo-abo/hydra) installed, the following is an example hydra for easily using Dumb-Jump and not needing to remember the bindings or function names:
