@@ -39,7 +39,6 @@
 ;; where it is defined, or a list of candidates if uncertain.  This
 ;; list can be navigated using M-g M-n (next-error) and M-g M-p
 ;; (previous-error).
-
 ;;; Code:
 (require 'xref)
 (require 'cl-generic)
@@ -3180,6 +3179,35 @@ Requires `cargo' to be installed and a Cargo.toml in the project."
   :group 'dumb-jump
   :type 'boolean)
 
+(defcustom dumb-jump-extra-search-paths-function nil
+  "Function to compute extra search paths for jump-to-definition lookups.
+When non-nil, this function is called with two arguments: LANG (a
+string naming the programming language, or nil if undetected) and
+PROJ-ROOT (the project root directory).  It should return a list of
+directory path strings to include in the search, or nil.
+
+Returned paths may be absolute or relative to PROJ-ROOT (relative
+entries are expanded via `expand-file-name').  Non-existent
+directories and non-string entries are silently ignored.
+
+This is useful for dynamically adding paths such as virtualenv
+site-packages, installed library sources, or SDK directories.
+
+Example:
+
+  (setq dumb-jump-extra-search-paths-function
+        (lambda (lang proj-root)
+          (when (string= lang \"python\")
+            (let* ((default-directory proj-root)
+                   (path (string-trim
+                          (shell-command-to-string
+                           \"poetry run python -c \\\"import site; print(site.getsitepackages()[0])\\\"\"))))
+              (when (file-directory-p path)
+                (list path))))))"
+  :group 'dumb-jump
+  :type '(choice (const :tag "None" nil)
+                 function))
+
 (defcustom dumb-jump-before-jump-hook nil
   "Hooks called before jumping."
   :group 'dumb-jump
@@ -4032,10 +4060,35 @@ The returned property list has the following members:
          (rust-dep-paths (when (and (string= lang "rust")
                                     dumb-jump-rust-search-dependencies)
                            (dumb-jump-get-rust-dependency-paths proj-root)))
+         (extra-paths
+          (when dumb-jump-extra-search-paths-function
+            (let* ((hook-lang (if (and (stringp lang)
+                                      (string-match "\\`\\(.+\\)PLUS" lang))
+                                 (match-string 1 lang)
+                               lang))
+                   (paths (funcall dumb-jump-extra-search-paths-function
+                                   hook-lang proj-root)))
+              (when (listp paths)
+                (mapcan
+                 (lambda (p)
+                   (when (stringp p)
+                     (let ((expanded (expand-file-name p proj-root)))
+                       (if (file-directory-p expanded)
+                           (list expanded)
+                         (when dumb-jump-debug
+                           (dumb-jump-message
+                            "Dumb Jump: extra-search-paths dropping %S (not a directory)"
+                            expanded))
+                         nil))))
+                 paths)))))
          ;; we will search proj root and all include paths
          (search-paths (seq-uniq (append (list proj-root)
                                          include-paths
-                                         (or rust-dep-paths '()))))
+                                         (or rust-dep-paths '())
+                                         (or extra-paths '()))))
+         (_search-paths-debug
+          (when dumb-jump-debug
+            (dumb-jump-message "Dumb Jump: search-paths = %S" search-paths)))
          (raw-results (mapcan
                        (lambda (it)
                          (dumb-jump-run-command look-for it
