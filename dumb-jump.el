@@ -39,7 +39,6 @@
 ;; where it is defined, or a list of candidates if uncertain.  This
 ;; list can be navigated using M-g M-n (next-error) and M-g M-p
 ;; (previous-error).
-;; jack-eval-buffer
 ;;; Code:
 (require 'xref)
 (require 'cl-generic)
@@ -4063,8 +4062,12 @@ The returned property list has the following members:
                            (dumb-jump-get-rust-dependency-paths proj-root)))
          (extra-paths
           (when dumb-jump-extra-search-paths-function
-            (let ((paths (funcall dumb-jump-extra-search-paths-function
-                                  lang proj-root)))
+            (let* ((hook-lang (if (and (stringp lang)
+                                      (string-match "\\`\\(.+\\)PLUS" lang))
+                                 (match-string 1 lang)
+                               lang))
+                   (paths (funcall dumb-jump-extra-search-paths-function
+                                   hook-lang proj-root)))
               (when (listp paths)
                 (mapcan
                  (lambda (p)
