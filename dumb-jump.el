@@ -3993,7 +3993,9 @@ The returned property list has the following members:
          (searcher (plist-get gen-funcs :searcher))
 
          (regexes (if (eq dumb-jump--search-mode 'references)
-                      (list dumb-jump-fallback-regex)
+                      ;; Broad symbol search with a left boundary that also
+                      ;; works for Lisp-family identifiers like *foo*.
+                      (list "(^|[^a-zA-Z0-9\\?\\*-])JJJ\\j")
                     (dumb-jump-get-contextual-regexes lang ctx-type searcher)))
 
          ;; If selected searcher has no rules for this language, try alternatives.
@@ -5010,12 +5012,15 @@ matching the tool boundaries: not followed by [a-zA-Z0-9?*-]."
     (setq text (dumb-jump--replace "\\j" "\\(?:[^a-zA-Z0-9?*-]\\|$\\)" text))
     text))
 
-(defun dumb-jump-filter-definition-results (results lang look-for searcher)
+(defun dumb-jump-filter-definition-results (results lang look-for _searcher)
   "Remove from RESULTS any that match definition patterns for LANG.
-LOOK-FOR is the symbol being searched.  SEARCHER is the search tool."
-  (let* ((raw-rules (seq-remove (lambda (it) (plist-get it :skip-ref-filter))
-                                (dumb-jump-get-rules-by-language lang searcher)))
-         (def-regexes (mapcar (lambda (it) (plist-get it :regex)) raw-rules))
+LOOK-FOR is the symbol being searched.  _SEARCHER is unused but kept for API."
+  (let* ((raw-rules (seq-remove
+                     (lambda (it) (plist-get it :skip-ref-filter))
+                     (seq-filter (lambda (it)
+                                   (string= (plist-get it :language) lang))
+                                 dumb-jump-find-rules)))
+         (def-regexes (seq-uniq (mapcar (lambda (it) (plist-get it :regex)) raw-rules)))
          (emacs-regexes (mapcar (lambda (re)
                                   (dumb-jump-populate-regex-for-emacs re look-for))
                                 def-regexes)))

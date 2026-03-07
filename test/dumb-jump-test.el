@@ -2437,26 +2437,27 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
   "Test that \\j boundary distinguishes identifiers with special chars.
 The \\j boundary should not match when followed by ?, *, or - (Lisp identifiers)."
   (let ((emacs-re (dumb-jump-populate-regex-for-emacs
-                   "\\(defun\\s+JJJ\\j" "test")))
+                   "\\(defun\\s+JJJ\\j" "test"))
+        (star-re (dumb-jump-populate-regex-for-emacs
+                  "\\(defun\\s+JJJ\\j" "*foo*")))
     ;; Should match (defun test followed by space or end
     (should (string-match-p emacs-re "(defun test "))
     (should (string-match-p emacs-re "(defun test)"))
     ;; Should NOT match test? test- or tester (Lisp naming conventions)
     (should-not (string-match-p emacs-re "(defun test?"))
     (should-not (string-match-p emacs-re "(defun test-thing"))
-    (should-not (string-match-p emacs-re "(defun tester"))))
+    (should-not (string-match-p emacs-re "(defun tester"))
+    ;; *foo* Lisp-style identifier
+    (should (string-match-p star-re "(defun *foo* "))
+    (should-not (string-match-p star-re "(defun *foo*bar "))))
 
 (ert-deftest dumb-jump-filter-definition-results-test ()
-  "Test that definition results are filtered out from reference search."
-  (let ((results '((:path "test.py" :line 1 :context "def test():" :diff 1 :target "test")
-                   (:path "test.py" :line 5 :context "  test()" :diff 5 :target "test")
-                   (:path "test.py" :line 10 :context "x = test()" :diff 10 :target "test")))
-        (filtered nil))
-    (with-mock
-     (stub dumb-jump-get-rules-by-language =>
-           '((:type "function" :regex "def\\s*JJJ\\b\\s*\\\("
-              :language "python" :supports ("ag" "rg" "grep" "git-grep"))))
-     (setq filtered (dumb-jump-filter-definition-results results "python" "test" 'rg)))
+  "Test that definition results are filtered out from reference search.
+Uses real Python rules from `dumb-jump-find-rules'."
+  (let* ((results '((:path "test.py" :line 1 :context "def test():" :diff 1 :target "test")
+                    (:path "test.py" :line 5 :context "  test()" :diff 5 :target "test")
+                    (:path "test.py" :line 10 :context "x = test()" :diff 10 :target "test")))
+         (filtered (dumb-jump-filter-definition-results results "python" "test" 'rg)))
     ;; The "def test():" line should be filtered out
     (should (= (length filtered) 2))
     (should (string= (plist-get (nth 0 filtered) :context) "  test()"))
@@ -2526,5 +2527,22 @@ Cursor on bar definition in test.cpp:3 should find the usage on test.cpp:9."
                          (string-match-p "int bar(int val)"
                                          (plist-get r :context)))
                        results)))))))
+
+(ert-deftest dumb-jump-find-references-public-api-test ()
+  "Test that `dumb-jump-find-references' correctly finds references via public API.
+Exercises the full public entry point including aggressive-jump suppression."
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 2)
+      (forward-char 10)
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        ;; Mock dumb-jump-result-follow to prevent actual navigation
+        (stub dumb-jump-result-follow)
+        (let ((dumb-jump-aggressive t))
+          (dumb-jump-find-references)
+          ;; Mode should be reset after the let binding exits
+          (should (eq dumb-jump--search-mode 'definitions)))))))
 
 ;;;
