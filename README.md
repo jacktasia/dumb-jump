@@ -265,9 +265,10 @@ You can provide a function that dynamically computes additional search paths bas
 (setq dumb-jump-extra-search-paths-function
       (lambda (lang proj-root)
         (when (string= lang "python")
-          (let ((path (string-trim
-                       (shell-command-to-string
-                        "poetry run python -c \"import site; print(site.getsitepackages()[0])\""))))
+          (let* ((default-directory proj-root)
+                 (path (string-trim
+                        (shell-command-to-string
+                         "poetry run python -c \"import site; print(site.getsitepackages()[0])\""))))
             (when (file-directory-p path)
               (list path))))))
 ~~~

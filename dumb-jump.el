@@ -3183,9 +3183,13 @@ Requires `cargo' to be installed and a Cargo.toml in the project."
 (defcustom dumb-jump-extra-search-paths-function nil
   "Function to compute extra search paths for jump-to-definition lookups.
 When non-nil, this function is called with two arguments: LANG (a
-string naming the programming language) and PROJ-ROOT (the project
-root directory).  It should return a list of additional directory
-paths to include in the search, or nil.
+string naming the programming language, or nil if undetected) and
+PROJ-ROOT (the project root directory).  It should return a list of
+directory path strings to include in the search, or nil.
+
+Returned paths may be absolute or relative to PROJ-ROOT (relative
+entries are expanded via `expand-file-name').  Non-existent
+directories and non-string entries are silently ignored.
 
 This is useful for dynamically adding paths such as virtualenv
 site-packages, installed library sources, or SDK directories.
@@ -3195,9 +3199,10 @@ Example:
   (setq dumb-jump-extra-search-paths-function
         (lambda (lang proj-root)
           (when (string= lang \"python\")
-            (let ((path (string-trim
-                         (shell-command-to-string
-                          \"poetry run python -c \\\"import site; print(site.getsitepackages()[0])\\\"\"))))
+            (let* ((default-directory proj-root)
+                   (path (string-trim
+                          (shell-command-to-string
+                           \"poetry run python -c \\\"import site; print(site.getsitepackages()[0])\\\"\"))))
               (when (file-directory-p path)
                 (list path))))))"
   :group 'dumb-jump
