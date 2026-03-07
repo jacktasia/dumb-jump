@@ -39,7 +39,7 @@
 ;; where it is defined, or a list of candidates if uncertain.  This
 ;; list can be navigated using M-g M-n (next-error) and M-g M-p
 ;; (previous-error).
-
+;; jack-eval-buffer
 ;;; Code:
 (require 'xref)
 (require 'cl-generic)
@@ -4070,14 +4070,22 @@ The returned property list has the following members:
                  (lambda (p)
                    (when (stringp p)
                      (let ((expanded (expand-file-name p proj-root)))
-                       (when (file-directory-p expanded)
-                         (list expanded)))))
+                       (if (file-directory-p expanded)
+                           (list expanded)
+                         (when dumb-jump-debug
+                           (dumb-jump-message
+                            "Dumb Jump: extra-search-paths dropping %S (not a directory)"
+                            expanded))
+                         nil))))
                  paths)))))
          ;; we will search proj root and all include paths
          (search-paths (seq-uniq (append (list proj-root)
                                          include-paths
                                          (or rust-dep-paths '())
                                          (or extra-paths '()))))
+         (_search-paths-debug
+          (when dumb-jump-debug
+            (dumb-jump-message "Dumb Jump: search-paths = %S" search-paths)))
          (raw-results (mapcan
                        (lambda (it)
                          (dumb-jump-run-command look-for it
