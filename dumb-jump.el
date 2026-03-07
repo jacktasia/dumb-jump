@@ -527,12 +527,10 @@ If nil add also the language type of current src block."
                  "(setq tester"
                  "(setq test?" "(setq test-"))
 
-    ;; The following regex identifying let-bound variables is the reason why
-    ;; searching for an elisp function cause a set of false positive on all
-    ;; locations where the function is invoked.
     (:language "elisp" :type "variable" ; let bound variables
                :supports ("ag" "grep" "rg" "git-grep")
                :regex "\\(JJJ\\s+"
+               :skip-ref-filter t
                :tests ("(let ((test 123)))"
                        "(let* ((test 123)))")
                :not ("(let ((test-2 123)))"
@@ -5015,7 +5013,8 @@ matching the tool boundaries: not followed by [a-zA-Z0-9?*-]."
 (defun dumb-jump-filter-definition-results (results lang look-for searcher)
   "Remove from RESULTS any that match definition patterns for LANG.
 LOOK-FOR is the symbol being searched.  SEARCHER is the search tool."
-  (let* ((raw-rules (dumb-jump-get-rules-by-language lang searcher))
+  (let* ((raw-rules (seq-remove (lambda (it) (plist-get it :skip-ref-filter))
+                                (dumb-jump-get-rules-by-language lang searcher)))
          (def-regexes (mapcar (lambda (it) (plist-get it :regex)) raw-rules))
          (emacs-regexes (mapcar (lambda (re)
                                   (dumb-jump-populate-regex-for-emacs re look-for))
