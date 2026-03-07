@@ -1223,10 +1223,11 @@ If nil add also the language type of current src block."
 
     (:language "python" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\bJJJ\\s*=\\s*lambda\\b"
+           :regex "^\\s*JJJ\\s*=\\s*lambda\\b"
            :tests ("test = lambda x: x"
                    "test = lambda: None")
-           :not ("testnot = lambda x: x"))
+           :not ("testnot = lambda x: x"
+                 "foo(test=lambda x: x)"))
 
     ;;-- matlab
     (:language "matlab" :type "variable"
@@ -1936,13 +1937,16 @@ If nil add also the language type of current src block."
 
     (:language "go" :type "type"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "type\\s+JJJ\\s+interface\\s*\\\{"
-           :tests ("type test interface {"))
+           :regex "type\\s+JJJ(\\\[[^]]+\\\])?\\s+interface\\s*\\\{"
+           :tests ("type test interface {"
+                   "type test[T comparable] interface {")
+           :not ("type testnot interface {"))
 
     (:language "go" :type "type"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "type\\s+JJJ\\s+"
+           :regex "type\\s+JJJ(\\\[[^]]+\\\])?\\s+"
            :tests ("type test int"
+                   "type test[T any] []byte"
                    "type test = string"
                    "type test []byte"
                    "type test string")
