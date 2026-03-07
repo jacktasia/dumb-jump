@@ -163,6 +163,9 @@ REP can return a list to splice in multiple elements."
     (define-key map (kbd "C-M-q") 'dumb-jump-quick-look)
     map))
 
+(defvar dumb-jump--search-mode 'definitions
+  "Current search mode: `definitions' (default) or `references'.")
+
 (defcustom dumb-jump-window
   'current
   "Which window to use when jumping.
@@ -524,12 +527,10 @@ If nil add also the language type of current src block."
                  "(setq tester"
                  "(setq test?" "(setq test-"))
 
-    ;; The following regex identifying let-bound variables is the reason why
-    ;; searching for an elisp function cause a set of false positive on all
-    ;; locations where the function is invoked.
     (:language "elisp" :type "variable" ; let bound variables
                :supports ("ag" "grep" "rg" "git-grep")
                :regex "\\(JJJ\\s+"
+               :skip-ref-filter t
                :tests ("(let ((test 123)))"
                        "(let* ((test 123)))")
                :not ("(let ((test-2 123)))"
@@ -3983,14 +3984,19 @@ The returned property list has the following members:
                     look-for
                     (dumb-jump--get-symbol-start))))
          (ctx-type
-          (dumb-jump-get-ctx-type-by-language lang pt-ctx))
+          (unless (eq dumb-jump--search-mode 'references)
+            (dumb-jump-get-ctx-type-by-language lang pt-ctx)))
 
          (gen-funcs (dumb-jump-pick-grep-variant proj-root))
          (parse-fn (plist-get gen-funcs :parse)) ; dumb-jump-parse-TOOL-response
          (generate-fn (plist-get gen-funcs :generate))
          (searcher (plist-get gen-funcs :searcher))
 
-         (regexes (dumb-jump-get-contextual-regexes lang ctx-type searcher))
+         (regexes (if (eq dumb-jump--search-mode 'references)
+                      ;; Broad symbol search with a left boundary that also
+                      ;; works for Lisp-family identifiers like *foo*.
+                      (list "(^|[^a-zA-Z0-9\\?\\*-])JJJ\\j")
+                    (dumb-jump-get-contextual-regexes lang ctx-type searcher)))
 
          ;; If selected searcher has no rules for this language, try alternatives.
          ;; Only block fallback when dumb-jump-force-searcher is a direct
@@ -3999,6 +4005,7 @@ The returned property list has the following members:
          ;; still be eligible for fallback.
          (_alt-searcher
           (when (and (null regexes)
+                     (not (eq dumb-jump--search-mode 'references))
                      (not (memq dumb-jump-force-searcher
                                 '(ag rg grep gnu-grep git-grep
                                      git-grep-plus-ag))))
@@ -4039,7 +4046,12 @@ The returned property list has the following members:
                        search-paths))
 
          (results
-          (delete-dups (mapcar (lambda (it) (plist-put it :target look-for)) raw-results))))
+          (let ((deduped (delete-dups
+                          (mapcar (lambda (it) (plist-put it :target look-for))
+                                  raw-results))))
+            (if (eq dumb-jump--search-mode 'references)
+                (dumb-jump-filter-definition-results deduped lang look-for searcher)
+              deduped))))
 
     `(:results ,results
       :lang ,(if (null lang) "" lang)
@@ -4093,6 +4105,17 @@ That is, show a tooltip of where it would jump instead."
   (interactive)
   (with-no-warnings
     (dumb-jump-go nil t)))
+
+;;;###autoload
+(defun dumb-jump-find-references ()
+  "Find references/usages of the symbol at point.
+This is the inverse of `dumb-jump-go' -- it finds where a symbol
+is used rather than where it is defined."
+  ;; Note: independent of the Emacs xref interface.
+  (interactive)
+  (let ((dumb-jump--search-mode 'references)
+        (dumb-jump-aggressive nil))
+    (dumb-jump-go)))
 
 ;;;###autoload
 (defun dumb-jump-go-prompt ()
@@ -4155,12 +4178,15 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
                                 (plist-get info :ctx-type)
                                 look-for use-tooltip prefer-external lang))
      ((= result-count 0)
-      (dumb-jump-message "'%s' %s %s declaration not found."
+      (dumb-jump-message "'%s' %s %s %s not found."
                          look-for
                          (if (string-blank-p (or lang ""))
                              "with unknown language so"
                            lang)
-                         (plist-get info :ctx-type))))))
+                         (plist-get info :ctx-type)
+                         (if (eq dumb-jump--search-mode 'references)
+                             "references"
+                           "declaration"))))))
 
 (defcustom dumb-jump-language-comments
   '((:comment "//" :language "c++")
@@ -4699,7 +4725,9 @@ The parameters are:
     (dumb-jump-debug-message cmd)
     (setq rawresults (shell-command-to-string cmd))
     (dumb-jump-debug-message rawresults)
-    (when (and (string-blank-p rawresults) dumb-jump-fallback-search)
+    (when (and (string-blank-p rawresults)
+               dumb-jump-fallback-search
+               (not (eq dumb-jump--search-mode 'references)))
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn
                          look-for cur-file
@@ -4927,6 +4955,84 @@ The arguments are:
    (lambda (it)
      (dumb-jump-populate-regex it look-for variant))
    regexes))
+
+(defun dumb-jump-pcre-to-emacs (regex)
+  "Convert a PCRE-style REGEX string to Emacs regex syntax.
+In PCRE and Emacs, +, ?, *, ., ^, $, [ are special without escaping.
+But (, ), |, {, } differ: special unescaped in PCRE, special escaped in Emacs.
+This function swaps the literal/special meaning of (, ), |, {, and }."
+  (let ((i 0)
+        (len (length regex))
+        (out (list)))
+    (while (< i len)
+      (let ((ch (aref regex i)))
+        (cond
+         ;; Backslash sequence
+         ((and (= ch ?\\) (< (1+ i) len))
+          (let ((next (aref regex (1+ i))))
+            (cond
+             ((memq next '(?\( ?\) ?| ?{ ?}))
+              ;; \X (literal in PCRE) → X (literal in Emacs)
+              (push (char-to-string next) out)
+              (setq i (+ i 2)))
+             (t
+              ;; Other backslash sequences (\b, \w, \+, \?, etc.) pass through
+              (push (substring regex i (+ i 2)) out)
+              (setq i (+ i 2))))))
+         ;; (? prefixed groups: (?:, (?!, (?=, (?<=, (?<!, etc.
+         ;; Emit \(? which in Emacs starts a shy group for (?:
+         ;; and produces a valid (if semantically different) group for others.
+         ((and (= ch ?\()
+               (< (1+ i) len)
+               (= (aref regex (1+ i)) ??))
+          (push "\\(?" out)
+          (setq i (+ i 2)))
+         ;; Unescaped chars that differ between PCRE and Emacs
+         ((= ch ?\() (push "\\(" out) (cl-incf i))
+         ((= ch ?\)) (push "\\)" out) (cl-incf i))
+         ((= ch ?|)  (push "\\|" out) (cl-incf i))
+         ((= ch ?{)  (push "\\{" out) (cl-incf i))
+         ((= ch ?})  (push "\\}" out) (cl-incf i))
+         ;; Everything else passes through (including +, ?, *, ., etc.)
+         (t (push (char-to-string ch) out) (cl-incf i)))))
+    (apply #'concat (nreverse out))))
+
+(defun dumb-jump-populate-regex-for-emacs (regex look-for)
+  "Populate dumb-jump generic REGEX for matching LOOK-FOR with Emacs `string-match-p'.
+Replaces dumb-jump meta-patterns and converts PCRE syntax to Emacs regex.
+The \\=\\j boundary is replaced after PCRE conversion with a character class
+matching the tool boundaries: not followed by [a-zA-Z0-9?*-]."
+  (let ((text regex))
+    (setq text (dumb-jump--replace "\\s" "[[:space:]]" text))
+    (setq text (dumb-jump--replace "JJJ" (regexp-quote look-for) text))
+    (setq text (dumb-jump-pcre-to-emacs text))
+    ;; Replace \j after PCRE conversion since the replacement is Emacs syntax.
+    ;; Mirrors the tool boundaries: (?![a-zA-Z0-9\?\*-]) for ag,
+    ;; ($|[^a-zA-Z0-9\?\*-]) for rg/grep.
+    (setq text (dumb-jump--replace "\\j" "\\(?:[^a-zA-Z0-9?*-]\\|$\\)" text))
+    text))
+
+(defun dumb-jump-filter-definition-results (results lang look-for _searcher)
+  "Remove from RESULTS any that match definition patterns for LANG.
+LOOK-FOR is the symbol being searched.  _SEARCHER is unused but kept for API."
+  (let* ((raw-rules (seq-remove
+                     (lambda (it) (plist-get it :skip-ref-filter))
+                     (seq-filter (lambda (it)
+                                   (string= (plist-get it :language) lang))
+                                 dumb-jump-find-rules)))
+         (def-regexes (seq-uniq (mapcar (lambda (it) (plist-get it :regex)) raw-rules)))
+         (emacs-regexes (mapcar (lambda (re)
+                                  (dumb-jump-populate-regex-for-emacs re look-for))
+                                def-regexes)))
+    (seq-filter
+     (lambda (r)
+       (let ((ctx (plist-get r :context)))
+         (not (seq-some (lambda (re)
+                         (condition-case nil
+                             (string-match-p re ctx)
+                           (invalid-regexp nil)))
+                       emacs-regexes))))
+     results)))
 
 ;; --
 (defun dumb-jump-generate-ag-command (look-for
@@ -5388,6 +5494,55 @@ For enabling globally, use `dumb-jump-mode' instead."
                      (if do-var-jump
                          (list var-to-jump)
                        match-cur-file-front))))))
+
+(cl-defmethod xref-backend-references ((_backend (eql dumb-jump))
+                                        entered-name)
+  (let* ((dumb-jump--search-mode 'references)
+         (info (dumb-jump-get-results entered-name))
+         (results (plist-get info :results))
+         (look-for (or entered-name (plist-get info :symbol)))
+         (proj-root (plist-get info :root))
+         (issue (plist-get info :issue))
+         (lang (plist-get info :lang))
+         (processed (dumb-jump-process-results
+                     results
+                     (plist-get info :file)
+                     proj-root
+                     (plist-get info :ctx-type)
+                     look-for
+                     nil
+                     nil
+                     lang))
+         (results (plist-get processed :results))
+         (match-cur-file-front (plist-get processed :match-cur-file-front)))
+
+    (cond ((eq issue 'nogrep)
+           (dumb-jump-message "Please install ag, rg, git grep or grep!"))
+          ((eq issue 'nosymbol)
+           (dumb-jump-message "No symbol under point."))
+          ((string-suffix-p " file" lang)
+           (dumb-jump-message "Could not find rules for '%s'." lang))
+          ((= (length results) 0)
+           (dumb-jump-message "'%s' %s references not found."
+                              look-for
+                              (if (string-blank-p (or lang ""))
+                                  "with unknown language so"
+                                lang)))
+          (t (mapcar (lambda (res)
+                       (with-no-warnings
+                         (xref-make
+                          (plist-get res :context)
+                          (xref-make-file-location
+                           (let* ((path (plist-get res :path))
+                                  (remote-prefix (file-remote-p default-directory)))
+                             (if remote-prefix
+                                 (if (file-name-absolute-p path)
+                                     (concat remote-prefix path)
+                                   (concat default-directory path))
+                               (expand-file-name path)))
+                           (plist-get res :line)
+                           0))))
+                     match-cur-file-front)))))
 
 (cl-defmethod xref-backend-apropos ((_backend (eql dumb-jump)) pattern)
   (xref-backend-definitions 'dumb-jump pattern))

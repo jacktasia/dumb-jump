@@ -1117,7 +1117,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (forward-char 4)
       (with-mock-forbidding-prompt
         (stub dumb-jump-rg-installed? => t)
-        (mock (dumb-jump-message "'%s' %s %s declaration not found." "nothing" * *))
+        (mock (dumb-jump-message "'%s' %s %s %s not found." "nothing" * * "declaration"))
         (with-no-warnings (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-go-no-rules-test ()
@@ -2399,5 +2399,150 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
 (ert-deftest dumb-jump-cargo-toml-is-project-denoter-test ()
   "Test that Cargo.toml is recognized as a project denoter."
   (should (member "Cargo.toml" dumb-jump-project-denoters)))
+
+;; Find references tests
+
+(ert-deftest dumb-jump-pcre-to-emacs-basic-test ()
+  "Test PCRE to Emacs regex conversion for basic patterns."
+  ;; Literal parens: \( in PCRE → ( in Emacs
+  (should (string= "def[[:space:]]*test(" (dumb-jump-pcre-to-emacs "def[[:space:]]*test\\(")))
+  ;; Group and alternation: (a|b) in PCRE → \(a\|b\) in Emacs
+  (should (string= "\\(foo\\|bar\\)" (dumb-jump-pcre-to-emacs "(foo|bar)")))
+  ;; Quantifiers: + and ? are special in both PCRE and Emacs, no conversion
+  (should (string= "[[:space:]]+" (dumb-jump-pcre-to-emacs "[[:space:]]+")))
+  (should (string= "x?" (dumb-jump-pcre-to-emacs "x?")))
+  ;; Escaped \+ and \? (literal in both) pass through unchanged
+  (should (string= "x\\+" (dumb-jump-pcre-to-emacs "x\\+")))
+  (should (string= "x\\?" (dumb-jump-pcre-to-emacs "x\\?")))
+  ;; Non-capturing group: (?:...) → \(?:...\)
+  (should (string= "\\(?:foo\\|bar\\)" (dumb-jump-pcre-to-emacs "(?:foo|bar)")))
+  ;; Lookahead/lookbehind: (?!...) (?=...) (?<=...) → valid Emacs groups
+  (should (string= "\\(?!class\\)" (dumb-jump-pcre-to-emacs "(?!class)")))
+  (should (string= "\\(?=foo\\)" (dumb-jump-pcre-to-emacs "(?=foo)")))
+  (should (string= "\\(?<=bar\\)" (dumb-jump-pcre-to-emacs "(?<=bar)")))
+  (should (string= "\\(?<!baz\\)" (dumb-jump-pcre-to-emacs "(?<!baz)")))
+  ;; Braces: {1,3} → \{1,3\}
+  (should (string= "x\\{1,3\\}" (dumb-jump-pcre-to-emacs "x{1,3}"))))
+
+(ert-deftest dumb-jump-populate-regex-for-emacs-test ()
+  "Test populating a dumb-jump regex for Emacs string-match-p."
+  (let ((emacs-re (dumb-jump-populate-regex-for-emacs "def\\s*JJJ\\b\\s*\\\(" "test")))
+    ;; Should match a Python def line
+    (should (string-match-p emacs-re "def test():"))
+    (should (string-match-p emacs-re "  def test(x, y):"))
+    ;; Should NOT match a usage
+    (should-not (string-match-p emacs-re "  test()"))))
+
+(ert-deftest dumb-jump-populate-regex-for-emacs-boundary-test ()
+  "Test that \\j boundary distinguishes identifiers with special chars.
+The \\j boundary should not match when followed by ?, *, or - (Lisp identifiers)."
+  (let ((emacs-re (dumb-jump-populate-regex-for-emacs
+                   "\\(defun\\s+JJJ\\j" "test"))
+        (star-re (dumb-jump-populate-regex-for-emacs
+                  "\\(defun\\s+JJJ\\j" "*foo*")))
+    ;; Should match (defun test followed by space or end
+    (should (string-match-p emacs-re "(defun test "))
+    (should (string-match-p emacs-re "(defun test)"))
+    ;; Should NOT match test? test- or tester (Lisp naming conventions)
+    (should-not (string-match-p emacs-re "(defun test?"))
+    (should-not (string-match-p emacs-re "(defun test-thing"))
+    (should-not (string-match-p emacs-re "(defun tester"))
+    ;; *foo* Lisp-style identifier
+    (should (string-match-p star-re "(defun *foo* "))
+    (should-not (string-match-p star-re "(defun *foo*bar "))))
+
+(ert-deftest dumb-jump-filter-definition-results-test ()
+  "Test that definition results are filtered out from reference search.
+Uses real Python rules from `dumb-jump-find-rules'."
+  (let* ((results '((:path "test.py" :line 1 :context "def test():" :diff 1 :target "test")
+                    (:path "test.py" :line 5 :context "  test()" :diff 5 :target "test")
+                    (:path "test.py" :line 10 :context "x = test()" :diff 10 :target "test")))
+         (filtered (dumb-jump-filter-definition-results results "python" "test" 'rg)))
+    ;; The "def test():" line should be filtered out
+    (should (= (length filtered) 2))
+    (should (string= (plist-get (nth 0 filtered) :context) "  test()"))
+    (should (string= (plist-get (nth 1 filtered) :context) "x = test()"))))
+
+(ert-deftest dumb-jump-filter-definition-results-cpp-lookaround-test ()
+  "Test that C++ rules with PCRE lookaround produce valid Emacs regexes.
+The C++ variable rule uses (?!...) negative lookahead which must not
+cause invalid-regexp errors in the filter."
+  (let* ((results '((:path "test.cpp" :line 3 :context "  int bar(int val) {" :diff 3 :target "bar")
+                    (:path "test.cpp" :line 9 :context "  return Foo::bar(42);" :diff 9 :target "bar")))
+         ;; Use real C++ rules (which contain (?! lookaround))
+         (filtered (dumb-jump-filter-definition-results results "c++" "bar" 'rg)))
+    ;; The function definition line should be filtered out
+    (should (= (length filtered) 1))
+    (should (string-match-p "Foo::bar" (plist-get (car filtered) :context)))))
+
+(ert-deftest dumb-jump-find-references-js-test ()
+  "Test finding references from a definition in JavaScript.
+Cursor on doSomeStuff definition in fake.js should find the call in fake2.js:1."
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 2)
+      (forward-char 10)
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        (let* ((dumb-jump--search-mode 'references)
+               (info (dumb-jump-get-results))
+               (results (plist-get info :results)))
+          ;; Should find the call in fake2.js line 1
+          (should (seq-some
+                   (lambda (r)
+                     (and (string-match-p "fake2\\.js" (plist-get r :path))
+                          (= 1 (plist-get r :line))))
+                   results))
+          ;; The definition line must not appear
+          (should-not (seq-some
+                       (lambda (r)
+                         (string-match-p "function doSomeStuff"
+                                         (plist-get r :context)))
+                       results)))))))
+
+(ert-deftest dumb-jump-find-references-cpp-test ()
+  "Test finding references in C++ using existing test data.
+Cursor on bar definition in test.cpp:3 should find the usage on test.cpp:9."
+  (let ((cpp-file (f-join test-data-dir-proj1 "src" "cpp" "test.cpp")))
+    (with-current-buffer (find-file-noselect cpp-file t)
+      (goto-char (point-min))
+      (forward-line 2)
+      (forward-char 6)
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        (let* ((dumb-jump--search-mode 'references)
+               (info (dumb-jump-get-results))
+               (results (plist-get info :results)))
+          ;; Should find the usage Foo::bar(42) on line 9
+          (should (seq-some
+                   (lambda (r)
+                     (and (string-match-p "test\\.cpp" (plist-get r :path))
+                          (= 9 (plist-get r :line))
+                          (string-match-p "Foo::bar" (plist-get r :context))))
+                   results))
+          ;; The function definition "int bar(int val)" should be filtered
+          (should-not (seq-some
+                       (lambda (r)
+                         (string-match-p "int bar(int val)"
+                                         (plist-get r :context)))
+                       results)))))))
+
+(ert-deftest dumb-jump-find-references-public-api-test ()
+  "Test that `dumb-jump-find-references' correctly finds references via public API.
+Exercises the full public entry point including aggressive-jump suppression."
+  (let ((js-file (f-join test-data-dir-proj1 "src" "js" "fake.js")))
+    (with-current-buffer (find-file-noselect js-file t)
+      (goto-char (point-min))
+      (forward-line 2)
+      (forward-char 10)
+      (with-mock
+        (stub dumb-jump-rg-installed? => t)
+        ;; Mock dumb-jump-result-follow to prevent actual navigation
+        (stub dumb-jump-result-follow)
+        (let ((dumb-jump-aggressive t))
+          (dumb-jump-find-references)
+          ;; Mode should be reset after the let binding exits
+          (should (eq dumb-jump--search-mode 'definitions)))))))
 
 ;;;

@@ -5,7 +5,7 @@
 ![Dumb Jump GIF](media/dumb-jump-example-v2.gif?raw=true)
 
 ## About
-**Dumb Jump** is an Emacs "jump to definition" package with support for 60+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes. Dumb Jump requires at least GNU Emacs `26.1`.
+**Dumb Jump** is an Emacs "jump to definition" and "find references" package with support for 60+ programming languages that favors "just working". This means minimal -- and ideally zero -- configuration with absolutely no stored indexes (TAGS) or persistent background processes. Dumb Jump requires at least GNU Emacs `26.1`.
 
 ### Pre-Emacs 26 Support
 Version `0.5.5` is the last release that supports Emacs versions below 26. If you need Emacs 24 or 25 support, use version 0.5.5 or earlier.
@@ -13,6 +13,8 @@ Version `0.5.5` is the last release that supports Emacs versions below 26. If yo
 
 ### How it works
 Dumb Jump uses [The Silver Searcher](https://github.com/ggreer/the_silver_searcher) `ag`, [ripgrep](https://github.com/BurntSushi/ripgrep) `rg`, or `grep` to find potential definitions of a function or variable under point. It uses a set of regular expressions based on the file extension, or `major-mode`, of the current buffer. The matches are run through a shared set of heuristic methods to find the best candidate to jump to. If it can't decide and you are using the legacy selector path, it will present the user with a list using `completing-read`, helm, or ivy via `dumb-jump-selector`. The `xref` UI is described separately later in this README.
+
+Dumb Jump also supports **find references** -- the inverse of jump-to-definition. It finds where a symbol is *used* rather than where it is *defined*. This works by performing a broad symbol search and then filtering out results that match definition patterns, so it works for all 60+ supported languages with zero additional configuration.
 
 #### Success Rate
 For the currently [supported languages](#supported-languages) it seems to do a good job of finding what you want. If you find a case where it does not work as expected do not hesitate to [open an issue](https://github.com/jacktasia/dumb-jump/issues). It can be slow if it needs to use `grep` and/or a project is large. Although it can be sped up by [installing `ag`](https://github.com/ggreer/the_silver_searcher#installing) or [installing `rg`](https://github.com/BurntSushi/ripgrep#installation) and/or creating a `.dumbjump` file in your project's root directory with paths that should be excluded ([see configuration](#configuration)).
@@ -111,7 +113,8 @@ To enable the [xref][] backend (new in version 0.5.4), evaluate
 ~~~
 
 or add it to your initialisation file. Using this, you can now use
-<kbd>M-.</kbd> (or <kbd>gd</kbd> when using Evil).
+<kbd>M-.</kbd> (or <kbd>gd</kbd> when using Evil) to jump to definitions
+and <kbd>M-?</kbd> to find references.
 
 Xref can be customized to use `completing-read` to select a
 target. That way a completion framework of your choice (Icomplete,
@@ -265,6 +268,7 @@ If you have [Hydra](https://github.com/abo-abo/hydra) installed, the following i
     ("o" dumb-jump-go-other-window "Other window")
     ("e" dumb-jump-go-prefer-external "Go external")
     ("x" dumb-jump-go-prefer-external-other-window "Go external other window")
+    ("r" dumb-jump-find-references "References")
     ("i" dumb-jump-go-prompt "Prompt")
     ("l" dumb-jump-quick-look "Quick look")
     ("b" dumb-jump-back "Back"))
@@ -280,13 +284,23 @@ It can be explicitly bound or used inside another hydra (if you already use some
 
 More details [here](http://p.cweiske.de/506). Thanks to @cweiske and @Glumanda99
 
-## Obsolete commands and options
+## Commands
+
+### Find references
+
+`dumb-jump-find-references` finds all usages/references of the symbol at point,
+excluding its definition. This is the inverse of jump-to-definition.
+
+It is also available via the xref interface as <kbd>M-?</kbd>
+(`xref-find-references`) when the dumb-jump xref backend is active.
+
+### Original (non-`xref`) commands and options
 
 Versions of dumb jump older than 0.5.4 didn't use xref, and instead had custom
 commands. These, while marked obsolete, can still be used:
 
 * `dumb-jump-go` (former) core functionality. Attempts to jump to the
-  definition for the thing under point. This has been replaced in the
+  definition for the thing under point. This functionality is also available in the
   new interface with `xref-find-definitions` (<kbd>M-.</kbd>).
 * `dumb-jump-back` jumps back to where you were when you jumped. These
   are chained so if you go down a rabbit hole you can get back out or
@@ -303,7 +317,7 @@ commands. These, while marked obsolete, can still be used:
 * `dumb-jump-go-prompt` exactly like `dumb-jump-go` but prompts user
   for function to jump to
 
-A few user options only have an effect when used with the legacy
+A few user options only have an effect when used with the original
 interface. These are:
 
 * `dumb-jump-after-jump-hook` (use `xref-after-jump-hook` instead)
