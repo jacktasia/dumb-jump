@@ -4522,10 +4522,8 @@ Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
          (match-sorted (seq-sort (lambda (x y)
                                    (< (plist-get x :diff) (plist-get y :diff)))
                                  results))
-         (match-no-comments (dumb-jump--boost-by-qualifier
-                           (dumb-jump-filter-no-start-comments match-sorted
-                                                               lang)
-                           qualifier))
+         (match-no-comments (dumb-jump-filter-no-start-comments match-sorted
+                                                                lang))
 
          ;; Find the relative current file path by the project root.
          ;; In some cases the results will not be absolute but relative and
@@ -4578,13 +4576,16 @@ Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
                                (string= (plist-get it :path) rel-cur-file)))
                          match-no-comments))))
 
+         (match-qualified
+          (dumb-jump--boost-by-qualifier match-cur-file-front qualifier))
+
          (matches
           (if (not prefer-external)
               (seq-uniq
                (append
-                (dumb-jump-current-file-results cur-file match-cur-file-front)
-                (dumb-jump-current-file-results rel-cur-file match-cur-file-front)))
-            match-cur-file-front))
+                (dumb-jump-current-file-results cur-file match-qualified)
+                (dumb-jump-current-file-results rel-cur-file match-qualified)))
+            match-qualified))
 
          (var-to-jump (car matches))
          ;; TODO: handle if ctx-type is null but ALL results are variable
