@@ -426,6 +426,60 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                      (dumb-jump-generate-rg-command
                       "tester" "blah.el" "." regexes "elisp" nil)))))
 
+(ert-deftest dumb-jump-generate-ag-command-follow-symlinks ()
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ag))
+         (expected-regexes
+          (mapconcat #'identity
+                     (dumb-jump--elisp-expected-regexps 'ag)
+                     "|"))
+         (dumb-jump-follow-symlinks t)
+         (expected
+          (concat "ag --nocolor --nogroup -f --elisp -- "
+                  (shell-quote-argument expected-regexes) " .")))
+    (should (string= expected
+                     (dumb-jump-generate-ag-command
+                      "tester" "blah.el" "." regexes "elisp" nil)))))
+
+(ert-deftest dumb-jump-generate-rg-command-follow-symlinks ()
+  (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
+         (expected-regexes (mapconcat #'identity
+                                      (dumb-jump--elisp-expected-regexps 'rg)
+                                      "|"))
+         (dumb-jump-follow-symlinks t)
+         (expected
+          (concat "rg --color never --no-heading --line-number -U --follow --pcre2 --type elisp -- "
+                  (shell-quote-argument expected-regexes)
+                  " .")))
+    (should (string= expected
+                     (dumb-jump-generate-rg-command
+                      "tester" "blah.el" "." regexes "elisp" nil)))))
+
+(ert-deftest dumb-jump-generate-grep-command-follow-symlinks ()
+  (let* ((system-type 'darwin)
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'grep))
+         (expected-regexes (string-join
+                            (mapcar (lambda (it) (concat " -e " (shell-quote-argument it)))
+                                    (dumb-jump--elisp-expected-regexps 'grep))
+                            ""))
+         (dumb-jump-follow-symlinks t)
+         (expected (concat "LANG=C grep -REn" expected-regexes " .")))
+    (should (string= expected
+                     (dumb-jump-generate-grep-command
+                      "tester" "blah.el" "." regexes "elisp" nil)))))
+
+(ert-deftest dumb-jump-generate-grep-command-no-follow-symlinks ()
+  (let* ((system-type 'darwin)
+         (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'grep))
+         (expected-regexes (string-join
+                            (mapcar (lambda (it) (concat " -e " (shell-quote-argument it)))
+                                    (dumb-jump--elisp-expected-regexps 'grep))
+                            ""))
+         (dumb-jump-follow-symlinks nil)
+         (expected (concat "LANG=C grep -rEn" expected-regexes " .")))
+    (should (string= expected
+                     (dumb-jump-generate-grep-command
+                      "tester" "blah.el" "." regexes "elisp" nil)))))
+
 (ert-deftest dumb-jump-generate-git-grep-command-not-search-untracked-test ()
   (let* ((dumb-jump-git-grep-search-args "")
          (dumb-jump-git-grep-search-untracked nil)

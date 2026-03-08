@@ -437,6 +437,17 @@ Default: \"--pcre2\"."
   :group 'dumb-jump
   :type 'string)
 
+(defcustom dumb-jump-follow-symlinks
+  nil
+  "If non-nil, follow symbolic links when searching.
+When enabled, passes the appropriate flag to each search tool:
+- rg: --follow
+- ag: -f
+- grep: -R instead of -r
+Note: git-grep follows symlinks by default."
+  :group 'dumb-jump
+  :type 'boolean)
+
 (defcustom dumb-jump-search-type-org-only-org
   t
   "If non nil restrict type ag/rg to org file.
@@ -5191,16 +5202,19 @@ The arguments are:
          (proj-dir (file-name-as-directory proj))
          ;; TODO: --search-zip always? in case the include is the in gz area
          ;;       like emacs lisp code.
-         (cmd (concat dumb-jump-ag-cmd
-                      " --nocolor --nogroup"
-                      (if (member lang dumb-jump--case-insensitive-languages)
-                          " --ignore-case"
-                        "")
-                      (if (string-suffix-p ".gz" cur-file)
-                          " --search-zip"
-                        "")
-                      (unless (string-blank-p dumb-jump-ag-search-args)
-                        (concat " " dumb-jump-ag-search-args))
+          (cmd (concat dumb-jump-ag-cmd
+                       " --nocolor --nogroup"
+                       (if dumb-jump-follow-symlinks
+                           " -f"
+                         "")
+                       (if (member lang dumb-jump--case-insensitive-languages)
+                           " --ignore-case"
+                         "")
+                       (if (string-suffix-p ".gz" cur-file)
+                           " --search-zip"
+                         "")
+                       (unless (string-blank-p dumb-jump-ag-search-args)
+                         (concat " " dumb-jump-ag-search-args))
                       (if agtypes
                           (dumb-jump--join "" (mapcar (lambda (it) (format " --%s" it)) agtypes))
                         (concat " -G '("
@@ -5271,16 +5285,19 @@ The arguments are:
          (ag-files-arg
           (dumb-jump-get-git-grep-files-matching-symbol-as-ag-arg
            look-for proj-dir))
-         (cmd (concat dumb-jump-ag-cmd
-                      " --nocolor --nogroup"
-                      (if (member lang dumb-jump--case-insensitive-languages)
-                          " --ignore-case"
-                        "")
-                      (if (string-suffix-p ".gz" cur-file)
-                          " --search-zip"
-                        "")
-                      " -G " ag-files-arg
-                      " "))
+          (cmd (concat dumb-jump-ag-cmd
+                       " --nocolor --nogroup"
+                       (if dumb-jump-follow-symlinks
+                           " -f"
+                         "")
+                       (if (member lang dumb-jump--case-insensitive-languages)
+                           " --ignore-case"
+                         "")
+                       (if (string-suffix-p ".gz" cur-file)
+                           " --search-zip"
+                         "")
+                       " -G " ag-files-arg
+                       " "))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir"
                         (mapcar
@@ -5310,16 +5327,19 @@ The arguments are:
          (rgtypes (dumb-jump-get-rg-type-by-language lang))
          (rg-nontype-exts (dumb-jump-get-rg-nontype-exts-by-language lang))
          (proj-dir (file-name-as-directory proj))
-         (cmd (concat dumb-jump-rg-cmd
-                      " --color never --no-heading --line-number -U"
-                      (if (member lang dumb-jump--case-insensitive-languages)
-                          " --ignore-case"
-                        "")
-                       (unless (string-blank-p dumb-jump-rg-search-args)
-                         (concat " " dumb-jump-rg-search-args))
-                       (dumb-jump--join "" (mapcar (lambda (it) (format " --type %s" it)) rgtypes))
-                       (if rgtypes ""
-                         (dumb-jump--join "" (mapcar (lambda (it) (format " -g \"*.%s\"" it)) rg-nontype-exts)))))
+          (cmd (concat dumb-jump-rg-cmd
+                       " --color never --no-heading --line-number -U"
+                       (if dumb-jump-follow-symlinks
+                           " --follow"
+                         "")
+                       (if (member lang dumb-jump--case-insensitive-languages)
+                           " --ignore-case"
+                         "")
+                        (unless (string-blank-p dumb-jump-rg-search-args)
+                          (concat " " dumb-jump-rg-search-args))
+                        (dumb-jump--join "" (mapcar (lambda (it) (format " --type %s" it)) rgtypes))
+                        (if rgtypes ""
+                          (dumb-jump--join "" (mapcar (lambda (it) (format " -g \"*.%s\"" it)) rg-nontype-exts)))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g"
                         (mapcar
@@ -5386,7 +5406,7 @@ The arguments are:
 - CUR-FILE: string: current file name.  Used to check if it's compressed.
 - PROJ: string: project root path.
 - REGEXES: list of strings: each string is a dumb-jump generic regular
-                            expression.
+                             expression.
 - LANG: string: handled language.
 - EXCLUDE-PATHS: list of strings: directories to exclude from search."
   (let* ((filled-regexes
@@ -5399,6 +5419,9 @@ The arguments are:
                (if (string-suffix-p ".gz" cur-file)
                    dumb-jump-zgrep-cmd
                  dumb-jump-grep-cmd)))
+         (grep-args (if dumb-jump-follow-symlinks
+                        (replace-regexp-in-string "-r\\b" "-R" dumb-jump-grep-args)
+                      (replace-regexp-in-string "-R" "-r" dumb-jump-grep-args)))
          (case-args (if (member lang dumb-jump--case-insensitive-languages)
                         " --ignore-case"
                       ""))
@@ -5413,7 +5436,7 @@ The arguments are:
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
     (if (null regexes)
         ""
-      (dumb-jump-concat-command cmd dumb-jump-grep-args
+      (dumb-jump-concat-command cmd grep-args
                                 case-args exclude-args
                                 include-args regex-args (shell-quote-argument proj)))))
 
@@ -5427,7 +5450,7 @@ The arguments are:
 - CUR-FILE: string: current file name.  Used to check if it's compressed.
 - PROJ: string: project root path.
 - REGEXES: list of strings: each string is a dumb-jump generic regular
-                            expression.
+                             expression.
 - LANG: string: handled language.
 - EXCLUDE-PATHS: list of strings: directories to exclude from search."
   (let* ((filled-regexes
@@ -5440,16 +5463,18 @@ The arguments are:
                (if (string-suffix-p ".gz" cur-file)
                    dumb-jump-zgrep-cmd
                  dumb-jump-grep-cmd)))
+         (grep-args (if dumb-jump-follow-symlinks
+                        (replace-regexp-in-string "-r\\b" "-R" dumb-jump-gnu-grep-args)
+                      (replace-regexp-in-string "-R" "-r" dumb-jump-gnu-grep-args)))
          (case-args (if (member lang dumb-jump--case-insensitive-languages)
                         " --ignore-case"
                       ""))
-         ;; TODO: GNU grep doesn't support these, so skip them
          (exclude-args "")
          (include-args "")
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
     (if (null regexes)
         ""
-      (dumb-jump-concat-command cmd dumb-jump-gnu-grep-args
+      (dumb-jump-concat-command cmd grep-args
                                 case-args exclude-args
                                 include-args regex-args (shell-quote-argument proj)))))
 
