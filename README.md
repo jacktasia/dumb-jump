@@ -180,6 +180,7 @@ If you want to stop a directory from registering as the project root (and have D
 * `(setq dumb-jump-git-grep-search-args "")` to set additional command line arguments when using git-grep for searching (defaults to `""`).
 * `(setq dumb-jump-ag-search-args "")` to set additional command line arguments when using ag for searching (defaults to `""`).
 * `(setq dumb-jump-rg-search-args "")` to set additional command line arguments when using rg for searching (defaults to `"--pcre2"`).
+* `(setq dumb-jump-follow-symlinks t)` to follow symbolic links when searching. Passes `--follow` to rg, `-f` to ag, and uses `-R` instead of `-r` for grep. Note: git-grep follows symlinks by default.
 
 Two user-options are used to select the search tool:
 

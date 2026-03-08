@@ -220,7 +220,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (expected-regexes (mapcar (lambda (it) (concat " -e " (shell-quote-argument it)))
                                    (dumb-jump--elisp-expected-regexps 'grep)))
          (expected (concat
-                    "LANG=C grep -REn --include \\*.el --include \\*.el.gz"
+                    "LANG=C grep -rEn --include \\*.el --include \\*.el.gz"
                     (string-join expected-regexes "")
                     " .")))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "elisp" nil)))))
@@ -462,7 +462,8 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                                     (dumb-jump--elisp-expected-regexps 'grep))
                             ""))
          (dumb-jump-follow-symlinks t)
-         (expected (concat "LANG=C grep -REn" expected-regexes " .")))
+         (expected (concat "LANG=C grep -REn --include \\*.el --include \\*.el.gz"
+                           expected-regexes " .")))
     (should (string= expected
                      (dumb-jump-generate-grep-command
                       "tester" "blah.el" "." regexes "elisp" nil)))))
@@ -475,7 +476,8 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                                     (dumb-jump--elisp-expected-regexps 'grep))
                             ""))
          (dumb-jump-follow-symlinks nil)
-         (expected (concat "LANG=C grep -rEn" expected-regexes " .")))
+         (expected (concat "LANG=C grep -rEn --include \\*.el --include \\*.el.gz"
+                           expected-regexes " .")))
     (should (string= expected
                      (dumb-jump-generate-grep-command
                       "tester" "blah.el" "." regexes "elisp" nil)))))
@@ -504,8 +506,8 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                             (mapcar (lambda (it) (concat " -e " (shell-quote-argument it)))
                                     (dumb-jump--elisp-expected-regexps 'grep 'elisp-functions))
                             ""))
-         (expected (concat "LANG=C grep -REn" expected-regexes " ."))
-         (zexpected (concat "LANG=C zgrep -REn" expected-regexes " .")))
+         (expected (concat "LANG=C grep -rEn" expected-regexes " ."))
+         (zexpected (concat "LANG=C zgrep -rEn" expected-regexes " .")))
     (should (string= expected  (dumb-jump-generate-grep-command  "tester" "blah.el" "." regexes "" nil)))
     (should (string= zexpected  (dumb-jump-generate-grep-command  "tester" "blah.el.gz" "." regexes "" nil)))))
 
@@ -516,7 +518,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type 'grep))
          (expected-regexes (mapcar (lambda (it) (concat " -e " (shell-quote-argument it)))
                                    (dumb-jump--elisp-expected-regexps 'grep 'elisp-functions)))
-         (expected (concat "LANG=C grep -REn" (string-join expected-regexes "") " .")))
+         (expected (concat "LANG=C grep -rEn" (string-join expected-regexes "") " .")))
     ;; the point context being passed should match a "function" type so only the one command
     (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
 
@@ -528,7 +530,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
            (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type 'grep))
            (expected-regexes (mapcar (lambda (it) (concat " -e " (shell-quote-argument it)))
                                      (dumb-jump--elisp-expected-regexps 'grep 'elisp-functions)))
-           (expected (concat "grep -REn" (string-join expected-regexes "") " " (shell-quote-argument "."))))
+           (expected (concat "grep -rEn" (string-join expected-regexes "") " " (shell-quote-argument "."))))
       (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil))))))
 
 (ert-deftest dumb-jump-generate-grep-command-with-ctx-but-ignored-test ()
@@ -538,7 +540,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (regexes (dumb-jump-get-contextual-regexes "elisp" ctx-type nil))
          (expected-regexes (mapcar (lambda (it) (concat " -e " (shell-quote-argument it)))
                                    (dumb-jump--elisp-expected-regexps 'grep)))
-         (expected (concat "LANG=C grep -REn" (string-join expected-regexes "") " .")))
+         (expected (concat "LANG=C grep -rEn" (string-join expected-regexes "") " .")))
 
     ;; the point context being passed is ignored so ALL should return
     (should (string= expected  (dumb-jump-generate-grep-command "tester" "blah.el" "." regexes "" nil)))))
@@ -550,7 +552,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (expected-regexes (mapcar (lambda (it) (concat " -e " (shell-quote-argument it)))
                                    (dumb-jump--elisp-expected-regexps 'grep)))
          (expected (concat
-                    "LANG=C grep -REn --exclude-dir this/is/excluded"
+                    "LANG=C grep -rEn --exclude-dir this/is/excluded"
                     " --include \\*.el --include \\*.el.gz"
                     (string-join expected-regexes "")
                     " /path/to/proj-root")))
