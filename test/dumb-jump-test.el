@@ -1418,6 +1418,35 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
     (should (string= result3c "Health"))
     (should (string= result4 "myvlfunc"))))
 
+(ert-deftest dumb-jump--extract-qualifier-test ()
+  (should (string= (dumb-jump--extract-qualifier '(:left "Module1." :right "()"))
+                    "Module1"))
+  (should (string= (dumb-jump--extract-qualifier '(:left "Foo::" :right "()"))
+                    "Foo"))
+  (should (string= (dumb-jump--extract-qualifier '(:left "Foo.Bar." :right "()"))
+                    "Bar"))
+  (should (string= (dumb-jump--extract-qualifier '(:left "x = " :right "()"))
+                    nil))
+  (should (string= (dumb-jump--extract-qualifier '(:left "" :right "()"))
+                    nil))
+  (should (string= (dumb-jump--extract-qualifier '(:left nil :right "()"))
+                    nil)))
+
+(ert-deftest dumb-jump--boost-by-qualifier-test ()
+  (let* ((r1 '(:path "/proj/module1.ex" :line 2 :context "def create do" :diff 10))
+         (r2 '(:path "/proj/module2.ex" :line 7 :context "def create do" :diff 5))
+         (r3 '(:path "/proj/module3.ex" :line 12 :context "def create do" :diff 1))
+         (results (list r2 r3 r1))
+         (boosted (dumb-jump--boost-by-qualifier results "module1")))
+    ;; r1 should be first because its path contains "module1"
+    (should (string= (plist-get (car boosted) :path) "/proj/module1.ex"))
+    ;; remaining order preserved
+    (should (string= (plist-get (nth 1 boosted) :path) "/proj/module2.ex"))
+    (should (string= (plist-get (nth 2 boosted) :path) "/proj/module3.ex")))
+  ;; nil qualifier is identity
+  (let* ((results '((:path "/a.ex" :line 1) (:path "/b.ex" :line 2))))
+    (should (equal (dumb-jump--boost-by-qualifier results nil) results))))
+
 (ert-deftest dumb-jump--result-follow-test ()
   (let* ((data '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
     (with-mock
