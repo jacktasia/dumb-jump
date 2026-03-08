@@ -277,6 +277,23 @@ The function receives two arguments — `lang` (a string like `"python"` or `"ja
 
 Since these paths typically live outside the git repository, you should use `rg` or `ag` as the searcher (not `git-grep`). If your function does something expensive (like running a shell command), consider caching results yourself.
 
+### Following symbolic links
+
+By default, search tools do not follow symbolic links. You can enable symlink following via the existing search args options:
+
+~~~lisp
+;; For rg:
+(setq dumb-jump-rg-search-args "--pcre2 --follow")
+
+;; For ag:
+(setq dumb-jump-ag-search-args "-f")
+
+;; For grep:
+(setq dumb-jump-grep-args "-REn")
+~~~
+
+Note: `git-grep` follows symlinks by default, so no configuration is needed.
+
 ### Hydra for efficiency
 
 If you have [Hydra](https://github.com/abo-abo/hydra) installed, the following is an example hydra for easily using Dumb-Jump and not needing to remember the bindings or function names:
