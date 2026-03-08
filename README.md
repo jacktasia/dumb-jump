@@ -230,6 +230,29 @@ You can also force an overriding in a specific directory by setting `dumb-jump-f
   ((nil . ((dumb-jump-force-searcher . rg))))
 ~~~
 
+### Overriding file extension to language mapping
+
+Some file extensions are shared by multiple languages (e.g., `.v` is used by Coq, Verilog, and V). If Dumb Jump is detecting the wrong language for your files, you can customize the `dumb-jump-language-file-exts` variable to override the mapping.
+
+For example, to treat `.v` files as SystemVerilog instead of Coq:
+
+~~~lisp
+;; Prepend your preferred mapping so it takes priority
+(setq dumb-jump-language-file-exts
+      (append
+       (list '(:language "systemverilog" :ext "v" :agtype "verilog" :rgtype "verilog"))
+       dumb-jump-language-file-exts))
+~~~
+
+You can also remove a mapping entirely:
+
+~~~lisp
+;; Remove all mappings for the .v extension
+(setq dumb-jump-language-file-exts
+      (seq-filter (lambda (i) (not (equal (plist-get i :ext) "v")))
+                  dumb-jump-language-file-exts))
+~~~
+
 ### If your project has multi-line method signatures [you should use `ag`](https://github.com/jacktasia/dumb-jump/issues/129) or [`rg` version `0.10.0` or higher](https://github.com/jacktasia/dumb-jump/issues/255).
 
 ### macOS and git-grep
