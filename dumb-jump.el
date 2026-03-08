@@ -4035,6 +4035,17 @@ For instance, remove clojure namespace prefix."
    (t
     look-for)))
 
+(defun dumb-jump--extract-qualifier (pt-ctx)
+  "Extract module/class qualifier from PT-CTX :left if present.
+For example, returns \"Module1\" when the left context ends with
+\"Module1.\" or \"Foo::\"."
+  (let ((left (plist-get pt-ctx :left)))
+    (when (and (stringp left)
+               (string-match "\\([A-Za-z0-9_]+\\)\\(?:::\\|[.]\\)$" left)
+               ;; Exclude range operators like 0..10
+               (not (string-suffix-p ".." left)))
+      (match-string 1 left))))
+
 (defun dumb-jump-get-point-line ()
   "Get line at point."
   (thing-at-point 'line t))
@@ -4093,6 +4104,7 @@ The returned property list has the following members:
          (ctx-type
           (unless (eq dumb-jump--search-mode 'references)
             (dumb-jump-get-ctx-type-by-language lang pt-ctx)))
+         (qualifier (dumb-jump--extract-qualifier pt-ctx))
 
          (gen-funcs (dumb-jump-pick-grep-variant proj-root))
          (parse-fn (plist-get gen-funcs :parse)) ; dumb-jump-parse-TOOL-response
@@ -4190,7 +4202,8 @@ The returned property list has the following members:
       :symbol ,look-for
       :ctx-type ,(if (null ctx-type) "" ctx-type)
       :file ,cur-file
-      :root ,proj-root)))
+      :root ,proj-root
+      :qualifier ,qualifier)))
 
 ;;;###autoload
 (defun dumb-jump-back ()
@@ -4308,7 +4321,8 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
                                 (plist-get info :file)
                                 proj-root
                                 (plist-get info :ctx-type)
-                                look-for use-tooltip prefer-external lang))
+                                look-for use-tooltip prefer-external lang
+                                (plist-get info :qualifier)))
      ((= result-count 0)
       (dumb-jump-message "'%s' %s %s %s not found."
                          look-for
@@ -4421,7 +4435,7 @@ A language may have more than 1 comment string."
 (defun dumb-jump-handle-results (results cur-file proj-root
                                          ctx-type look-for
                                          use-tooltip prefer-external
-                                         &optional language)
+                                         &optional language qualifier)
   "Handle the searchers results.
 RESULTS is a list of property lists with the searcher's results.
 CUR-FILE is the current file within PROJ-ROOT.
@@ -4432,7 +4446,8 @@ PREFER-EXTERNAL will sort current file last.
 LANGUAGE is an optional language to pass to `dumb-jump-process-results'."
   (let* ((processed (dumb-jump-process-results results cur-file proj-root
                                                ctx-type look-for use-tooltip
-                                               prefer-external language))
+                                               prefer-external language
+                                               qualifier))
          (results (plist-get processed :results))
          (do-var-jump (plist-get processed :do-var-jump))
          (var-to-jump (plist-get processed :var-to-jump))
@@ -4470,9 +4485,27 @@ Order by :path length (shorter first), then by :line."
       (< (plist-get x :line)
          (plist-get y :line)))))
 
+(defun dumb-jump--boost-by-qualifier (results qualifier)
+  "Re-order RESULTS so those whose :path contains QUALIFIER appear first.
+Preserves relative order within each group.  Returns RESULTS unchanged
+if QUALIFIER is nil or empty."
+  (if (or (null qualifier) (string= qualifier ""))
+      results
+    (let ((q-down (downcase qualifier)))
+      (append
+       (seq-filter (lambda (r)
+                     (dumb-jump--contains-p
+                      q-down (downcase (or (plist-get r :path) "")) t))
+                   results)
+       (seq-filter (lambda (r)
+                     (not (dumb-jump--contains-p
+                           q-down (downcase (or (plist-get r :path) "")) t)))
+                   results)))))
+
 (defun dumb-jump-process-results (results cur-file proj-root ctx-type
                                           _look-for _use-tooltip
-                                          prefer-external &optional language)
+                                          prefer-external &optional language
+                                          qualifier)
   "Process (filter, sort, ...) the searchers results.
 RESULTS is a list of property lists with the searcher's results.
 CUR-FILE is the current file within PROJ-ROOT.
@@ -4482,6 +4515,7 @@ USE-TOOLTIP shows a preview instead of jumping.
 PREFER-EXTERNAL will sort current file last.
 LANGUAGE is the optional given language, if nil it will be found by
 `dumb-jump-get-language-by-filename'.
+QUALIFIER is an optional module/class name used to boost matching results.
 Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
   (let* ((lang (if language language
                   (dumb-jump-get-language-by-filename cur-file)))
@@ -4542,13 +4576,16 @@ Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
                                (string= (plist-get it :path) rel-cur-file)))
                          match-no-comments))))
 
+         (match-qualified
+          (dumb-jump--boost-by-qualifier match-cur-file-front qualifier))
+
          (matches
           (if (not prefer-external)
               (seq-uniq
                (append
-                (dumb-jump-current-file-results cur-file match-cur-file-front)
-                (dumb-jump-current-file-results rel-cur-file match-cur-file-front)))
-            match-cur-file-front))
+                (dumb-jump-current-file-results cur-file match-qualified)
+                (dumb-jump-current-file-results rel-cur-file match-qualified)))
+            match-qualified))
 
          (var-to-jump (car matches))
          ;; TODO: handle if ctx-type is null but ALL results are variable
@@ -5586,7 +5623,8 @@ For enabling globally, use `dumb-jump-mode' instead."
                      look-for
                      nil
                      nil
-                     lang))
+                     lang
+                     (plist-get info :qualifier)))
          (results (plist-get processed :results))
          (do-var-jump (plist-get processed :do-var-jump))
          (var-to-jump (plist-get processed :var-to-jump))
