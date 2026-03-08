@@ -1427,7 +1427,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
 
 ;; react tests
 
-(ert-deftest dumb-jump-react-test1 ()
+(ert-deftest dumb-jump-react-jsx-to-class-component ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
@@ -1438,7 +1438,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         (mock (dumb-jump-goto-file-line * 3 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
-(ert-deftest dumb-jump-react-test2 ()
+(ert-deftest dumb-jump-react-jsx-to-destructured-arrow ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
@@ -1450,7 +1450,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
 
-(ert-deftest dumb-jump-react-test3 ()
+(ert-deftest dumb-jump-react-jsx-to-stateless-arrow ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
@@ -1461,7 +1461,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         (mock (dumb-jump-goto-file-line * 26 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
-(ert-deftest dumb-jump-react-test4 ()
+(ert-deftest dumb-jump-react-jsx-to-inline-variable ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
@@ -1472,7 +1472,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         (mock (dumb-jump-goto-file-line * 31 6))
         (should (string= js-file (with-no-warnings (dumb-jump-go))))))))
 
-(ert-deftest dumb-jump-react-test5 ()
+(ert-deftest dumb-jump-react-jsx-to-decorated-component ()
   (let ((js-file (f-join test-data-dir-proj1 "src" "js" "react.js")))
     (with-current-buffer (find-file-noselect js-file t)
       (goto-char (point-min))
@@ -1943,22 +1943,6 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (gen-funcs (dumb-jump-generators-by-searcher 'grep))
          (variant (dumb-jump-pick-grep-variant)))
     (should (generator-plist-equal gen-funcs variant))))
-
-;; The following test no longer represents what the searcher selection logic
-;; does but what it used to do: always select git-grep when the project
-;; directory is a Git repo even when `dumb-jump-force-searcher' was nil.
-;; With the new logic, `dumb-jump-force-searcher' must be set to a user
-;; function that selects Git Grep or the project directory is identified to
-;; override it to Git Grep.
-;; Therefore, the following test should be removed.
-;; - For now I keep it to show the evolution.
-;; The real test is now done by `dumb-jump-selected-grep-variant-tests' above.
-;;
-;; (ert-deftest dumb-jump-pick-grep-variant-git-grep-in-git-repo ()
-;;   (let* ((dumb-jump-force-searcher nil)
-;;          (gen-funcs (dumb-jump-generators-by-searcher 'git-grep))
-;;          (variant (dumb-jump-pick-grep-variant (f-expand "."))))
-;;     (should (generator-plist-equal gen-funcs variant))))
 
 (ert-deftest dumb-jump-pick-grep-variant-prefer ()
   (let* ((dumb-jump-force-searcher nil)
