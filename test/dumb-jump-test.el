@@ -645,6 +645,46 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
            (first-result (car results)))
       (should (null first-result)))))
 
+(ert-deftest dumb-jump-run-cmd-pcre2-warning-test ()
+  "Test that a warning is shown when rg output contains PCRE2 error."
+  (let ((dumb-jump--detected-env-problems nil)
+        (warned nil))
+    (cl-letf (((symbol-function 'shell-command-to-string)
+               (lambda (_cmd) "PCRE2 is not available in this build of ripgrep"))
+              ((symbol-function 'dumb-jump-message)
+               (lambda (str &rest _args)
+                 (when (string-match-p "PCRE2" str)
+                   (setq warned t)))))
+      (let* ((generate-fn (lambda (&rest _args) "rg --pcre2 test"))
+             (parse-fn (lambda (_raw _file _line) nil))
+             (results (dumb-jump-run-command "test-func" "/tmp" '("regex") "c" "" "test.c" 1
+                                             parse-fn generate-fn)))
+        (should (null results))
+        (should warned)
+        (should (cl-some (lambda (p) (string-match-p "PCRE2" p))
+                         dumb-jump--detected-env-problems))))))
+
+(ert-deftest dumb-jump-run-cmd-pcre2-warning-no-false-positive-test ()
+  "Test that a search hit containing the PCRE2 error text does not trigger the warning."
+  (let ((dumb-jump--detected-env-problems nil)
+        (warned nil))
+    (cl-letf (((symbol-function 'shell-command-to-string)
+               (lambda (_cmd) "src/foo.c:42:// PCRE2 is not available in this build"))
+              ((symbol-function 'dumb-jump-message)
+               (lambda (str &rest _args)
+                 (when (string-match-p "PCRE2" str)
+                   (setq warned t)))))
+      (let* ((generate-fn (lambda (&rest _args) "rg --pcre2 test"))
+             (parse-fn (lambda (raw _file _line)
+                         (unless (string-blank-p raw)
+                           (list (list :context "PCRE2 is not available"
+                                       :path "src/foo.c"
+                                       :line 42)))))
+             (results (dumb-jump-run-command "PCRE2" "/tmp" '("regex") "c" "" "test.c" 1
+                                             parse-fn generate-fn)))
+        (should-not warned)
+        (should (null dumb-jump--detected-env-problems))))))
+
 (ert-deftest dumb-jump-find-proj-root-test ()
   (let* ((js-file (f-join test-data-dir-proj1 "src" "js"))
          (found-project (dumb-jump-get-project-root js-file)))

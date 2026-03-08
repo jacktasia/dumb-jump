@@ -4859,6 +4859,9 @@ The parameters are:
     (dumb-jump-debug-message cmd)
     (setq rawresults (shell-command-to-string cmd))
     (dumb-jump-debug-message rawresults)
+    (when (string-match-p "^PCRE2 is not available" rawresults)
+      (dumb-jump-message "dumb-jump: Ripgrep PCRE2 support is not available. Install ripgrep with PCRE2 support or customize `dumb-jump-rg-search-args' to remove \"--pcre2\".")
+      (dumb-jump-env-problem "Ripgrep PCRE2 support is not available in the current build."))
     (when (and (string-blank-p rawresults)
                dumb-jump-fallback-search
                (not (eq dumb-jump--search-mode 'references)))
