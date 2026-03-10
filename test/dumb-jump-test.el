@@ -589,7 +589,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
            (results (dumb-jump-run-command "another-fake-function" test-data-dir-elisp regexes "" ""
                                            "blah.el" 3 parse-fn generate-fn))
            (first-result (car results)))
-      (should (dumb-jump--contains-p "/fake.el" (plist-get first-result :path)))
+      (should (string-search "/fake.el" (plist-get first-result :path)))
       (should (= (plist-get first-result :line) 6)))))
 
 (ert-deftest dumb-jump-run-cmd-debug-before-shell-command-test ()
@@ -895,7 +895,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (results '((:path "/usr/blah/test.txt" :line 54 :context "function thing()")
                     (:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a"))))
     (with-mock
-     (mock (dumb-jump--select-choice * *) => "/test2.txt:52: var thing = function()")
+     (mock (dumb-jump--select-choice *) => "/test2.txt:52: var thing = function()")
      (mock (dumb-jump-result-follow '(:path "/usr/blah/test2.txt" :line 52 :context "var thing = function()" :target "a")))
      (dumb-jump-prompt-user-for-choice "/usr/blah" results))))
 
@@ -1001,7 +1001,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (forward-char 13)
       (with-mock
         (stub dumb-jump-rg-installed? => t)
-        (mock (dumb-jump--show-preview "/src/js/fake.js:3: function doSomeStuff() {"))
+        (mock (message "%s" "/src/js/fake.js:3: function doSomeStuff() {"))
         (should (string= go-js-file (with-no-warnings (dumb-jump-quick-look))))))))
 
 (ert-deftest dumb-jump-go-js2-test ()
@@ -1360,7 +1360,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
 
 (ert-deftest dumb-jump-message-result-follow-tooltip-test ()
   (with-mock
-   (mock (dumb-jump--show-preview "/file.js:62: var isNow = true"))
+   (mock (message "%s" "/file.js:62: var isNow = true"))
    (let ((result '(:path "src/file.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")))
      (dumb-jump--result-follow result t "src"))))
 
@@ -2119,9 +2119,9 @@ Exercises the actual fallback path in dumb-jump-fetch-results."
         (results '((:path "relfile.js" :line 62 :context "var isNow = true" :diff 7 :target "isNow")
                    (:path "src/absfile.js" :line 69 :context "isNow = false" :diff 0 :target "isNow"))))
     (with-mock
-     (mock (dumb-jump--select-choice '("relfile.js:62: var isNow = true" "src/absfile.js:69: isNow = false") "Matches: ")
+     (mock (dumb-jump--select-choice '("relfile.js:62: var isNow = true" "src/absfile.js:69: isNow = false"))
            => "src/absfile.js:69: isNow = false")
-     (mock (dumb-jump--show-preview "src/absfile.js:69: isNow = false") :times 1)
+     (mock (message "%s" "src/absfile.js:69: isNow = false") :times 1)
      (dumb-jump-handle-results results "relfile.js" "/code/redux" "" "isNow" t nil))))
 
 ;; Make sure it jumps when there's only one possibility in non-aggressive mode.
