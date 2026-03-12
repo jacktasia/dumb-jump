@@ -3222,7 +3222,8 @@ Last detected problem is first in the list.")
 
 (defun dumb-jump-env-problem (problem)
   "Add PROBLEM string to `dumb-jump--detected-env-problems' list."
-  (cl-pushnew problem dumb-jump--detected-env-problems :test #'equal))
+  (unless (member problem dumb-jump--detected-env-problems)
+    (push problem dumb-jump--detected-env-problems)))
 
 ;;;###autoload
 (defun dumb-jump-show-detected-problems (keep)
@@ -3931,7 +3932,7 @@ For instance, remove clojure namespace prefix."
     (cl-loop for ent in dumb-jump-language-file-exts
              when (save-excursion
                     (goto-char (point-min))
-                    (search-forward-regexp
+                    (re-search-forward
                      (concat "\\." (regexp-quote (plist-get ent :ext)) "\\b")
                      nil 'noerror))
              collect (plist-get ent :language))))
@@ -4268,9 +4269,8 @@ A language may have more than 1 comment string."
 
 (defun dumb-jump--context-startswith-comment (context-string comments)
   "Return t when CONTEXT-STRING starts with any COMMENTS string."
-  (string-match-p
-   (rx bol (* space) (regexp (regexp-opt comments)))
-   context-string))
+  (let ((cs (string-trim-left context-string)))
+    (cl-some (lambda (c) (string-prefix-p c cs)) comments)))
 
 (defun dumb-jump-filter-no-start-comments (results lang)
   "Filter out RESULTS with a :context starting with a LANG comment in file."
@@ -4757,10 +4757,8 @@ Return a list of (path line context)."
           (save-match-data
             (and (string-match "\\(?:^\\|:\\)\\([0-9]+\\):" resp-line)
                  (match-string 1 resp-line)))))
-    
+
     (cond
-     ;; fixes rare bug where context is blank  but file is defined "/somepath/file.txt:14:"
-     ;; OR: (and (= (length parts) 1) (file-name-exists (nth 0 parts)))
      ((string-match-p ":[0-9]+:$" resp-line)
       nil)
      ((and parts line-num)
@@ -4794,10 +4792,10 @@ Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
                      (when it
                        (let* ((line-num (string-to-number (nth 1 it)))
                               (diff (- cur-line-num line-num)))
-                         (list (list :path (nth 0 it)
-                                     :line line-num
-                                     :context (nth 2 it)
-                                     :diff diff)))))
+                         (list `(:path ,(nth 0 it)
+                                       :line ,line-num
+                                       :context ,(nth 2 it)
+                                       :diff ,diff)))))
                    parsed)))
     (seq-filter
      (lambda (it)
@@ -4810,15 +4808,13 @@ Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
   "Parse raw grep search response RESP into a list of plists.
 - CUR-FILE:     current file.
 - CUR-LINE-NUM: current line number."
-  (let* ((resp-lines (dumb-jump--split "\n" (dumb-jump--trim resp)))
-         (non-warnings (seq-remove
-                        (lambda (it)
-                          (string-match-p
-                           (rx (or (: bol "grep:") "No such file or"))
-                           it))
-                        resp-lines))
+  (let* ((resp-no-warnings
+          (seq-filter (lambda (it)
+                        (and (not (string-prefix-p "grep:" it))
+                             (not (string-search "No such file or" it))))
+                      (dumb-jump--split "\n" (dumb-jump--trim resp))))
          (parsed (mapcar (lambda (it) (dumb-jump-parse-response-line it cur-file))
-                         non-warnings)))
+                         resp-no-warnings)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
 
 (defun dumb-jump--clean-wsl-response (resp)
@@ -4891,11 +4887,11 @@ that are both strings."
                                    (dumb-jump-re-match (plist-get it :right)
                                                        (plist-get pt-ctx :right)))))
                         contexts)))
-         (use-ctx (= (seq-count
-                      (lambda (it)
-                        (string= (plist-get it :type)
-                                 (and usable-ctxs (plist-get (car usable-ctxs) :type))))
-                      usable-ctxs)
+         (use-ctx (= (length (seq-filter
+                              (lambda (it)
+                                (string= (plist-get it :type)
+                                         (and usable-ctxs (plist-get (car usable-ctxs) :type))))
+                              usable-ctxs))
                      (length usable-ctxs))))
 
     (when (and usable-ctxs use-ctx)
@@ -4913,7 +4909,7 @@ that are both strings."
   (let* ((normalized-values (mapcar (lambda (it) (dumb-jump--trim (or it ""))) values))
          (non-empty-values (seq-filter (lambda (it) (length> it 0)) normalized-values)))
     (if non-empty-values
-        (format " %s %s " prefix (string-join non-empty-values (format " %s " prefix)))
+        (format " %s %s " prefix (mapconcat #'identity non-empty-values (format " %s " prefix)))
       "")))
 
 (defun dumb-jump-get-contextual-regexes (lang ctx-type searcher)
@@ -4940,12 +4936,11 @@ The arguments are:
 - VARIANT : symbol: the search tool variant,
                     one of: ag, rg, grep, gnu-grep, git-grep-plus-ag, git-grep."
   (let ((boundary
-         (pcase variant
-           ('rg dumb-jump-rg-word-boundary)
-           ('ag dumb-jump-ag-word-boundary)
-           ('git-grep-plus-ag dumb-jump-ag-word-boundary)
-           ('git-grep dumb-jump-git-grep-word-boundary)
-           (_ dumb-jump-grep-word-boundary))))
+         (cond ((eq variant 'rg) dumb-jump-rg-word-boundary)
+               ((eq variant 'ag) dumb-jump-ag-word-boundary)
+               ((eq variant 'git-grep-plus-ag) dumb-jump-ag-word-boundary)
+               ((eq variant 'git-grep) dumb-jump-git-grep-word-boundary)
+               (t dumb-jump-grep-word-boundary))))
     (let ((text it))
       (setq text (dumb-jump--replace "\\j" boundary text))
       (when (dumb-jump-use-space-bracket-exp-for variant)
@@ -5076,10 +5071,9 @@ The arguments are:
                       (unless (string-blank-p dumb-jump-ag-search-args)
                         (concat " " dumb-jump-ag-search-args))
                       (if agtypes
-                          (string-join (mapcar (lambda (it) (format " --%s" it)) agtypes))
+                          (mapconcat (lambda (it) (format " --%s" it)) agtypes "")
                         (concat " -G '("
-                                (string-join (mapcar (lambda (it) (format "\\.%s" it)) lang-exts)
-                                        "|")
+                                (mapconcat (lambda (it) (format "\\.%s" it)) lang-exts "|")
                                 ")$'"))))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir"
@@ -5087,7 +5081,7 @@ The arguments are:
                          (lambda (it)
                            (shell-quote-argument (dumb-jump--replace proj-dir "" it)))
                          exclude-paths)))
-         (regex-args (shell-quote-argument (string-join filled-regexes "|"))))
+         (regex-args (shell-quote-argument (mapconcat #'identity filled-regexes "|"))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args "--" regex-args (shell-quote-argument proj)))))
@@ -5161,7 +5155,7 @@ The arguments are:
                          (lambda (it)
                            (shell-quote-argument (dumb-jump--replace proj-dir "" it)))
                          exclude-paths)))
-         (regex-args (shell-quote-argument (string-join filled-regexes "|"))))
+         (regex-args (shell-quote-argument (mapconcat #'identity filled-regexes "|"))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args regex-args (shell-quote-argument proj)))))
@@ -5191,9 +5185,9 @@ The arguments are:
                         "")
                        (unless (string-blank-p dumb-jump-rg-search-args)
                          (concat " " dumb-jump-rg-search-args))
-                       (mapconcat (lambda (it) (format " --type %s" it)) rgtypes)
+                       (mapconcat (lambda (it) (format " --type %s" it)) rgtypes "")
                        (if rgtypes ""
-                         (mapconcat (lambda (it) (format " -g \"*.%s\"" it)) rg-nontype-exts))))
+                         (mapconcat (lambda (it) (format " -g \"*.%s\"" it)) rg-nontype-exts ""))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g"
                         (mapcar
@@ -5201,7 +5195,7 @@ The arguments are:
                            (shell-quote-argument
                             (concat "!" (dumb-jump--replace proj-dir "" it))))
                          exclude-paths)))
-         (regex-args (shell-quote-argument (string-join filled-regexes "|"))))
+         (regex-args (shell-quote-argument (mapconcat #'identity filled-regexes "|"))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args "--" regex-args (shell-quote-argument proj)))))
@@ -5233,20 +5227,20 @@ The arguments are:
                       (unless (string-blank-p dumb-jump-git-grep-search-args)
                         (concat " " dumb-jump-git-grep-search-args))
                       " -E"))
-         (fileexps (string-join
-                    (or
-                     (mapcar (lambda (it)
-                               (shell-quote-argument
-                                (format "%s/*.%s" proj it)))
-                             ggtypes)
-                     '(":/"))
-                    " "))
+         (fileexps (mapconcat #'identity
+                             (or
+                              (mapcar (lambda (it)
+                                        (shell-quote-argument
+                                         (format "%s/*.%s" proj it)))
+                                      ggtypes)
+                              '(":/"))
+                             " "))
          (exclude-args (mapconcat (lambda (it)
                                     (shell-quote-argument
                                      (concat ":(exclude)" it)))
                                   exclude-paths
                                   " "))
-         (regex-args (shell-quote-argument (string-join filled-regexes "|"))))
+         (regex-args (shell-quote-argument (mapconcat #'identity filled-regexes "|"))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd regex-args "--" fileexps exclude-args))))
@@ -5334,7 +5328,7 @@ The arguments are:
   "Concat the PARTS of a command if each part has a length."
   (let* ((normalized-parts (mapcar (lambda (it) (dumb-jump--trim (or it ""))) parts))
          (non-empty-parts (seq-filter (lambda (it) (length> it 0)) normalized-parts)))
-    (string-join non-empty-parts " ")))
+    (mapconcat #'identity non-empty-parts " ")))
 
 (defun dumb-jump-get-file-exts-by-language (language)
   "Return list of file extensions for a LANGUAGE."
@@ -5436,7 +5430,7 @@ For enabling globally, use `dumb-jump-mode' instead."
                  "2020-06-26"))
 
 (cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumb-jump)))
-  (and-let* ((bounds (bounds-of-thing-at-point 'symbol)))
+  (when-let* ((bounds (bounds-of-thing-at-point 'symbol)))
     (let* ((ident (dumb-jump-get-point-symbol))
            (start (car bounds))
            (col (- start (line-beginning-position)))
