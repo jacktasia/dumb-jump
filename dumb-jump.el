@@ -4267,20 +4267,21 @@ A language may have more than 1 comment string."
                                dumb-jump-language-comments))))
     (mapcar (lambda (pl) (plist-get pl :comment)) entries)))
 
-(defun dumb-jump--context-startswith-comment (context-string comments)
-  "Return t when CONTEXT-STRING starts with any COMMENTS string."
+(defun dumb-jump--context-startswith-comment (context-string comment-re)
+  "Return t when CONTEXT-STRING starts with COMMENT-RE after leading whitespace."
   (let ((cs (string-trim-left context-string)))
-    (cl-some (lambda (c) (string-prefix-p c cs)) comments)))
+    (string-match-p comment-re cs)))
 
 (defun dumb-jump-filter-no-start-comments (results lang)
   "Filter out RESULTS with a :context starting with a LANG comment in file."
   (let ((comments (dumb-jump-get-comment-by-language lang)))
     (if comments
-        (seq-filter (lambda (it)
-                      (not (dumb-jump--context-startswith-comment
-                            (plist-get it :context)
-                            comments)))
-                    results)
+        (let ((comment-re (concat "\\`" (regexp-opt comments))))
+          (seq-filter (lambda (it)
+                        (not (dumb-jump--context-startswith-comment
+                              (plist-get it :context)
+                              comment-re)))
+                      results))
       results)))
 
 (defun dumb-jump-handle-results (results cur-file proj-root
@@ -4744,8 +4745,9 @@ The parameters are:
       (let ((results (funcall parse-fn rawresults cur-file line-num))
             (ignore-case (member lang dumb-jump--case-insensitive-languages)))
         (seq-filter (lambda (it)
-                      (string-search look-for
-                                     (plist-get it :context) ignore-case))
+                      (let ((case-fold-search ignore-case))
+                        (string-match-p (regexp-quote look-for)
+                                        (plist-get it :context))))
                     results)))))
 
 (defun dumb-jump-parse-response-line (resp-line cur-file)
@@ -4792,10 +4794,10 @@ Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
                      (when it
                        (let* ((line-num (string-to-number (nth 1 it)))
                               (diff (- cur-line-num line-num)))
-                         (list `(:path ,(nth 0 it)
-                                       :line ,line-num
-                                       :context ,(nth 2 it)
-                                       :diff ,diff)))))
+                         `((:path ,(nth 0 it)
+                                  :line ,line-num
+                                  :context ,(nth 2 it)
+                                  :diff ,diff)))))
                    parsed)))
     (seq-filter
      (lambda (it)
@@ -4887,11 +4889,11 @@ that are both strings."
                                    (dumb-jump-re-match (plist-get it :right)
                                                        (plist-get pt-ctx :right)))))
                         contexts)))
-         (use-ctx (= (length (seq-filter
+         (use-ctx (= (seq-count
                               (lambda (it)
                                 (string= (plist-get it :type)
                                          (and usable-ctxs (plist-get (car usable-ctxs) :type))))
-                              usable-ctxs))
+                              usable-ctxs)
                      (length usable-ctxs))))
 
     (when (and usable-ctxs use-ctx)
@@ -5081,7 +5083,7 @@ The arguments are:
                          (lambda (it)
                            (shell-quote-argument (dumb-jump--replace proj-dir "" it)))
                          exclude-paths)))
-         (regex-args (shell-quote-argument (mapconcat #'identity filled-regexes "|"))))
+         (regex-args (shell-quote-argument (string-join filled-regexes "|"))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args "--" regex-args (shell-quote-argument proj)))))
@@ -5155,7 +5157,7 @@ The arguments are:
                          (lambda (it)
                            (shell-quote-argument (dumb-jump--replace proj-dir "" it)))
                          exclude-paths)))
-         (regex-args (shell-quote-argument (mapconcat #'identity filled-regexes "|"))))
+         (regex-args (shell-quote-argument (string-join filled-regexes "|"))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args regex-args (shell-quote-argument proj)))))
@@ -5195,7 +5197,7 @@ The arguments are:
                            (shell-quote-argument
                             (concat "!" (dumb-jump--replace proj-dir "" it))))
                          exclude-paths)))
-         (regex-args (shell-quote-argument (mapconcat #'identity filled-regexes "|"))))
+         (regex-args (shell-quote-argument (string-join filled-regexes "|"))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args "--" regex-args (shell-quote-argument proj)))))
@@ -5240,7 +5242,7 @@ The arguments are:
                                      (concat ":(exclude)" it)))
                                   exclude-paths
                                   " "))
-         (regex-args (shell-quote-argument (mapconcat #'identity filled-regexes "|"))))
+         (regex-args (shell-quote-argument (string-join filled-regexes "|"))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd regex-args "--" fileexps exclude-args))))
@@ -5430,7 +5432,7 @@ For enabling globally, use `dumb-jump-mode' instead."
                  "2020-06-26"))
 
 (cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumb-jump)))
-  (when-let* ((bounds (bounds-of-thing-at-point 'symbol)))
+  (and-let* ((bounds (bounds-of-thing-at-point 'symbol)))
     (let* ((ident (dumb-jump-get-point-symbol))
            (start (car bounds))
            (col (- start (line-beginning-position)))
@@ -5475,7 +5477,7 @@ For enabling globally, use `dumb-jump-mode' instead."
            (dumb-jump-message "No symbol under point."))
           ((string-suffix-p " file" lang)
            (dumb-jump-message "Could not find rules for '%s'." lang))
-          ((length= results 0)
+          ((null results)
            (dumb-jump-message "'%s' %s %s declaration not found."
                               look-for
                               (if (string-blank-p (or lang ""))
