@@ -3207,11 +3207,8 @@ If nil, jump without confirmation but print a warning."
   :type 'boolean)
 
 (defcustom dumb-jump-disable-obsolete-warnings nil
-  "Suppress warnings about the legacy interface.
-This option has to be set to the current version of the package to have
-any effect."
-  :type '(choice (const :tag "Display warnings" nil)
-                 string))
+  "If non-nil, don't warn about using the legacy interface."
+  :type 'boolean)
 
 ;; ---------------------------------------------------------------------------
 ;; Search tool presence checkers
@@ -5411,10 +5408,9 @@ For enabling globally, use `dumb-jump-mode' instead."
 ;; -----------------------------------------------------------------------------
 ;;; Xref Backend
 
-(unless (equal dumb-jump-disable-obsolete-warnings (package-get-version))
+(unless dumb-jump-disable-obsolete-warnings
   (dolist (obsolete
            '(dumb-jump-mode
-             dumb-jump-local-mode
              dumb-jump-go
              dumb-jump-go-prefer-external-other-window
              dumb-jump-go-prompt
