@@ -2537,7 +2537,7 @@ If nil add also the language type of current src block."
                    "defmodule Foo.Bar.test do"))
 
     (:language "elixir" :type "module"
-           :supports ("ag" "grep" "rg" "git-grep") :
+           :supports ("ag" "grep" "rg" "git-grep")
            :regex "defprotocol\\s+(\\w+\\.)*JJJ\\s+"
            :tests ("defprotocol test do"
                    "defprotocol Foo.Bar.test do"))
