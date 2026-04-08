@@ -1,0 +1,14 @@
+.cask
+.claude
+.coderabbit.yaml
+.dir-locals.el
+.github
+.gitignore
+AGENTS.md
+Cask
+CLAUDE.md
+docs
+gnu.mk
+Makefile
+media
+test
