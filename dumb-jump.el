@@ -1565,9 +1565,9 @@ If nil add also the language type of current src block."
            :tests ("contract test{"
                    "contract test {"
                    "contract test is foo"))
-    
-    (:language "solidity" :type "type" 
-           :supports ("ag" "grep" "rg" "git-grep") 
+
+    (:language "solidity" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
            :regex  "struct\\s*JJJ\\s*\\\{"
            :tests ("struct test{"
                    "struct test {"))
@@ -3258,8 +3258,9 @@ Requires `cargo' to be installed and a Cargo.toml in the project."
   :group 'dumb-jump
   :type 'boolean)
 
-(defcustom dumb-jump-extra-search-paths-function nil
-  "Function to compute extra search paths for jump-to-definition lookups.
+(with-no-warnings ; don't warn about long example line
+  (defcustom dumb-jump-extra-search-paths-function nil
+    "Function to compute extra search paths for jump-to-definition lookups.
 When non-nil, this function is called with two arguments: LANG (a
 string naming the programming language, or nil if undetected) and
 PROJ-ROOT (the project root directory).  It should return a list of
@@ -3283,9 +3284,9 @@ Example:
                            \"poetry run python -c \\\"import site; print(site.getsitepackages()[0])\\\"\"))))
               (when (file-directory-p path)
                 (list path))))))"
-  :group 'dumb-jump
-  :type '(choice (const :tag "None" nil)
-                 function))
+    :group 'dumb-jump
+    :type '(choice (const :tag "None" nil)
+                   function)))
 
 (defcustom dumb-jump-before-jump-hook nil
   "Hooks called before jumping."
@@ -3736,7 +3737,9 @@ Return a directory name without the trailing slash."
                 (when proj
                   (if (fboundp 'project-root)
                       (project-root proj)
-                    (car (project-roots proj)))))))))
+                    (with-no-warnings
+                      ;; On Emacs 26.1 use now obsolete `project-roots'
+                      (car (project-roots proj))))))))))
     (directory-file-name
      (expand-file-name
       (or dumb-jump-project
@@ -4247,7 +4250,8 @@ is used rather than where it is defined."
   (interactive)
   (let ((dumb-jump--search-mode 'references)
         (dumb-jump-aggressive nil))
-    (dumb-jump-go)))
+    (with-no-warnings
+      (dumb-jump-go))))
 
 ;;;###autoload
 (defun dumb-jump-go-prompt ()
@@ -5135,7 +5139,7 @@ This function swaps the literal/special meaning of (, ), |, {, and }."
     (apply #'concat (nreverse out))))
 
 (defun dumb-jump-populate-regex-for-emacs (regex look-for)
-  "Populate dumb-jump generic REGEX for matching LOOK-FOR with Emacs `string-match-p'.
+  "Populate dumb-jump generic REGEX to match LOOK-FOR with `string-match-p'.
 Replaces dumb-jump meta-patterns and converts PCRE syntax to Emacs regex.
 The \\=\\j boundary is replaced after PCRE conversion with a character class
 matching the tool boundaries: not followed by [a-zA-Z0-9?*-]."
