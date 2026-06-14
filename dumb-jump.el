@@ -2969,7 +2969,89 @@ If nil add also the language type of current src block."
                :tests ("       program-id. test."
                        "       program-id. 'test'."
                        "program-id. \"test\".")
-               :not ("        test.")))
+                :not ("        test."))
+
+    ;;-- c3
+    (:language "c3" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "fn\\s+\\S+\\s+JJJ\\s*\\\("
+           :tests ("fn void test()"
+                   "fn int test(int a)"
+                   "fn void? test()"
+                   "fn int test(int a, int b)")
+           :not ("test(1)" "fn void Foo.test()"))
+
+    (:language "c3" :type "method"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "fn\\s+\\S+\\s+\\S+\\.JJJ\\s*\\\("
+           :tests ("fn void Foo.test(Foo* this)"
+                   "fn int MyStruct.test(MyStruct* self)"
+                   "fn String Bob.test(Bob*)")
+           :not ("fn void test()" "test()"))
+
+    (:language "c3" :type "macro"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "macro\\s+(\\S+\\s+)?JJJ\\s*\\\("
+           :tests ("macro test(a, b)"
+                   "macro long test(long $n)")
+           :not ("test(1)"))
+
+    (:language "c3" :type "struct"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "struct\\s+JJJ\\j"
+           :tests ("struct test" "struct test {")
+           :not ("struct other"))
+
+    (:language "c3" :type "union"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "union\\s+JJJ\\j"
+           :tests ("union test" "union test {")
+           :not ("union other"))
+
+    (:language "c3" :type "enum"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "enum\\s+JJJ\\j"
+           :tests ("enum test" "enum test : uint {" "enum test : (String abbrev) {")
+           :not ("enum other"))
+
+    (:language "c3" :type "interface"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "interface\\s+JJJ\\j"
+           :tests ("interface test" "interface test {")
+           :not ("interface other"))
+
+    (:language "c3" :type "alias"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "alias\\s+JJJ\\b"
+           :tests ("alias test = fn int(char c);"
+                   "alias test = Stack{int};")
+           :not ("alias other = int;"))
+
+    (:language "c3" :type "constant"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "const\\s+(\\S+\\s+)?JJJ\\b"
+           :tests ("const test = 3;"
+                   "const int test = 10;"
+                   "const long test = fib(19);")
+           :not ("const int other = 1;"))
+
+    (:language "c3" :type "faultdef"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "faultdef\\s+JJJ\\b"
+           :tests ("faultdef test;" "faultdef test, OTHER;")
+           :not ("faultdef OTHER;"))
+
+    (:language "c3" :type "bitstruct"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "bitstruct\\s+JJJ\\j"
+           :tests ("bitstruct test : char {" "bitstruct test : uint {")
+           :not ("bitstruct other"))
+
+    (:language "c3" :type "module"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "module\\s+JJJ\\j"
+           :tests ("module test;" "module test @private;")
+           :not ("module other;")))
 
   "List of search regex pattern templates organized by language and type.
 Used for generating the grep tool search commands.
@@ -3164,7 +3246,9 @@ More information using the search tool command line help."
     (:language "odin"          :ext "odin"        :agtype nil         :rgtype nil)
     (:language "cobol"         :ext "cbl"         :agtype nil         :rgtype nil)
     (:language "cobol"         :ext "cob"         :agtype nil         :rgtype nil)
-    (:language "cobol"         :ext "cpy"         :agtype nil         :rgtype nil))
+    (:language "cobol"         :ext "cpy"         :agtype nil         :rgtype nil)
+    (:language "c3"            :ext "c3"          :agtype nil         :rgtype nil)
+    (:language "c3"            :ext "c3i"         :agtype nil         :rgtype nil))
 
   "Map programming language to file extensions support by search tool.
 The value of :agytpe, :rgtype is nil when the search tool file type does
@@ -4380,7 +4464,9 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "//" :language "apex")
     (:comment "//" :language "odin")
     (:comment "/*" :language "odin")
-    (:comment "*>" :language "cobol"))
+    (:comment "*>" :language "cobol")
+    (:comment "//" :language "c3")
+    (:comment "/*" :language "c3"))
   "List of one-line comments organized by language.
 A language may have more than 1 comment string."
   :group 'dumb-jump

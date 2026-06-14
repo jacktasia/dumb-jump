@@ -2049,7 +2049,44 @@ Non-portable rules (multiline/lookahead) should not be."
     ;; Non-portable rules should NOT be present
     (should-not (seq-find (lambda (r) (string= (plist-get r :type) "top level function")) rules))
     (should-not (seq-find (lambda (r) (string= (plist-get r :type) "(data)type constructor 1")) rules))
-    (should-not (seq-find (lambda (r) (string= (plist-get r :type) "data/newtype record field")) rules))))
+     (should-not (seq-find (lambda (r) (string= (plist-get r :type) "data/newtype record field")) rules))))
+
+(ert-deftest dumb-jump-get-lang-by-ext-c3-test ()
+  "C3 language should be detected from .c3 and .c3i file extensions."
+  (let ((lang1 (dumb-jump-get-language-by-filename "main.c3"))
+        (lang2 (dumb-jump-get-language-by-filename "/project/src/types.c3i")))
+    (should (string= lang1 "c3"))
+    (should (string= lang2 "c3"))))
+
+(ert-deftest dumb-jump-language-to-ext-c3-test ()
+  "C3 extensions should be retrievable."
+  (should (member "c3" (dumb-jump-get-file-exts-by-language "c3")))
+  (should (member "c3i" (dumb-jump-get-file-exts-by-language "c3"))))
+
+(ert-deftest dumb-jump-get-rules-by-language-c3-rg ()
+  "C3 rules should be available for rg searcher."
+  (let ((rules (dumb-jump-get-rules-by-language "c3" 'rg)))
+    (should (> (length rules) 0))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "function")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "method")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "macro")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "struct")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "enum")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "interface")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "module")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "constant")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "alias")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "faultdef")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "bitstruct")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "union")) rules))))
+
+(ert-deftest dumb-jump-get-rules-by-language-c3-grep ()
+  "C3 rules should be available for grep searcher."
+  (let ((rules (dumb-jump-get-rules-by-language "c3" 'grep)))
+    (should (> (length rules) 0))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "function")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "struct")) rules))
+    (should (seq-find (lambda (r) (string= (plist-get r :type) "enum")) rules))))
 
 (ert-deftest dumb-jump-searcher-fallback-when-no-rules ()
   "When selected searcher has no rules for a language, fall back to one that does.
