@@ -1201,7 +1201,7 @@ If nil add also the language type of current src block."
 
     (:language "python" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "def\\s*JJJ\\b\\s*\\\("
+           :regex "^\\s*def\\s*JJJ\\b\\s*\\\("
            :tests ("\tdef test(asdf)"
                    "def test()")
            :not ("\tdef testnot(asdf)"
@@ -1209,7 +1209,7 @@ If nil add also the language type of current src block."
 
     (:language "python" :type "type"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "class\\s*JJJ\\b\\s*\\\(?"
+           :regex "^\\s*class\\s*JJJ\\b\\s*\\\(?"
            :tests ("class test(object):"
                    "class test:")
            :not ("class testnot:"
@@ -1217,7 +1217,7 @@ If nil add also the language type of current src block."
 
     (:language "python" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "async\\s+def\\s*JJJ\\b\\s*\\\("
+           :regex "^\\s*async\\s+def\\s*JJJ\\b\\s*\\\("
            :tests ("async def test(param)"
                    "async def test()")
            :not ("async def testnot(param)"
