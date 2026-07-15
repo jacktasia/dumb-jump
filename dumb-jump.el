@@ -1175,7 +1175,7 @@ If nil add also the language type of current src block."
     ;;-- python
     (:language "python" :type "variable"
            :supports ("ag" "rg")
-           :regex "\\s*\\bJJJ\\b(\\s*:[^=\\n]+)?\\s*=[^=\\n]+"
+           :regex "\\bJJJ\\b(\\s*:[^=\\n]+)?\\s*=[^=\\n]+"
            :tests ("test = 1234"
                    "test: int = 1234"
                    "test: int | None = 1234"
@@ -1188,7 +1188,7 @@ If nil add also the language type of current src block."
 
         (:language "python" :type "variable"
            :supports ("grep" "git-grep")
-           :regex "\\s*\\bJJJ\\b(\\s*:[^=]+)?\\s*=[^=]+"
+           :regex "\\bJJJ\\b(\\s*:[^=]+)?\\s*=[^=]+"
            :tests ("test = 1234"
                    "test: int = 1234"
                    "test: int | None = 1234"
