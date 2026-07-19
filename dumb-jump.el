@@ -1175,29 +1175,43 @@ If nil add also the language type of current src block."
     ;;-- python
     (:language "python" :type "variable"
            :supports ("ag" "rg")
-           :regex "\\bJJJ\\b(\\s*:[^=\\n]+)?\\s*=[^=\\n]+"
+           :regex "\\bJJJ\\b(\\s*:[^=\\n]+)?(\\s*,[^=\\n]*)*\\s*=[^=\\n]+"
            :tests ("test = 1234"
                    "test: int = 1234"
                    "test: int | None = 1234"
-                   "test: List[Optional[int]] = [1234, None]")
+                   "test: List[Optional[int]] = [1234, None]"
+                   "test, xxx = 1, 2"
+                   "xxx, test = 1, 2"
+                   "a, test, b = 1, 2, 3"
+                   "test, *rest = something"
+                   "*test, rest = something"
+                   "test, = something")
            :not ("if test == 1234:"
                  "_test = 1234"
                  "if (test := 3):"
                  "while test:"
-                 "test['key'] = 1234"))
+                 "test['key'] = 1234"
+                 "test, xxx == yyy"))
 
         (:language "python" :type "variable"
            :supports ("grep" "git-grep")
-           :regex "\\bJJJ\\b(\\s*:[^=]+)?\\s*=[^=]+"
+           :regex "\\bJJJ\\b(\\s*:[^=]+)?(\\s*,[^=]*)*\\s*=[^=]+"
            :tests ("test = 1234"
                    "test: int = 1234"
                    "test: int | None = 1234"
-                   "test: List[Optional[int]] = [1234, None]")
+                   "test: List[Optional[int]] = [1234, None]"
+                   "test, xxx = 1, 2"
+                   "xxx, test = 1, 2"
+                   "a, test, b = 1, 2, 3"
+                   "test, *rest = something"
+                   "*test, rest = something"
+                   "test, = something")
            :not ("if test == 1234:"
                  "_test = 1234"
                  "if (test := 3):"
                  "while test:"
-                 "test['key'] = 1234"))
+                 "test['key'] = 1234"
+                 "test, xxx == yyy"))
 
     (:language "python" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
