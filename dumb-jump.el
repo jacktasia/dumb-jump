@@ -1213,6 +1213,29 @@ If nil add also the language type of current src block."
                  "test['key'] = 1234"
                  "test, xxx == yyy"))
 
+     (:language "python" :type "variable"
+       :supports ("ag" "rg" "grep" "git-grep")
+       :regex "^\\s*(async\\s+)?def\\s+\\w+\\s*\\(([^()]*[,*])?\\s*JJJ\\b"
+       :tests ("def foo(test):"
+                "def foo(test, other):"
+                "def foo(other, test):"
+                "def foo(test: int):"
+                "def foo(test: int = 1234):"
+                "def foo(test=1234):"
+                "async def foo(test):"
+                "async def foo(test: int):"
+                "    def foo(test):"
+                "def foo(*, test: int):"
+                "def foo(*test):"
+                "def foo(**test):")
+       :not ("def foo(_test):"
+              "def foo(test_other):"
+              "def foo(other_test):"
+              "def foo():"
+              "def foo(other):"
+              "def foo(other=test):"
+              "class foo(test):"))
+
     (:language "python" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
            :regex "^\\s*def\\s*JJJ\\b\\s*\\\("
