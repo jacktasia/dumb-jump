@@ -1175,33 +1175,70 @@ If nil add also the language type of current src block."
     ;;-- python
     (:language "python" :type "variable"
            :supports ("ag" "rg")
-           :regex "\\s*\\bJJJ\\b(\\s*:[^=\\n]+)?\\s*=[^=\\n]+"
+           :regex "\\bJJJ\\b(\\s*:[^=\\n]+)?(\\s*,[^=\\n]*)*\\s*=[^=\\n]+"
            :tests ("test = 1234"
                    "test: int = 1234"
                    "test: int | None = 1234"
-                   "test: List[Optional[int]] = [1234, None]")
+                   "test: List[Optional[int]] = [1234, None]"
+                   "test, xxx = 1, 2"
+                   "xxx, test = 1, 2"
+                   "a, test, b = 1, 2, 3"
+                   "test, *rest = something"
+                   "*test, rest = something"
+                   "test, = something")
            :not ("if test == 1234:"
                  "_test = 1234"
                  "if (test := 3):"
                  "while test:"
-                 "test['key'] = 1234"))
+                 "test['key'] = 1234"
+                 "test, xxx == yyy"))
 
         (:language "python" :type "variable"
            :supports ("grep" "git-grep")
-           :regex "\\s*\\bJJJ\\b(\\s*:[^=]+)?\\s*=[^=]+"
+           :regex "\\bJJJ\\b(\\s*:[^=]+)?(\\s*,[^=]*)*\\s*=[^=]+"
            :tests ("test = 1234"
                    "test: int = 1234"
                    "test: int | None = 1234"
-                   "test: List[Optional[int]] = [1234, None]")
+                   "test: List[Optional[int]] = [1234, None]"
+                   "test, xxx = 1, 2"
+                   "xxx, test = 1, 2"
+                   "a, test, b = 1, 2, 3"
+                   "test, *rest = something"
+                   "*test, rest = something"
+                   "test, = something")
            :not ("if test == 1234:"
                  "_test = 1234"
                  "if (test := 3):"
                  "while test:"
-                 "test['key'] = 1234"))
+                 "test['key'] = 1234"
+                 "test, xxx == yyy"))
+
+     (:language "python" :type "variable"
+       :supports ("ag" "rg" "grep" "git-grep")
+       :regex "^\\s*(async\\s+)?def\\s+\\w+\\s*\\(([^()]*[,*])?\\s*JJJ\\b"
+       :tests ("def foo(test):"
+                "def foo(test, other):"
+                "def foo(other, test):"
+                "def foo(test: int):"
+                "def foo(test: int = 1234):"
+                "def foo(test=1234):"
+                "async def foo(test):"
+                "async def foo(test: int):"
+                "    def foo(test):"
+                "def foo(*, test: int):"
+                "def foo(*test):"
+                "def foo(**test):")
+       :not ("def foo(_test):"
+              "def foo(test_other):"
+              "def foo(other_test):"
+              "def foo():"
+              "def foo(other):"
+              "def foo(other=test):"
+              "class foo(test):"))
 
     (:language "python" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "def\\s*JJJ\\b\\s*\\\("
+           :regex "^\\s*def\\s*JJJ\\b\\s*\\\("
            :tests ("\tdef test(asdf)"
                    "def test()")
            :not ("\tdef testnot(asdf)"
@@ -1209,7 +1246,7 @@ If nil add also the language type of current src block."
 
     (:language "python" :type "type"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "class\\s*JJJ\\b\\s*\\\(?"
+           :regex "^\\s*class\\s*JJJ\\b\\s*\\\(?"
            :tests ("class test(object):"
                    "class test:")
            :not ("class testnot:"
@@ -1217,7 +1254,7 @@ If nil add also the language type of current src block."
 
     (:language "python" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "async\\s+def\\s*JJJ\\b\\s*\\\("
+           :regex "^\\s*async\\s+def\\s*JJJ\\b\\s*\\\("
            :tests ("async def test(param)"
                    "async def test()")
            :not ("async def testnot(param)"
