@@ -63,7 +63,7 @@ jobs:
           version: ${{ matrix.cask_version }}
 
       - name: Install search tools
-        run: brew install the_silver_searcher ripgrep
+        run: brew install the_silver_searcher ripgrep ugrep
 
       - name: Run tests
         timeout-minutes: 20

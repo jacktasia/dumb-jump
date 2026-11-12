@@ -12,7 +12,7 @@ Version `0.5.5` is the last release that supports Emacs versions below 26. If yo
 
 
 ### How it works
-Dumb Jump uses [The Silver Searcher](https://github.com/ggreer/the_silver_searcher) `ag`, [ripgrep](https://github.com/BurntSushi/ripgrep) `rg`, or `grep` to find potential definitions of a function or variable under point. It uses a set of regular expressions based on the file extension, or `major-mode`, of the current buffer. The matches are run through a shared set of heuristic methods to find the best candidate to jump to. If it can't decide and you are using the legacy selector path, it will present the user with a list using `completing-read`, helm, or ivy via `dumb-jump-selector`. The `xref` UI is described separately later in this README.
+Dumb Jump uses [The Silver Searcher](https://github.com/ggreer/the_silver_searcher) `ag`, [ripgrep](https://github.com/BurntSushi/ripgrep) `rg`, [ugrep](https://github.com/Genivia/ugrep) `ugrep`, or `grep` to find potential definitions of a function or variable under point. It uses a set of regular expressions based on the file extension, or `major-mode`, of the current buffer. The matches are run through a shared set of heuristic methods to find the best candidate to jump to. If it can't decide and you are using the legacy selector path, it will present the user with a list using `completing-read`, helm, or ivy via `dumb-jump-selector`. The `xref` UI is described separately later in this README.
 
 Dumb Jump also supports **find references** -- the inverse of jump-to-definition. It finds where a symbol is *used* rather than where it is *defined*. This works by performing a broad symbol search and then filtering out results that match definition patterns, so it works for all 60+ supported languages with zero additional configuration.
 
@@ -95,12 +95,12 @@ The recommended way to install Dumb Jump is via `package.el`. It's available on 
 
 ### Spacemacs
 
-If you're using an up-to-date Spacemacs, then you already have Dumb Jump by default, just make sure you install `ag` or `rg` (see below) to ensure you have the best experience.
+If you're using an up-to-date Spacemacs, then you already have Dumb Jump by default, just make sure you install `ag`, `rg`, or `ugrep` (see below) to ensure you have the best experience.
 
 
-### Installing `ag` or `rg`
+### Installing a searcher
 
-Dumb Jump performs best with The Silver Searcher `ag` ([ag install instructions](https://github.com/ggreer/the_silver_searcher#installing)) or ripgrep `rg` ([rg install instructions](https://github.com/BurntSushi/ripgrep#installation)) installed on your system.
+Dumb Jump performs best with The Silver Searcher `ag` ([installation](https://github.com/ggreer/the_silver_searcher#installing)), ripgrep `rg` ([installation](https://github.com/BurntSushi/ripgrep#installation)), or ugrep `ugrep` ([installation](https://github.com/Genivia/ugrep#installation)) installed on your system.
 
 ## Usage
 
@@ -170,7 +170,7 @@ If you want to stop a directory from registering as the project root (and have D
     +../some-lib/src
     +/usr/lib/src
 
-*NOTE* When adding paths outside of the project (using `+`) ensure you use a searcher that can search outside the project root. The `git-grep` searcher cannot do this, so if you have explicitly set `dumb-jump-force-searcher` or `dumb-jump-prefer-searcher` to `'git-grep`, switch to `'ag` or `'rg` instead (see below). The default automatic searcher selection (see the fallback order below) does not include `git-grep`, so this caveat only applies when git-grep has been explicitly configured.
+*NOTE* When adding paths outside of the project (using `+`) ensure you use a searcher that can search outside the project root. The `git-grep` searcher cannot do this, so if you have explicitly set `dumb-jump-force-searcher` or `dumb-jump-prefer-searcher` to `'git-grep`, switch to `'ag`, `'rg`, or `'ug` instead (see below). The default automatic searcher selection (see the fallback order below) does not include `git-grep`, so this caveat only applies when git-grep has been explicitly configured.
 
 ### `.emacs` options
 
@@ -180,18 +180,20 @@ If you want to stop a directory from registering as the project root (and have D
 * `(setq dumb-jump-git-grep-search-args "")` to set additional command line arguments when using git-grep for searching (defaults to `""`).
 * `(setq dumb-jump-ag-search-args "")` to set additional command line arguments when using ag for searching (defaults to `""`).
 * `(setq dumb-jump-rg-search-args "")` to set additional command line arguments when using rg for searching (defaults to `"--pcre2"`).
+* `(setq dumb-jump-ug-search-args "")` to set additional command line arguments when using ugrep for searching (defaults to `""`).
 
 Two user-options are used to select the search tool:
 
 * `dumb-jump-prefer-searcher`: identifies the search tool normally used, unless it is nil or the value of `dumb-jump-force-searcher` overrides your preference.
 * `dumb-jump-force-searcher`: identifies how the searcher selection is overridden:
-  * If you want to force a specific tool like `ag` or `rg` set `dumb-jump-force-searcher` to that value.
+  * If you want to force a specific tool like `ag`, `rg`, or `ug` set `dumb-jump-force-searcher` to that value.
   * If you want to use the tool selected by `dumb-jump-prefer-searcher` *except* for some directories where you prefer to use `git-grep`, then set `dumb-jump-force-searcher` to a list holding the path of these directories.
   * If you want more flexibility in the overriding, then write a function that takes the project directory and return a symbol identifying the search tool to use for that project directory, or nil to honor `dumb-jump-prefer-searcher` choice.
 
 When both `dumb-jump-prefer-searcher` and `dumb-jump-force-searcher` are nil, Dumb Jump selects the first tool found from this list, in that order:
 * `ag`,
 * `rg`,
+* `ug`,
 * `gnu grep`,
 * `grep`.
 
@@ -278,7 +280,7 @@ When working in a Rust project, you can configure Dumb Jump to automatically sea
 
 When enabled, Dumb Jump will run `cargo metadata --format-version=1` to find the source directories of all dependencies and include them in the search. Results are cached per project root so the command is only run once per session.
 
-This requires `cargo` to be installed and a `Cargo.toml` in the project root. Since dependency sources live outside the git repository, you must use `rg` or `ag` as the searcher (not `git-grep`).
+This requires `cargo` to be installed and a `Cargo.toml` in the project root. Since dependency sources live outside the git repository, you must use `rg`, `ag`, or `ug` as the searcher (not `git-grep`).
 
 ### Dynamic extra search paths
 
@@ -298,7 +300,7 @@ You can provide a function that dynamically computes additional search paths bas
 
 The function receives two arguments — `lang` (a string like `"python"` or `"javascript"`) and `proj-root` (the project root directory) — and should return a list of directory paths or nil. Relative paths are expanded against `proj-root`; non-existent directories are silently ignored.
 
-Since these paths typically live outside the git repository, you should use `rg` or `ag` as the searcher (not `git-grep`). If your function does something expensive (like running a shell command), consider caching results yourself.
+Since these paths typically live outside the git repository, you should use `rg`, `ag`, or `ug` as the searcher (not `git-grep`). If your function does something expensive (like running a shell command), consider caching results yourself.
 
 ### Following symbolic links
 
