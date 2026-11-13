@@ -317,7 +317,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
 (ert-deftest dumb-jump-generate-ug-command-test ()
   (let* ((regexes '("foo\\s+JJJ\\j"))
          (expected
-          (concat "ugrep --no-config --recursive --color=never --no-heading --line-number --separator=: --perl-regexp"
+          (concat "ugrep --no-config --recursive --ignore-files --ignore-binary --color=never --no-heading --line-number --separator=: --perl-regexp"
                   " --glob=\\*.el --glob=\\*.el.gz -- "
                   (shell-quote-argument
                    "foo(?:\\s|\\R)+tester($|[^-a-zA-Z0-9?*])")
@@ -330,7 +330,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
   (let* ((dumb-jump-ug-search-args "--hidden")
          (regexes '("foo\\s+JJJ\\j"))
          (expected
-          (concat "ugrep --no-config --recursive --color=never --no-heading --line-number --separator=: --perl-regexp"
+          (concat "ugrep --no-config --recursive --ignore-files --ignore-binary --color=never --no-heading --line-number --separator=: --perl-regexp"
                   " --hidden --glob=\\*.el --glob=\\*.el.gz"
                   " --exclude-dir=excluded -- "
                   (shell-quote-argument
@@ -655,6 +655,45 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                                (plist-get gen-funcs :generate))))
                 (should (= (length results) 1))
                 (should (= (plist-get (car results) :line) 1)))))
+        (delete-directory project t)))))
+
+(when (dumb-jump-ug-installed?)
+  (ert-deftest dumb-jump-run-ug-command-respects-gitignore-test ()
+    (let ((project (make-temp-file "dumb-jump-ug-" t)))
+      (unwind-protect
+          (progn
+            (with-temp-file (expand-file-name ".gitignore" project)
+              (insert "ignored.el\n"))
+            (with-temp-file (expand-file-name "ignored.el" project)
+              (insert "(defun ugrep-ignored-file-test () nil)\n"))
+            (let* ((gen-funcs (dumb-jump-generators-by-searcher 'ug))
+                   (regexes (dumb-jump-get-contextual-regexes
+                             "elisp" nil 'ug))
+                   (results (dumb-jump-run-command
+                             "ugrep-ignored-file-test" project regexes
+                             "elisp" nil "ignored.el" 1
+                             (plist-get gen-funcs :parse)
+                             (plist-get gen-funcs :generate))))
+              (should-not results)))
+        (delete-directory project t)))))
+
+(when (dumb-jump-ug-installed?)
+  (ert-deftest dumb-jump-run-ug-command-ignores-binary-files-test ()
+    (let ((project (make-temp-file "dumb-jump-ug-" t)))
+      (unwind-protect
+          (progn
+            (with-temp-file (expand-file-name "binary.el" project)
+              (set-buffer-multibyte nil)
+              (insert "(defun ugrep-binary-file-test () nil)\0"))
+            (let* ((gen-funcs (dumb-jump-generators-by-searcher 'ug))
+                   (regexes (dumb-jump-get-contextual-regexes
+                             "elisp" nil 'ug))
+                   (results (dumb-jump-run-command
+                             "ugrep-binary-file-test" project regexes
+                             "elisp" nil "binary.el" 1
+                             (plist-get gen-funcs :parse)
+                             (plist-get gen-funcs :generate))))
+              (should-not results)))
         (delete-directory project t)))))
 
 (ert-deftest dumb-jump-run-cmd-debug-before-shell-command-test ()

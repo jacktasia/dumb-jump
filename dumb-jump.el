@@ -5533,7 +5533,7 @@ The arguments are:
          (exts (dumb-jump-get-file-exts-by-language lang))
          (proj-dir (file-name-as-directory proj))
          (cmd (concat dumb-jump-ug-cmd
-                      " --no-config --recursive --color=never --no-heading --line-number --separator=: --perl-regexp"
+                      " --no-config --recursive --ignore-files --ignore-binary --color=never --no-heading --line-number --separator=: --perl-regexp"
                       (if (member lang dumb-jump--case-insensitive-languages)
                           " --ignore-case"
                         "")
