@@ -314,6 +314,33 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
     (should (string= expected  (dumb-jump-generate-rg-command
                                 "tester" "blah.el" "." regexes "elisp" nil)))))
 
+(ert-deftest dumb-jump-generate-ug-command-test ()
+  (let* ((regexes '("foo\\s+JJJ\\j"))
+         (expected
+          (concat "ugrep --no-config --recursive --ignore-files --ignore-binary --color=never --no-heading --line-number --separator=: --perl-regexp"
+                  " --glob=\\*.el --glob=\\*.el.gz -- "
+                  (shell-quote-argument
+                   "foo(?:\\s|\\R)+tester($|[^-a-zA-Z0-9?*])")
+                  " .")))
+    (should (string= expected
+                     (dumb-jump-generate-ug-command
+                      "tester" "blah.el" "." regexes "elisp" nil)))))
+
+(ert-deftest dumb-jump-generate-ug-command-exclude-and-args-test ()
+  (let* ((dumb-jump-ug-search-args "--hidden")
+         (regexes '("foo\\s+JJJ\\j"))
+         (expected
+          (concat "ugrep --no-config --recursive --ignore-files --ignore-binary --color=never --no-heading --line-number --separator=: --perl-regexp"
+                  " --hidden --glob=\\*.el --glob=\\*.el.gz"
+                  " --exclude-dir=excluded -- "
+                  (shell-quote-argument
+                   "foo(?:\\s|\\R)+tester($|[^-a-zA-Z0-9?*])")
+                  " /path/to/project")))
+    (should (string= expected
+                     (dumb-jump-generate-ug-command
+                      "tester" "blah.el" "/path/to/project" regexes "elisp"
+                      '("/path/to/project/excluded"))))))
+
 (ert-deftest dumb-jump-generate-rg-command-remote-test ()
   (let* ((regexes (dumb-jump-get-contextual-regexes "elisp" nil 'rg))
          (expected-regexes
@@ -592,6 +619,83 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (should (dumb-jump--contains-p "/fake.el" (plist-get first-result :path)))
       (should (= (plist-get first-result :line) 6)))))
 
+(when (dumb-jump-ug-installed?)
+  (ert-deftest dumb-jump-run-ug-command-test ()
+    (let* ((gen-funcs (dumb-jump-generators-by-searcher 'ug))
+           (parse-fn (plist-get gen-funcs :parse))
+           (generate-fn (plist-get gen-funcs :generate))
+           (regexes (dumb-jump-get-contextual-regexes "elisp" nil 'ug))
+           (results (dumb-jump-run-command
+                     "another-fake-function" test-data-dir-elisp regexes
+                     "elisp" nil "blah.el" 3 parse-fn generate-fn))
+           (first-result (car results)))
+      (should (dumb-jump--contains-p "/fake.el"
+                                     (plist-get first-result :path)))
+      (should (= (plist-get first-result :line) 6)))))
+
+(when (dumb-jump-ug-installed?)
+  (ert-deftest dumb-jump-run-ug-command-ignores-project-config-test ()
+    (let ((project (make-temp-file "dumb-jump-ug-" t)))
+      (unwind-protect
+          (progn
+            (with-temp-file (expand-file-name ".ugrep" project)
+              (insert "json\n"))
+            (make-directory (expand-file-name "nested/dir" project) t)
+            (with-temp-file (expand-file-name "nested/dir/sample.el" project)
+              (insert "(defun ugrep-config-test () nil)\n"))
+            (let ((default-directory (file-name-as-directory project))
+                  (dumb-jump-ug-cmd "ug"))
+              (let* ((gen-funcs (dumb-jump-generators-by-searcher 'ug))
+                     (regexes (dumb-jump-get-contextual-regexes
+                               "elisp" nil 'ug))
+                     (results (dumb-jump-run-command
+                               "ugrep-config-test" project regexes "elisp" nil
+                               "sample.el" 1
+                               (plist-get gen-funcs :parse)
+                               (plist-get gen-funcs :generate))))
+                (should (= (length results) 1))
+                (should (= (plist-get (car results) :line) 1)))))
+        (delete-directory project t)))))
+
+(when (dumb-jump-ug-installed?)
+  (ert-deftest dumb-jump-run-ug-command-respects-gitignore-test ()
+    (let ((project (make-temp-file "dumb-jump-ug-" t)))
+      (unwind-protect
+          (progn
+            (with-temp-file (expand-file-name ".gitignore" project)
+              (insert "ignored.el\n"))
+            (with-temp-file (expand-file-name "ignored.el" project)
+              (insert "(defun ugrep-ignored-file-test () nil)\n"))
+            (let* ((gen-funcs (dumb-jump-generators-by-searcher 'ug))
+                   (regexes (dumb-jump-get-contextual-regexes
+                             "elisp" nil 'ug))
+                   (results (dumb-jump-run-command
+                             "ugrep-ignored-file-test" project regexes
+                             "elisp" nil "ignored.el" 1
+                             (plist-get gen-funcs :parse)
+                             (plist-get gen-funcs :generate))))
+              (should-not results)))
+        (delete-directory project t)))))
+
+(when (dumb-jump-ug-installed?)
+  (ert-deftest dumb-jump-run-ug-command-ignores-binary-files-test ()
+    (let ((project (make-temp-file "dumb-jump-ug-" t)))
+      (unwind-protect
+          (progn
+            (with-temp-file (expand-file-name "binary.el" project)
+              (set-buffer-multibyte nil)
+              (insert "(defun ugrep-binary-file-test () nil)\0"))
+            (let* ((gen-funcs (dumb-jump-generators-by-searcher 'ug))
+                   (regexes (dumb-jump-get-contextual-regexes
+                             "elisp" nil 'ug))
+                   (results (dumb-jump-run-command
+                             "ugrep-binary-file-test" project regexes
+                             "elisp" nil "binary.el" 1
+                             (plist-get gen-funcs :parse)
+                             (plist-get gen-funcs :generate))))
+              (should-not results)))
+        (delete-directory project t)))))
+
 (ert-deftest dumb-jump-run-cmd-debug-before-shell-command-test ()
   (let ((dumb-jump-debug t)
         (dumb-jump-fallback-search t)
@@ -767,6 +871,12 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (dumb-jump-output-rule-test-failures rule-failures)
       (should (= (length rule-failures) 0)))))
 
+(when (dumb-jump-ug-installed?)
+  (ert-deftest dumb-jump-test-ug-rules-test ()
+    (let ((rule-failures (dumb-jump-test-ug-rules)))
+      (dumb-jump-output-rule-test-failures rule-failures)
+      (should (= (length rule-failures) 0)))))
+
 (when (and (not (eq system-type 'darwin))   ; git grep is broken on macOS as of Jan 2026.
            (dumb-jump-git-grep-installed?))
   (ert-deftest dumb-jump-test-git-grep-rules-test ()
@@ -788,6 +898,12 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
 (when (dumb-jump-rg-installed?)
   (ert-deftest dumb-jump-test-rg-rules-not-test () ;; :not tests
     (let ((rule-failures (dumb-jump-test-rg-rules t)))
+      (dumb-jump-output-rule-test-failures rule-failures)
+      (should (= (length rule-failures) 0)))))
+
+(when (dumb-jump-ug-installed?)
+  (ert-deftest dumb-jump-test-ug-rules-not-test () ;; :not tests
+    (let ((rule-failures (dumb-jump-test-ug-rules t)))
       (dumb-jump-output-rule-test-failures rule-failures)
       (should (= (length rule-failures) 0)))))
 
@@ -836,6 +952,17 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
 	   (rule-failures (dumb-jump-test-rg-rules)))
       ;; No rule taken from dumb-jump.el should fail: the only one that
       ;; should fail should be the `bad-rule' defined above.
+      (should (= (length rule-failures) 1)))))
+
+(when (dumb-jump-ug-installed?)
+  (ert-deftest dumb-jump-test-ug-rules-fail-test ()
+    (let* ((bad-rule '(:type "variable"
+                             :supports ("ug")
+                             :language "elisp"
+                             :regex "\\\(defvarJJJ\\b\\s*"
+                             :tests ("(defvar test ")))
+           (dumb-jump-find-rules (cons bad-rule dumb-jump-find-rules))
+           (rule-failures (dumb-jump-test-ug-rules)))
       (should (= (length rule-failures) 1)))))
 
 (when (and (not (eq system-type 'darwin))   ; git grep is broken on macOS as of Jan 2026.
@@ -1182,7 +1309,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
                  '(:results (:result))))
         (with-mock-forbidding-prompt
           (stub dumb-jump-rg-installed? => t)
-          (mock (dumb-jump-message "Took over %ss to find '%s'. Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions" * * *))
+          (mock (dumb-jump-message "Took over %ss to find '%s'. Please install ag, rg or ug, or add a .dumbjump file to '%s' with path exclusions" * * *))
           (mock (dumb-jump-result-follow * * *))
           (with-no-warnings (dumb-jump-go)))))))
 
@@ -1291,6 +1418,45 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       ;; confirm memoization of the previous result
       (should (eq (dumb-jump-rg-installed?) nil)))))
 
+(ert-deftest dumb-jump-ug-installed?-test ()
+  (let ((dumb-jump--ug-installed? 'unset))
+    (with-mock
+      (mock (executable-find *) => t)
+      (mock (shell-command-to-string *) =>
+            "ugrep 7.8.5 x86_64; -P:pcre2jit\n" :times 1)
+      (should (eq (dumb-jump-ug-installed?) t))
+      ;; Confirm memoization of the previous result.
+      (should (eq (dumb-jump-ug-installed?) t)))))
+
+(ert-deftest dumb-jump-ug-installed?-test-no-executable ()
+  (let ((dumb-jump--ug-installed? 'unset)
+        (dumb-jump--detected-env-problems nil))
+    (with-mock
+      (mock (executable-find *) => nil)
+      (should-not (dumb-jump-ug-installed?))
+      (should (equal dumb-jump--detected-env-problems
+                     '("Ugrep not found as specified in `dumb-jump-ug-cmd': ugrep"))))))
+
+(ert-deftest dumb-jump-ug-installed?-test-unknown-version ()
+  (let ((dumb-jump--ug-installed? 'unset)
+        (dumb-jump--detected-env-problems nil))
+    (with-mock
+      (mock (executable-find *) => t)
+      (mock (shell-command-to-string *) => "unknown\n" :times 1)
+      (should-not (dumb-jump-ug-installed?))
+      (should (equal dumb-jump--detected-env-problems
+                     '("Can't detect Ugrep version."))))))
+
+(ert-deftest dumb-jump-ug-installed?-test-no-pcre2 ()
+  (let ((dumb-jump--ug-installed? 'unset)
+        (dumb-jump--detected-env-problems nil))
+    (with-mock
+      (mock (executable-find *) => t)
+      (mock (shell-command-to-string *) => "ugrep 7.8.5 x86_64\n" :times 1)
+      (should-not (dumb-jump-ug-installed?))
+      (should (equal dumb-jump--detected-env-problems
+                     '("Ugrep does not support PCRE2."))))))
+
 (ert-deftest dumb-jump-git-grep-installed?-test ()
   (let ((dumb-jump--git-grep-installed? 'unset))
     (with-mock
@@ -1307,10 +1473,11 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (with-mock-forbidding-prompt
         ;; (mock (executable-find *) => t)
         (mock (dumb-jump-rg-installed?) => nil)
+        (mock (dumb-jump-ug-installed?) => nil)
         (mock (dumb-jump-ag-installed?) => nil)
         (mock (dumb-jump-git-grep-installed?) => nil)
         (mock (dumb-jump-grep-installed?) => nil)
-        (mock (dumb-jump-message "Please install ag, rg, git grep or grep!"))
+        (mock (dumb-jump-message "Please install ag, rg, ug, git grep or grep!"))
         (with-no-warnings (dumb-jump-go))))))
 
 (ert-deftest dumb-jump-go-nosymbol-test ()
@@ -1327,6 +1494,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
   (with-mock
     ;; (mock (executable-find *) => t)
     (mock (dumb-jump-rg-installed?) => nil)
+    (mock (dumb-jump-ug-installed?) => nil)
     (mock (dumb-jump-ag-installed?) => nil)
     (mock (dumb-jump-git-grep-installed?) => nil)
     (mock (dumb-jump-grep-installed?) => nil)
@@ -1381,6 +1549,21 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'rg) '("testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "$testvar" '("JJJ\\s*=\\s*") 'rg) '("\\$testvar\\s*=\\s*")))
   (should (equal (dumb-jump-populate-regexes "-testvar" '("JJJ\\s*=\\s*") 'rg) '("-testvar\\s*=\\s*"))))
+
+(ert-deftest dumb-jump-populate-regexes-ug-test ()
+  (should
+   (equal (dumb-jump-populate-regexes
+           "testvar" '("JJJ\\s*=\\s*") 'ug)
+          '("testvar(?:\\s|\\R)*=(?:\\s|\\R)*")))
+  (should
+   (equal (dumb-jump-ug-regex "[^\\s]+[[:digit:]][^a-z-]")
+          "[^\\s]+[[:digit:]](?:[^a-z\\-]|\\R)"))
+  (should
+   (equal (dumb-jump-ug-regex "[^=\\n]+") "[^=\\n]+"))
+  (should
+   (equal (dumb-jump-ug-regex "[^\\s]+") "[^\\s]+"))
+  (should
+   (equal (dumb-jump-ug-regex "[^[:space:]]+") "[^[:space:]]+")))
 
 (ert-deftest dumb-jump-populate-regexes-git-grep-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'git-grep) '("testvar\\s*=\\s*")))
@@ -1826,6 +2009,11 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (gen-funcs (dumb-jump-generators-by-searcher searcher)))
     (should (generators-valid gen-funcs searcher))))
 
+(ert-deftest dumb-jump-generators-by-searcher-ug ()
+  (let* ((searcher 'ug)
+         (gen-funcs (dumb-jump-generators-by-searcher searcher)))
+    (should (generators-valid gen-funcs searcher))))
+
 (ert-deftest dumb-jump-generators-by-searcher-gnu-grep ()
   (let* ((searcher 'gnu-grep)
          (gen-funcs (dumb-jump-generators-by-searcher searcher)))
@@ -1858,6 +2046,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       ;; (mock (executable-find *) => t)
       (mock (dumb-jump-ag-installed?) => nil)
       (mock (dumb-jump-rg-installed?) => nil)
+      (mock (dumb-jump-ug-installed?) => nil)
       (mock (dumb-jump-grep-installed?) => 'bsd)
       (should (eq (dumb-jump-selected-grep-variant) 'grep)))))
 
@@ -1868,6 +2057,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       ;; (mock (executable-find *) => t)
       (mock (dumb-jump-ag-installed?) => nil)
       (mock (dumb-jump-rg-installed?) => nil)
+      (mock (dumb-jump-ug-installed?) => nil)
       (mock (dumb-jump-grep-installed?) => nil)
       ;; [:todo 2026-01-14, by Pierre Rouleau: When dumb-jump-grep-installed?
       ;;                    returns nil the selection is still 'grep. Is this OK??]
@@ -1903,6 +2093,13 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (mock (dumb-jump-rg-installed?) => t)
       (should (eq (dumb-jump-selected-grep-variant) 'rg)))))
 
+(ert-deftest dumb-jump-selected-grep-variant-test-ug-nil ()
+  (let ((dumb-jump-prefer-searcher 'ug)
+        (dumb-jump-force-searcher nil))
+    (with-mock
+      (mock (dumb-jump-ug-installed?) => t)
+      (should (eq (dumb-jump-selected-grep-variant) 'ug)))))
+
 (ert-deftest dumb-jump-selected-grep-variant-test-rg-grep ()
   (let ((dumb-jump-prefer-searcher 'rg)
         (dumb-jump-force-searcher 'grep))
@@ -1933,12 +2130,13 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       ;; (mock (executable-find *) => t)
       (mock (dumb-jump-ag-installed?) => t)
       (mock (dumb-jump-rg-installed?) => t)
+      (mock (dumb-jump-ug-installed?) => t)
       (mock (dumb-jump-grep-installed?) => 'gnu)
       (mock (dumb-jump-git-grep-installed?) => t)
       ;; [:todo 2026-01-14, by Pierre Rouleau: the next one is never called.  Why?]
       ;; (mock (dumb-jump--git-grep-plus-ag-installed?) => t)
 
-      (dolist (dumb-jump-prefer-searcher '(ag rg grep gnu-grep
+      (dolist (dumb-jump-prefer-searcher '(ag rg ug grep gnu-grep
                                               git-grep git-grep-plus-ag))
         ;;
         ;; When there is no overriding, the preference is honoured.
@@ -1948,7 +2146,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         ;;
         ;; when there is an overriding of the old/deprecated style,
         ;; the preference is ignored.
-        (dolist (dumb-jump-force-searcher '(ag rg grep gnu-grep
+        (dolist (dumb-jump-force-searcher '(ag rg ug grep gnu-grep
                                                git-grep git-grep-plus-ag))
           (should (eq (dumb-jump-selected-grep-variant)
                       dumb-jump-force-searcher)))
@@ -1957,7 +2155,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         ;; function determines the selection. Drive user selection via the
         ;; `dumb-jump-search-selector-tester-choice' variable in this test:
         (setq dumb-jump-force-searcher #'dumb-jump-search-selector-tester)
-        (dolist (dumb-jump-search-selector-tester-choice '(ag rg grep gnu-grep
+        (dolist (dumb-jump-search-selector-tester-choice '(ag rg ug grep gnu-grep
                                                               git-grep
                                                               git-grep-plus-ag))
           (should (eq (dumb-jump-selected-grep-variant)
@@ -1996,6 +2194,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (dumb-jump-prefer-searcher nil)
 	 (dumb-jump--ag-installed? t)
          (dumb-jump--rg-installed? nil)
+         (dumb-jump--ug-installed? nil)
          (gen-funcs (dumb-jump-generators-by-searcher 'ag))
          (variant (dumb-jump-pick-grep-variant)))
     (should (generator-plist-equal gen-funcs variant))))
@@ -2005,7 +2204,18 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (dumb-jump-prefer-searcher nil)
          (dumb-jump--ag-installed? nil)
          (dumb-jump--rg-installed? t)
+         (dumb-jump--ug-installed? nil)
          (gen-funcs (dumb-jump-generators-by-searcher 'rg))
+         (variant (dumb-jump-pick-grep-variant)))
+    (should (generator-plist-equal gen-funcs variant))))
+
+(ert-deftest dumb-jump-pick-grep-variant-fallback-ug ()
+  (let* ((dumb-jump-force-searcher nil)
+         (dumb-jump-prefer-searcher nil)
+         (dumb-jump--ag-installed? nil)
+         (dumb-jump--rg-installed? nil)
+         (dumb-jump--ug-installed? t)
+         (gen-funcs (dumb-jump-generators-by-searcher 'ug))
          (variant (dumb-jump-pick-grep-variant)))
     (should (generator-plist-equal gen-funcs variant))))
 
@@ -2014,6 +2224,7 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (dumb-jump-prefer-searcher nil)
          (dumb-jump--ag-installed? nil)
          (dumb-jump--rg-installed? nil)
+         (dumb-jump--ug-installed? nil)
          (dumb-jump--grep-installed? 'gnu)
          (gen-funcs (dumb-jump-generators-by-searcher 'gnu-grep))
          (variant (dumb-jump-pick-grep-variant)))
@@ -2024,10 +2235,26 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
          (dumb-jump-prefer-searcher nil)
          (dumb-jump--ag-installed? nil)
          (dumb-jump--rg-installed? nil)
+         (dumb-jump--ug-installed? nil)
          (dumb-jump--grep-installed? 'bsd)
          (gen-funcs (dumb-jump-generators-by-searcher 'grep))
          (variant (dumb-jump-pick-grep-variant)))
     (should (generator-plist-equal gen-funcs variant))))
+
+(ert-deftest dumb-jump-get-rules-by-language-ug-is-explicit ()
+  (let ((dumb-jump-find-rules
+         '((:language "ug-only" :type "function" :supports ("ug")
+                      :regex "ug-only")
+           (:language "rg-only" :type "function" :supports ("rg")
+                      :regex "rg-only")
+           (:language "shared" :type "function" :supports ("rg" "ug")
+                      :regex "shared"))))
+    (should (= (length (dumb-jump-get-rules-by-language "ug-only" 'ug)) 1))
+    (should-not (dumb-jump-get-rules-by-language "rg-only" 'ug))
+    (should (= (length (dumb-jump-get-rules-by-language "shared" 'ug)) 1))
+    (should-not (dumb-jump-get-rules-by-language "ug-only" 'rg))
+    (should (= (length (dumb-jump-get-rules-by-language "rg-only" 'rg)) 1))
+    (should (= (length (dumb-jump-get-rules-by-language "shared" 'rg)) 1))))
 
 (ert-deftest dumb-jump-get-rules-by-language-haskell-rg ()
   "Haskell rules should be available for rg searcher."

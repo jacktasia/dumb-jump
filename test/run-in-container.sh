@@ -21,6 +21,7 @@ echo "==> Toolchain versions:"
 echo -n "    emacs : "; emacs --version | head -1
 echo -n "    rg    : "; rg --version | head -1
 echo -n "    ag    : "; ag --version | head -1
+echo -n "    ugrep : "; ugrep --version | head -1
 echo -n "    git   : "; git --version
 echo ""
 
