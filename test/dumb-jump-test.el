@@ -643,16 +643,18 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
             (make-directory (expand-file-name "nested/dir" project) t)
             (with-temp-file (expand-file-name "nested/dir/sample.el" project)
               (insert "(defun ugrep-config-test () nil)\n"))
-            (let* ((gen-funcs (dumb-jump-generators-by-searcher 'ug))
-                   (regexes (dumb-jump-get-contextual-regexes
-                             "elisp" nil 'ug))
-                   (results (dumb-jump-run-command
-                             "ugrep-config-test" project regexes "elisp" nil
-                             "sample.el" 1
-                             (plist-get gen-funcs :parse)
-                             (plist-get gen-funcs :generate))))
-              (should (= (length results) 1))
-              (should (= (plist-get (car results) :line) 1))))
+            (let ((default-directory (file-name-as-directory project))
+                  (dumb-jump-ug-cmd "ug"))
+              (let* ((gen-funcs (dumb-jump-generators-by-searcher 'ug))
+                     (regexes (dumb-jump-get-contextual-regexes
+                               "elisp" nil 'ug))
+                     (results (dumb-jump-run-command
+                               "ugrep-config-test" project regexes "elisp" nil
+                               "sample.el" 1
+                               (plist-get gen-funcs :parse)
+                               (plist-get gen-funcs :generate))))
+                (should (= (length results) 1))
+                (should (= (plist-get (car results) :line) 1)))))
         (delete-directory project t)))))
 
 (ert-deftest dumb-jump-run-cmd-debug-before-shell-command-test ()
