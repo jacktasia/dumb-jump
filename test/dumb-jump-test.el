@@ -738,6 +738,48 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
         (should (equal (plist-get (car results) :path) "fake.el"))
         (should (= (plist-get (car results) :line) 6))))))
 
+(defun dumb-jump-test--run-with-outputs (outputs)
+  "Run a search whose successive shell commands return OUTPUTS.
+Each output is a list of \"path:context\" strings.  The directory
+/proj/generated is excluded.  Return the number of shell commands
+run, followed by the paths of the results."
+  (let* ((shell-calls 0)
+         (dumb-jump-fallback-search t)
+         (dumb-jump--search-mode nil)
+         (generate-fn (lambda (&rest _args) "search"))
+         (parse-fn (lambda (raw _file _line)
+                     (mapcar (lambda (line)
+                               (let ((parts (split-string line ":")))
+                                 (list :path (car parts) :line 1
+                                       :context (cadr parts))))
+                             (split-string raw "\n" t)))))
+    (cl-letf (((symbol-function 'shell-command-to-string)
+               (lambda (_cmd)
+                 (prog1 (mapconcat #'identity (nth shell-calls outputs) "\n")
+                   (setq shell-calls (1+ shell-calls))))))
+      (let ((results (dumb-jump-run-command
+                      "target" "/proj" '("regex") "elisp"
+                      '("/proj/generated") "/proj/blah.el" 3
+                      parse-fn generate-fn)))
+        (cons shell-calls
+              (mapcar (lambda (it) (plist-get it :path)) results))))))
+
+(ert-deftest dumb-jump-run-cmd-fallback-when-all-results-excluded-test ()
+  "The fallback search runs when every primary match is in an excluded dir."
+  (should (equal (dumb-jump-test--run-with-outputs
+                  '(("/proj/generated/a.el:(defun target ())")
+                    ("/proj/generated/a.el:(defun target ())"
+                     "/proj/allowed/b.el:(target)")))
+                 '(2 "/proj/allowed/b.el"))))
+
+(ert-deftest dumb-jump-run-cmd-no-fallback-when-some-results-allowed-test ()
+  "No fallback search runs when a primary match is outside the excluded dirs."
+  (should (equal (dumb-jump-test--run-with-outputs
+                  '(("/proj/generated/a.el:(defun target ())"
+                     "/proj/allowed/c.el:(defun target ())")
+                    ("/proj/allowed/b.el:(target)")))
+                 '(1 "/proj/allowed/c.el"))))
+
 (ert-deftest dumb-jump-run-cmd-fail-test ()
   (with-mock
     (stub dumb-jump-rg-installed? => t)

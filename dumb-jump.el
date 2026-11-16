@@ -4948,9 +4948,13 @@ The parameters are:
     (when (string-match-p "^PCRE2 is not available" rawresults)
       (dumb-jump-message "dumb-jump: Ripgrep PCRE2 support is not available. Install ripgrep with PCRE2 support or customize `dumb-jump-rg-search-args' to remove \"--pcre2\".")
       (dumb-jump-env-problem "Ripgrep PCRE2 support is not available in the current build."))
-    (when (and (string-blank-p rawresults)
-               dumb-jump-fallback-search
-               (not (eq dumb-jump--search-mode 'references)))
+    ;; Fall back when nothing was found, or when everything found is
+    ;; inside an excluded directory and so is about to be dropped.
+    (when (and dumb-jump-fallback-search
+               (not (eq dumb-jump--search-mode 'references))
+               (or (string-blank-p rawresults)
+                   (dumb-jump--only-excluded-results-p
+                    rawresults parse-fn cur-file line-num exclude-args)))
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn
                          look-for cur-file
@@ -4967,6 +4971,17 @@ The parameters are:
                                                   (plist-get it :context) ignore-case)
                            (not (dumb-jump--result-excluded-p it exclude-args))))
                     results)))))
+
+(defun dumb-jump--only-excluded-results-p (rawresults parse-fn cur-file
+                                                      line-num exclude-paths)
+  "Return non-nil if RAWRESULTS holds matches, all inside EXCLUDE-PATHS.
+RAWRESULTS is parsed with PARSE-FN for CUR-FILE and LINE-NUM."
+  (unless (seq-empty-p exclude-paths)
+    (let ((results (funcall parse-fn rawresults cur-file line-num)))
+      (and results
+           (seq-every-p (lambda (it)
+                          (dumb-jump--result-excluded-p it exclude-paths))
+                        results)))))
 
 (defun dumb-jump--result-excluded-p (result exclude-paths)
   "Return non-nil if RESULT is a match inside one of EXCLUDE-PATHS.
