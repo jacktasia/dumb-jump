@@ -334,7 +334,6 @@ When this matters use `\\j` instead and rg will use this value."
   :group 'dumb-jump
   :type 'string)
 
-;; [:todo 2026-01-29, by Pierre Rouleau: Should we not exclude '_' from word boundary?]
 (defcustom dumb-jump-ug-word-boundary
   "($|[^-a-zA-Z0-9?*])"
   "Regexp that replaces `\\j` in dumb-jump regexes for ugrep search."
@@ -3453,8 +3452,13 @@ Record diagnostics in `dumb-jump--detected-env-problems' otherwise."
            (throw 'ug-problem nil))
          (let ((stdout (shell-command-to-string
                         (concat dumb-jump-ug-cmd " --version"))))
-           (unless (string-match-p "ugrep [0-9]" stdout)
+           (unless (string-match "ugrep \\([0-9.]+\\)" stdout)
              (dumb-jump-env-problem "Can't detect Ugrep version.")
+             (throw 'ug-problem nil))
+           (unless (version<= "5.0.0" (match-string 1 stdout))
+             (dumb-jump-env-problem
+              (format "Ugrep %s is too old; version 5.0.0 or later is required."
+                      (match-string 1 stdout)))
              (throw 'ug-problem nil))
            (unless (string-match-p "-P:pcre2" stdout)
              (dumb-jump-env-problem "Ugrep does not support PCRE2.")
@@ -5736,19 +5740,16 @@ they are not covered by ripgrep's built-in type definitions."
 
 (defun dumb-jump-get-rules-by-language (language searcher)
   "Return a list of rules for the LANGUAGE by SEARCHER."
-  (let* ((searcher-strs (cond ((eq 'git-grep searcher) '("git-grep"))
-                              ((eq 'rg searcher) '("rg"))
-                              ((eq 'ug searcher) '("ug"))
-                              ((eq 'ag searcher) '("ag"))
-                              ((eq 'git-grep-plus-ag searcher) '("ag"))
-                              (t '("grep"))))
+  (let* ((searcher-str (cond ((eq 'git-grep searcher) "git-grep")
+                             ((eq 'rg searcher) "rg")
+                             ((eq 'ug searcher) "ug")
+                             ((eq 'ag searcher) "ag")
+                             ((eq 'git-grep-plus-ag searcher) "ag")
+                             (t "grep")))
          (results (seq-filter (lambda (it)
                                 (and
                                  (string= (plist-get it ':language) language)
-                                 (seq-some
-                                  (lambda (name)
-                                    (member name (plist-get it ':supports)))
-                                  searcher-strs)))
+                                 (member searcher-str (plist-get it ':supports))))
                               dumb-jump-find-rules)))
     (if dumb-jump-functions-only
         (seq-filter (lambda (it) (string= (plist-get it ':type) "function")) results)

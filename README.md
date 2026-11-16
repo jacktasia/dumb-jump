@@ -183,6 +183,8 @@ If you want to stop a directory from registering as the project root (and have D
 * `(setq dumb-jump-ug-search-args "")` to set additional command line arguments when using ugrep for searching (defaults to `""`).
 * `(setq dumb-jump-ug-cmd "/path/to/ugrep")` to use a ugrep executable outside `PATH` (defaults to `"ugrep"`).
 
+The ugrep searcher symbol is `ug`, while its default executable is `ugrep`.
+
 Two user-options are used to select the search tool:
 
 * `dumb-jump-prefer-searcher`: identifies the search tool normally used, unless it is nil or the value of `dumb-jump-force-searcher` overrides your preference.

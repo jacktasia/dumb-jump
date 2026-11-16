@@ -1447,6 +1447,17 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
       (should (equal dumb-jump--detected-env-problems
                      '("Can't detect Ugrep version."))))))
 
+(ert-deftest dumb-jump-ug-installed?-test-too-old ()
+  (let ((dumb-jump--ug-installed? 'unset)
+        (dumb-jump--detected-env-problems nil))
+    (with-mock
+      (mock (executable-find *) => t)
+      (mock (shell-command-to-string *) =>
+            "ugrep 4.5.2 x86_64; -P:pcre2jit\n" :times 1)
+      (should-not (dumb-jump-ug-installed?))
+      (should (equal dumb-jump--detected-env-problems
+                     '("Ugrep 4.5.2 is too old; version 5.0.0 or later is required."))))))
+
 (ert-deftest dumb-jump-ug-installed?-test-no-pcre2 ()
   (let ((dumb-jump--ug-installed? 'unset)
         (dumb-jump--detected-env-problems nil))
@@ -1563,7 +1574,13 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
   (should
    (equal (dumb-jump-ug-regex "[^\\s]+") "[^\\s]+"))
   (should
-   (equal (dumb-jump-ug-regex "[^[:space:]]+") "[^[:space:]]+")))
+   (equal (dumb-jump-ug-regex "[^[:space:]]+") "[^[:space:]]+"))
+  (should
+   (equal (dumb-jump-ug-regex "\\b")
+          "(?:(?<!\\w)(?=\\w)|(?<=\\w)(?!\\w))"))
+  (should (equal (dumb-jump-ug-regex "\\=") "="))
+  (should (equal (dumb-jump-ug-regex "({foo})") "(\\{foo\\})"))
+  (should (equal (dumb-jump-ug-regex "(a{2,3})") "(a{2,3})")))
 
 (ert-deftest dumb-jump-populate-regexes-git-grep-test ()
   (should (equal (dumb-jump-populate-regexes "testvar" '("JJJ\\s*=\\s*") 'git-grep) '("testvar\\s*=\\s*")))
