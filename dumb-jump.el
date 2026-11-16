@@ -5489,6 +5489,16 @@ The arguments are:
       (dumb-jump-concat-command cmd exclude-args regex-args (shell-quote-argument proj)))))
 
 ;; --
+(defun dumb-jump--exclude-glob (path proj-dir &optional prefix)
+  "Return a glob excluding PATH, a directory inside PROJ-DIR.
+The glob is PATH relative to PROJ-DIR preceded by PREFIX, which
+defaults to \"**/\".  The wildcard prefix makes the glob match
+whatever directory the search tool runs from and however it spells
+the directories it visits: ripgrep matches globs against paths
+relative to its working directory, ugrep against the full path."
+  (concat (or prefix "**/")
+          (string-remove-prefix "/" (dumb-jump--replace proj-dir "" path))))
+
 (defun dumb-jump-generate-rg-command (look-for
                                       _cur-file proj
                                       regexes lang
@@ -5521,7 +5531,7 @@ The arguments are:
                         (mapcar
                          (lambda (it)
                            (shell-quote-argument
-                            (concat "!" (dumb-jump--replace proj-dir "" it))))
+                            (concat "!" (dumb-jump--exclude-glob it proj-dir))))
                          exclude-paths)))
          (regex-args (shell-quote-argument (dumb-jump--join "|" filled-regexes))))
     (if (null regexes)
@@ -5555,7 +5565,7 @@ The arguments are:
                         (mapcar (lambda (path)
                                   (format " --exclude-dir=%s"
                                           (shell-quote-argument
-                                           (dumb-jump--replace proj-dir "" path))))
+                                           (dumb-jump--exclude-glob path proj-dir))))
                                 exclude-paths)))
          (regex-args (shell-quote-argument
                       (dumb-jump--join "|" filled-regexes))))
@@ -5639,7 +5649,16 @@ The arguments are:
                         "--exclude-dir"
                         (mapcar
                          (lambda (it)
-                           (dumb-jump--replace proj-dir "" it))
+                           (let ((rel (dumb-jump--replace proj-dir "" it)))
+                             ;; grep matches a pattern holding a slash
+                             ;; against the full path, so a nested
+                             ;; directory needs a wildcard prefix.  A
+                             ;; plain name is left alone: it matches by
+                             ;; base name in both BSD and GNU grep.
+                             (shell-quote-argument
+                              (if (string-match-p "/" rel)
+                                  (dumb-jump--exclude-glob it proj-dir "*/")
+                                rel))))
                          exclude-paths)))
          (include-args (dumb-jump-get-ext-includes lang))
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
