@@ -874,8 +874,9 @@ VARIANT must be one of: ag, rg, grep, gnu-grep, git-grep, or git-grep-plus-ag."
 ;; Excluded directories must stay excluded when they are nested inside
 ;; the project and when the search runs from a sub-directory of it, as it
 ;; does when the visited file is not in the project root.
-(defun dumb-jump-test--nested-exclusion-paths (searcher)
+(defun dumb-jump-test--nested-exclusion-paths (searcher &optional from)
   "Search a temporary project with SEARCHER, excluding a nested directory.
+Run the search from the project sub-directory FROM, \"src/keep/\" by default.
 Return the project-relative paths of the files holding a match."
   (let* ((project (file-name-as-directory
                    (make-temp-file "dumb-jump-exclude-" t)))
@@ -886,7 +887,8 @@ Return the project-relative paths of the files holding a match."
             (make-directory (expand-file-name dir project) t)
             (with-temp-file (expand-file-name (concat dir "/sample.el") project)
               (insert "(defun nested-exclusion-test () nil)\n")))
-          (let* ((default-directory (expand-file-name "src/keep/" project))
+          (let* ((default-directory (expand-file-name (or from "src/keep/")
+                                                      project))
                  (gen-funcs (dumb-jump-generators-by-searcher searcher))
                  (regexes (dumb-jump-get-contextual-regexes
                            "elisp" nil searcher))
@@ -898,8 +900,9 @@ Return the project-relative paths of the files holding a match."
                            (plist-get gen-funcs :parse)
                            (plist-get gen-funcs :generate))))
             (sort (mapcar (lambda (result)
-                            (file-relative-name (plist-get result :path)
-                                                project))
+                            (file-relative-name
+                             (expand-file-name (plist-get result :path))
+                             project))
                           results)
                   #'string<)))
       (delete-directory project t))))
@@ -915,27 +918,59 @@ Return the project-relative paths of the files holding a match."
   (should (string= (dumb-jump--exclude-glob "/elsewhere/dir" "/proj/")
                    "**/elsewhere/dir")))
 
+;; The search runs from the directory of the visited file, which may be
+;; beside the excluded directory, hold it, or be inside it.
+(defun dumb-jump-test--check-nested-exclusion (searcher)
+  "Check SEARCHER skips a nested excluded directory wherever it runs from."
+  (dolist (from '("src/keep/" "src/" "src/generated/" "./"))
+    (should (equal (cons from (dumb-jump-test--nested-exclusion-paths
+                               searcher from))
+                   (list from "other/sample.el" "src/keep/sample.el")))))
+
 (when (dumb-jump-rg-installed?)
   (ert-deftest dumb-jump-run-rg-command-nested-exclusion-test ()
-    (should (equal (dumb-jump-test--nested-exclusion-paths 'rg)
-                   '("other/sample.el" "src/keep/sample.el")))))
+    (dumb-jump-test--check-nested-exclusion 'rg)))
 
 (when (dumb-jump-ug-installed?)
   (ert-deftest dumb-jump-run-ug-command-nested-exclusion-test ()
-    (should (equal (dumb-jump-test--nested-exclusion-paths 'ug)
-                   '("other/sample.el" "src/keep/sample.el")))))
+    (dumb-jump-test--check-nested-exclusion 'ug)))
 
 (when (dumb-jump-ag-installed?)
   (ert-deftest dumb-jump-run-ag-command-nested-exclusion-test ()
-    (should (equal (dumb-jump-test--nested-exclusion-paths 'ag)
-                   '("other/sample.el" "src/keep/sample.el")))))
+    (dumb-jump-test--check-nested-exclusion 'ag)))
 
 ;; GNU grep only matches `--exclude-dir' against a directory's base name,
-;; so a nested exclusion can only take effect with BSD grep.
-(when (eq (dumb-jump-grep-installed?) 'bsd)
+;; so there the nested directory is searched and its matches are dropped
+;; from the results.
+(when (dumb-jump-grep-installed?)
   (ert-deftest dumb-jump-run-grep-command-nested-exclusion-test ()
-    (should (equal (dumb-jump-test--nested-exclusion-paths 'grep)
-                   '("other/sample.el" "src/keep/sample.el")))))
+    (dumb-jump-test--check-nested-exclusion
+     (if (eq (dumb-jump-grep-installed?) 'gnu) 'gnu-grep 'grep))))
+
+(ert-deftest dumb-jump-rg-exclude-globs-test ()
+  ;; Beside the excluded directory: the wildcard glob is enough.
+  (let ((default-directory "/proj/src/keep/"))
+    (should (equal (dumb-jump--rg-exclude-globs "/proj/src/generated" "/proj/")
+                   '("**/src/generated"))))
+  ;; In a directory holding it: add a glob anchored to that directory.
+  (let ((default-directory "/proj/src/"))
+    (should (equal (dumb-jump--rg-exclude-globs "/proj/src/generated" "/proj/")
+                   '("**/src/generated" "/generated"))))
+  ;; In the excluded directory itself: no anchored glob can express it.
+  (let ((default-directory "/proj/src/generated/"))
+    (should (equal (dumb-jump--rg-exclude-globs "/proj/src/generated" "/proj/")
+                   '("**/src/generated")))))
+
+(ert-deftest dumb-jump-result-excluded-p-test ()
+  (let ((excluded '("/proj/src/generated")))
+    (should (dumb-jump--result-excluded-p
+             '(:path "/proj/src/generated/sub/a.el") excluded))
+    (should-not (dumb-jump--result-excluded-p
+                 '(:path "/proj/src/generated-not/a.el") excluded))
+    (should-not (dumb-jump--result-excluded-p
+                 '(:path "/proj/src/keep/a.el") excluded))
+    (should-not (dumb-jump--result-excluded-p
+                 '(:path "/proj/src/keep/a.el") nil))))
 
 (when (dumb-jump-ug-installed?)
   (ert-deftest dumb-jump-test-ug-rules-test ()

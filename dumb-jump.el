@@ -4963,9 +4963,24 @@ The parameters are:
       (let ((results (funcall parse-fn rawresults cur-file line-num))
             (ignore-case (member lang dumb-jump--case-insensitive-languages)))
         (seq-filter (lambda (it)
-                      (dumb-jump--contains-p look-for
-                                             (plist-get it :context) ignore-case))
+                      (and (dumb-jump--contains-p look-for
+                                                  (plist-get it :context) ignore-case)
+                           (not (dumb-jump--result-excluded-p it exclude-args))))
                     results)))))
+
+(defun dumb-jump--result-excluded-p (result exclude-paths)
+  "Return non-nil if RESULT is a match inside one of EXCLUDE-PATHS.
+The search tools are told to skip the excluded directories, but how
+well each one manages depends on the tool, its version and the
+directory it runs from.  Checking the results makes sure a match
+inside an excluded directory is never returned."
+  (let ((path (file-local-name (expand-file-name (plist-get result :path)))))
+    (seq-some (lambda (exclude)
+                (string-prefix-p
+                 (file-name-as-directory
+                  (file-local-name (expand-file-name exclude)))
+                 path))
+              exclude-paths)))
 
 (defun dumb-jump-parse-response-line (resp-line cur-file)
   "Parse a search program's single RESP-LINE for CUR-FILE.
@@ -5499,6 +5514,23 @@ relative to its working directory, ugrep against the full path."
   (concat (or prefix "**/")
           (string-remove-prefix "/" (dumb-jump--replace proj-dir "" path))))
 
+(defun dumb-jump--rg-exclude-globs (path proj-dir)
+  "Return the globs that make ripgrep skip PATH, a directory in PROJ-DIR.
+Ripgrep matches a glob against the path relative to its working
+directory when the path is inside it, and against the path as given
+otherwise.  The wildcard glob covers the second case.  When the
+search runs from a directory holding PATH, a second glob anchored to
+that directory covers the first."
+  (let ((cwd (file-name-as-directory
+              (expand-file-name (file-local-name default-directory))))
+        (dir (file-name-as-directory path))
+        (globs (list (dumb-jump--exclude-glob path proj-dir))))
+    (when (and (string-prefix-p cwd dir)
+               (not (string= cwd dir)))
+      (push (concat "/" (directory-file-name (substring dir (length cwd))))
+            globs))
+    (nreverse globs)))
+
 (defun dumb-jump-generate-rg-command (look-for
                                       _cur-file proj
                                       regexes lang
@@ -5529,10 +5561,12 @@ The arguments are:
          (exclude-args (dumb-jump-arg-joiner
                         "-g"
                         (mapcar
-                         (lambda (it)
-                           (shell-quote-argument
-                            (concat "!" (dumb-jump--exclude-glob it proj-dir))))
-                         exclude-paths)))
+                         (lambda (glob)
+                           (shell-quote-argument (concat "!" glob)))
+                         (seq-mapcat
+                          (lambda (it)
+                            (dumb-jump--rg-exclude-globs it proj-dir))
+                          exclude-paths))))
          (regex-args (shell-quote-argument (dumb-jump--join "|" filled-regexes))))
     (if (null regexes)
         ""
