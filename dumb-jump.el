@@ -4948,9 +4948,13 @@ The parameters are:
     (when (string-match-p "^PCRE2 is not available" rawresults)
       (dumb-jump-message "dumb-jump: Ripgrep PCRE2 support is not available. Install ripgrep with PCRE2 support or customize `dumb-jump-rg-search-args' to remove \"--pcre2\".")
       (dumb-jump-env-problem "Ripgrep PCRE2 support is not available in the current build."))
-    (when (and (string-blank-p rawresults)
-               dumb-jump-fallback-search
-               (not (eq dumb-jump--search-mode 'references)))
+    ;; Fall back when nothing was found, or when everything found is
+    ;; inside an excluded directory and so is about to be dropped.
+    (when (and dumb-jump-fallback-search
+               (not (eq dumb-jump--search-mode 'references))
+               (or (string-blank-p rawresults)
+                   (dumb-jump--only-excluded-results-p
+                    rawresults parse-fn cur-file line-num exclude-args)))
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn
                          look-for cur-file
@@ -4963,9 +4967,35 @@ The parameters are:
       (let ((results (funcall parse-fn rawresults cur-file line-num))
             (ignore-case (member lang dumb-jump--case-insensitive-languages)))
         (seq-filter (lambda (it)
-                      (dumb-jump--contains-p look-for
-                                             (plist-get it :context) ignore-case))
+                      (and (dumb-jump--contains-p look-for
+                                                  (plist-get it :context) ignore-case)
+                           (not (dumb-jump--result-excluded-p it exclude-args))))
                     results)))))
+
+(defun dumb-jump--only-excluded-results-p (rawresults parse-fn cur-file
+                                                      line-num exclude-paths)
+  "Return non-nil if RAWRESULTS holds matches, all inside EXCLUDE-PATHS.
+RAWRESULTS is parsed with PARSE-FN for CUR-FILE and LINE-NUM."
+  (unless (seq-empty-p exclude-paths)
+    (let ((results (funcall parse-fn rawresults cur-file line-num)))
+      (and results
+           (seq-every-p (lambda (it)
+                          (dumb-jump--result-excluded-p it exclude-paths))
+                        results)))))
+
+(defun dumb-jump--result-excluded-p (result exclude-paths)
+  "Return non-nil if RESULT is a match inside one of EXCLUDE-PATHS.
+The search tools are told to skip the excluded directories, but how
+well each one manages depends on the tool, its version and the
+directory it runs from.  Checking the results makes sure a match
+inside an excluded directory is never returned."
+  (let ((path (file-local-name (expand-file-name (plist-get result :path)))))
+    (seq-some (lambda (exclude)
+                (string-prefix-p
+                 (file-name-as-directory
+                  (file-local-name (expand-file-name exclude)))
+                 path))
+              exclude-paths)))
 
 (defun dumb-jump-parse-response-line (resp-line cur-file)
   "Parse a search program's single RESP-LINE for CUR-FILE.
@@ -5489,6 +5519,33 @@ The arguments are:
       (dumb-jump-concat-command cmd exclude-args regex-args (shell-quote-argument proj)))))
 
 ;; --
+(defun dumb-jump--exclude-glob (path proj-dir &optional prefix)
+  "Return a glob excluding PATH, a directory inside PROJ-DIR.
+The glob is PATH relative to PROJ-DIR preceded by PREFIX, which
+defaults to \"**/\".  The wildcard prefix makes the glob match
+whatever directory the search tool runs from and however it spells
+the directories it visits: ripgrep matches globs against paths
+relative to its working directory, ugrep against the full path."
+  (concat (or prefix "**/")
+          (string-remove-prefix "/" (dumb-jump--replace proj-dir "" path))))
+
+(defun dumb-jump--rg-exclude-globs (path proj-dir)
+  "Return the globs that make ripgrep skip PATH, a directory in PROJ-DIR.
+Ripgrep matches a glob against the path relative to its working
+directory when the path is inside it, and against the path as given
+otherwise.  The wildcard glob covers the second case.  When the
+search runs from a directory holding PATH, a second glob anchored to
+that directory covers the first."
+  (let ((cwd (file-name-as-directory
+              (expand-file-name (file-local-name default-directory))))
+        (dir (file-name-as-directory path))
+        (globs (list (dumb-jump--exclude-glob path proj-dir))))
+    (when (and (string-prefix-p cwd dir)
+               (not (string= cwd dir)))
+      (push (concat "/" (directory-file-name (substring dir (length cwd))))
+            globs))
+    (nreverse globs)))
+
 (defun dumb-jump-generate-rg-command (look-for
                                       _cur-file proj
                                       regexes lang
@@ -5519,10 +5576,12 @@ The arguments are:
          (exclude-args (dumb-jump-arg-joiner
                         "-g"
                         (mapcar
-                         (lambda (it)
-                           (shell-quote-argument
-                            (concat "!" (dumb-jump--replace proj-dir "" it))))
-                         exclude-paths)))
+                         (lambda (glob)
+                           (shell-quote-argument (concat "!" glob)))
+                         (seq-mapcat
+                          (lambda (it)
+                            (dumb-jump--rg-exclude-globs it proj-dir))
+                          exclude-paths))))
          (regex-args (shell-quote-argument (dumb-jump--join "|" filled-regexes))))
     (if (null regexes)
         ""
@@ -5555,7 +5614,7 @@ The arguments are:
                         (mapcar (lambda (path)
                                   (format " --exclude-dir=%s"
                                           (shell-quote-argument
-                                           (dumb-jump--replace proj-dir "" path))))
+                                           (dumb-jump--exclude-glob path proj-dir))))
                                 exclude-paths)))
          (regex-args (shell-quote-argument
                       (dumb-jump--join "|" filled-regexes))))
@@ -5639,7 +5698,16 @@ The arguments are:
                         "--exclude-dir"
                         (mapcar
                          (lambda (it)
-                           (dumb-jump--replace proj-dir "" it))
+                           (let ((rel (dumb-jump--replace proj-dir "" it)))
+                             ;; grep matches a pattern holding a slash
+                             ;; against the full path, so a nested
+                             ;; directory needs a wildcard prefix.  A
+                             ;; plain name is left alone: it matches by
+                             ;; base name in both BSD and GNU grep.
+                             (shell-quote-argument
+                              (if (string-match-p "/" rel)
+                                  (dumb-jump--exclude-glob it proj-dir "*/")
+                                rel))))
                          exclude-paths)))
          (include-args (dumb-jump-get-ext-includes lang))
          (regex-args (dumb-jump-arg-joiner "-e" filled-regexes)))
